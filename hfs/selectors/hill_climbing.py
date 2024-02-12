@@ -7,9 +7,9 @@ import numpy as np
 from scipy import sparse
 from sklearn.utils.validation import check_X_y
 
-from hfs.eagerHierarchicalFeatureSelector import EagerHierarchicalFeatureSelector
 from hfs.helpers import compute_aggregated_values, get_leaves, normalize_score
 from hfs.metrics import cosine_similarity
+from hfs.selectors import EagerHierarchicalFeatureSelector
 
 
 class HillClimbingSelector(EagerHierarchicalFeatureSelector):
@@ -121,7 +121,7 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
         if self.dataset_type == "numerical":
             normalized_matrix = np.zeros_like(score_matrix, dtype=float)
             for row_index in range(self._num_rows):
-                for column_index in range(self.n_features_):
+                for column_index in range(self.n_features_in_):
                     score = score_matrix[row_index, column_index]
                     normalized_matrix[row_index, column_index] = normalize_score(
                         score, max(score_matrix[row_index, :])
@@ -506,7 +506,7 @@ class BottomUpSelector(HillClimbingSelector):
         result = count * (
             1
             + self.alpha
-            * (number_of_leaf_nodes - self.n_features_)
+            * (number_of_leaf_nodes - self.n_features_in_)
             / number_of_leaf_nodes
         )
         return result

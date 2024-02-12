@@ -23,7 +23,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -80,3 +79,6 @@ slurm-*.out
 
 # WandB
 wandb
+
+# Weird file kgextension generates
+rate_limits.db

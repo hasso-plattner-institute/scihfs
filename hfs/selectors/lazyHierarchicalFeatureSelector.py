@@ -5,9 +5,9 @@ import numpy as np
 from sklearn.metrics import classification_report
 from sklearn.naive_bayes import BernoulliNB
 
-from .base import HierarchicalEstimator
-from .helpers import checkData, getRelevance
-from .metrics import conditional_mutual_information
+from hfs.helpers import checkData, getRelevance
+from hfs.metrics import conditional_mutual_information
+from hfs.selectors import HierarchicalEstimator
 
 
 class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
@@ -47,7 +47,14 @@ class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
         X = self._validate_data(
             X,
         )
-        self.n_features_ = X.shape[1]
+        if y is not None:
+            if not isinstance(y, np.ndarray):
+                try:
+                    y = np.asarray(y)
+                except Exception as e:
+                    raise ValueError(f"Invalid input for y: {e}")
+            self.n_classes_ = np.unique(y).shape[0]
+
         return self
 
     def fit_selector(self, X_train, y_train, X_test, columns=None):
@@ -68,13 +75,15 @@ class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
             The target values, i.e., hierarchical class labels for classification.
         """
         # Create DAG
-        self.n_features_ = X_train.shape[1]
+        self.n_features_in_ = X_train.shape[1]
+        self.n_classes_ = np.unique(y_train).shape[0]
+
         self._set_hierarchy()
         self._hierarchy.remove_node("ROOT")
         if columns:
             self._columns = columns
         else:
-            self._columns = list(range(self.n_features_))
+            self._columns = list(range(self.n_features_in_))
 
         mapping = {value: index for index, value in enumerate(self._columns)}
         self._hierarchy = nx.relabel_nodes(self._hierarchy, mapping)
@@ -259,8 +268,8 @@ class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
         Build minium spanning tree for each possible edge in the feature tree.
         """
         edges = self._hierarchy.edges
-        self._edge_status = np.zeros((self.n_features_, self.n_features_))
-        self._cmi = np.zeros((self.n_features_, self.n_features_))
+        self._edge_status = np.zeros((self.n_features_in_, self.n_features_in_))
+        self._cmi = np.zeros((self.n_features_in_, self.n_features_in_))
         self._sorted_edges = []
         for node1 in self._hierarchy.nodes:
             for node2 in self._hierarchy.nodes:
@@ -272,7 +281,7 @@ class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
                 self._edge_status[node1][node2] = 1
         sorted_indices = np.argsort(self._cmi, axis=None)
         for index in sorted_indices:
-            coordinates = divmod(index, self.n_features_)
+            coordinates = divmod(index, self.n_features_in_)
 
             if coordinates[0] < coordinates[1]:
                 self._sorted_edges.append(coordinates)
@@ -295,9 +304,9 @@ class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
             for node2 in self._hierarchy:
                 self._edge_status[node1][node2] = 1
 
-        representants = [i for i in range(self.n_features_)]
+        representants = [i for i in range(self.n_features_in_)]
         members = {}
-        for i in range(self.n_features_):
+        for i in range(self.n_features_in_):
             members[i] = [i]
 
         # get paths

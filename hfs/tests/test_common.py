@@ -6,16 +6,18 @@ from hfs import (
     HierarchicalEstimator,
     HierarchicalPreprocessor,
 )
-
-from ..gtd import GreedyTopDownSelector
-from ..hill_climbing import BottomUpSelector, TopDownSelector
-from ..hip import HIP
-from ..hnb import HNB
-from ..hnbs import HNBs
-from ..mr import MR
-from ..rnb import RNB
-from ..shsel import SHSELSelector
-from ..tsel import TSELSelector
+from hfs.selectors import (
+    HIP,
+    HNB,
+    MR,
+    RNB,
+    BottomUpSelector,
+    GreedyTopDownSelector,
+    HNBs,
+    SHSELSelector,
+    TopDownSelector,
+    TSELSelector,
+)
 
 
 @pytest.mark.parametrize(

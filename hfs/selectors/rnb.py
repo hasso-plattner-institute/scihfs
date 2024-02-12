@@ -1,4 +1,4 @@
-"HNB-select feature selection"
+"RNB feature selection"
 
 import numpy as np
 from sklearn.naive_bayes import BernoulliNB
@@ -6,29 +6,32 @@ from sklearn.naive_bayes import BernoulliNB
 from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
 
-class Tan(LazyHierarchicalFeatureSelector):
+class RNB(LazyHierarchicalFeatureSelector):
+
     """
-    Select non-redundant features following the algorithm proposed by Wan and Freitas.
+    Select the k features with the highest relevance.
+
     """
 
-    def __init__(self, hierarchy=None):
-        """Initializes a HNBs-Selector.
+    def __init__(self, hierarchy=None, k=0):
+        """Initializes a RNB-Selector.
 
         Parameters
         ----------
         hierarchy : np.ndarray
             The hierarchy graph as an adjacency matrix.
+        k : int
+            The numbers of features to select.
         """
-        super(Tan, self).__init__(hierarchy)
+        super(RNB, self).__init__(hierarchy)
+        self.k = k
 
     def select_and_predict(
         self, predict=True, saveFeatures=False, estimator=BernoulliNB()
     ):
         """
         Select features lazy for each test instance amd optionally predict target value of test instances.
-        It builds a minimal spanning tree (MST), by first adding all possible edges,
-        that meets certain conditions (to remove redundancy and selecting most relevant features) to an undirected graph (UDAG).
-        Afterwards features are obtained from the tree and can be used for prediction.        
+        It selects the top-k-ranked features in descending order of their individual predictive power measured by their relevance defined in helpers.py
 
         Parameters
         ----------
@@ -39,18 +42,18 @@ class Tan(LazyHierarchicalFeatureSelector):
         estimator : sklearn-compatible estimator
             Estimator to use for predictions.
 
-
         Returns
         -------
         predictions for test input samples, if predict = false, returns empty array.
         """
         predictions = np.array([])
-        self._build_mst()
         for idx in range(len(self._xtest)):
-            self._get_nonredundant_features_from_mst(idx)
+            self._get_top_k()  # change as equal for each test instance
             if predict:
                 predictions = np.append(predictions, self._predict(idx, estimator)[0])
             if saveFeatures:
                 self._features[idx] = np.array(list(self._instance_status.values()))
-            self._feature_length[idx] = len([nodes for nodes, status in self._instance_status.items() if status])
+            self._feature_length[idx] = len(
+                [nodes for nodes, status in self._instance_status.items() if status]
+            )
         return predictions

@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 
-from ..hill_climbing import BottomUpSelector, TopDownSelector
+from hfs.selectors.hill_climbing import BottomUpSelector, TopDownSelector
+
 from .fixtures.fixtures import (
     data1,
     data1_2,

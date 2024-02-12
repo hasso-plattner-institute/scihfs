@@ -1,12 +1,10 @@
-import os
-
 import networkx as nx
 import numpy as np
 import pytest
 
-from ..data.data_utils import create_mapping_columns_to_nodes, load_data
-from ..helpers import get_columns_for_numpy_hierarchy
-from ..preprocessing import HierarchicalPreprocessor
+from hfs.data_utils import create_mapping_columns_to_nodes, load_data
+from hfs.helpers import get_columns_for_numpy_hierarchy
+from hfs.preprocessing import HierarchicalPreprocessor
 
 
 def data1():

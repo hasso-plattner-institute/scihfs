@@ -1,15 +1,20 @@
+import time
+
 import networkx as nx
+import wandb
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import BernoulliNB
 
-from hfs.data.data_utils import create_mapping_columns_to_nodes, load_data
-from hfs.gtd import GreedyTopDownSelector
-from hfs.hill_climbing import BottomUpSelector, TopDownSelector
+from hfs.data_utils import create_mapping_columns_to_nodes, load_data
 from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.shsel import SHSELSelector
-from hfs.tsel import TSELSelector
-import time
-import wandb
+from hfs.selectors import (
+    BottomUpSelector,
+    GreedyTopDownSelector,
+    SHSELSelector,
+    TopDownSelector,
+    TSELSelector,
+)
+
 from .experiments import data
 
 

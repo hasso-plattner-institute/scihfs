@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 
-from ..gtd import GreedyTopDownSelector
+from hfs.selectors import GreedyTopDownSelector
+
 from .fixtures.fixtures import (
     data2,
     data2_1,

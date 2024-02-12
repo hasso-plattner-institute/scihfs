@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 
-from ..shsel import SHSELSelector
+from hfs.selectors import SHSELSelector
+
 from .fixtures.fixtures import (
     data1,
     data1_2,

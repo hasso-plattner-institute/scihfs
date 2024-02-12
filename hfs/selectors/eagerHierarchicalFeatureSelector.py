@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.feature_selection import SelectorMixin
 from sklearn.utils.validation import check_array
 
-from .base import HierarchicalEstimator
+from hfs.selectors import HierarchicalEstimator
 
 
 class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
@@ -75,7 +75,7 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
             The input samples with only the selected features.
         """
         X = check_array(X, dtype=None, accept_sparse="csr")
-        if self.n_features_ != X.shape[1]:
+        if self.n_features_in_ != X.shape[1]:
             raise ValueError("X has a different shape than during fitting.")
         return super().transform(X)
 
@@ -88,14 +88,14 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
         return np.asarray(
             [
                 True if index in representatives_indices else False
-                for index in range(self.n_features_)
+                for index in range(self.n_features_in_)
             ]
         )
 
     def _check_hierarchy_X(self):
         not_in_hierarchy = [
             feature_index
-            for feature_index in range(self.n_features_)
+            for feature_index in range(self.n_features_in_)
             if feature_index not in self._columns
         ]
         if not_in_hierarchy:

@@ -3,7 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from ..data.data_utils import create_mapping_columns_to_nodes, load_data, process_data
+from hfs.data_utils import create_mapping_columns_to_nodes, load_data, process_data
+
 from .fixtures.fixtures import (
     dataframe,
     hierarchy1,

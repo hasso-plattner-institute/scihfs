@@ -18,8 +18,8 @@ hierarchical feature selector class and use it in exactly the same way.
 import networkx as nx
 import numpy as np
 
-from hfs import SHSELSelector
 from hfs.helpers import get_columns_for_numpy_hierarchy
+from hfs.selectors import SHSELSelector
 
 # Example dataset X with 3 samples and 5 features.
 X = np.array(
@@ -65,7 +65,7 @@ import networkx as nx
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import BernoulliNB
 
-from hfs.data.data_utils import create_mapping_columns_to_nodes, load_data, process_data
+from hfs.data_utils import create_mapping_columns_to_nodes, load_data, process_data
 from hfs.preprocessing import HierarchicalPreprocessor
 from hfs.shsel import SHSELSelector
 

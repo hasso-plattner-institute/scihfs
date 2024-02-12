@@ -6,14 +6,13 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.naive_bayes import BernoulliNB
 
-from hfs.data.data_utils import create_mapping_columns_to_nodes
 from hfs.hip import HIP
 from hfs.hnb import HNB
 from hfs.hnbs import HNBs
 from hfs.mr import MR
+from hfs.data_utils import create_mapping_columns_to_nodes
 from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.rnb import RNB
-from hfs.tan import Tan
+from hfs.selectors import HIP, HNB, MR, RNB, TAN, HNBs
 
 
 def data():
@@ -81,12 +80,12 @@ def mr(hierarchy, train, y_train, test, y_test, k, columns, path):
 
 
 def tan(hierarchy, train, y_train, test, y_test, k, columns, path):
-    model = Tan(hierarchy=hierarchy)
+    model = TAN(hierarchy=hierarchy)
     model.fit_selector(X_train=train, y_train=y_train, X_test=test, columns=columns)
     pred = model.select_and_predict(predict=True, saveFeatures=True)
     score = model.get_score(y_test, pred)
     with open(path, "a") as file:
-        file.write("\nTan:\n")
+        file.write("\nTAN:\n")
         file.write(json.dumps(score))
 
 
@@ -99,11 +98,11 @@ def hip(hierarchy, train, y_train, test, y_test, k, columns, path):
         file.write("\nHIP:\n")
         file.write(json.dumps(score))
 
-def naive_bayes(hierarchy, train, y_train, test, y_test, k, columns,path):
-    
+
+def naive_bayes(hierarchy, train, y_train, test, y_test, k, columns, path):
     clf = BernoulliNB()
     clf.fit(train, y_train)
-    predictions =  clf.predict(test)
+    predictions = clf.predict(test)
     score = classification_report(y_true=y_test, y_pred=predictions, output_dict=True)
     with open(path, "a") as file:
         file.write("\nBaseline:\n")
@@ -117,7 +116,7 @@ def evaluate(data, k):
     preprocessor.fit(train, columns=columns)
     train = preprocessor.transform(train)
     test = preprocessor.transform(test)
-    
+
     hierarchy = preprocessor.get_hierarchy()
     graph = nx.DiGraph(hierarchy)
     columns = create_mapping_columns_to_nodes(pd.DataFrame(train), graph)
@@ -134,7 +133,7 @@ def evaluate(data, k):
             y_test=y_test,
             k=k,
             columns=columns,
-            path = path
+            path=path,
         )
 
 

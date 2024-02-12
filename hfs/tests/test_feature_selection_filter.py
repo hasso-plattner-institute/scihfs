@@ -2,14 +2,13 @@ import numpy as np
 import pytest
 from sklearn.utils.estimator_checks import check_estimator
 
-from hfs.tan import Tan
+from hfs.selectors.hip import HIP
+from hfs.selectors.hnb import HNB
+from hfs.selectors.hnbs import HNBs
+from hfs.selectors.mr import MR
+from hfs.selectors.rnb import RNB
+from hfs.selectors.tan import TAN
 
-from ..lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
-from ..hip import HIP
-from ..hnb import HNB
-from ..hnbs import HNBs
-from ..mr import MR
-from ..rnb import RNB
 from .fixtures.fixtures import *
 
 
@@ -85,9 +84,13 @@ def data2():
 def test_HNB(data):
     small_DAG, train_x_data, train_y_data, test_x_data, test_y_data = data
     selector = HNB(hierarchy=small_DAG, k=2)
-    selector.fit_selector(X_train=train_x_data, y_train=train_y_data, X_test=test_x_data)
+    selector.fit_selector(
+        X_train=train_x_data, y_train=train_y_data, X_test=test_x_data
+    )
     pred = selector.select_and_predict(predict=True, saveFeatures=True)
-    assert np.array_equal(selector.get_features(), np.array([[0, 1, 1, 0], [0, 0, 1, 1]]))
+    assert np.array_equal(
+        selector.get_features(), np.array([[0, 1, 1, 0], [0, 0, 1, 1]])
+    )
     assert np.array_equal(pred, np.array([0, 1]))
     assert selector.get_score(test_y_data, pred)["accuracy"] == 0.0  # accuracy
     assert selector.get_score(test_y_data, pred)["1"]["recall"] == 0.0  # sensitivity
@@ -105,10 +108,14 @@ def test_HNB(data):
 def test_HNBs(data):
     small_DAG, train_x_data, train_y_data, test_x_data, test_y_data = data
     selector = HNBs(hierarchy=small_DAG)
-    selector.fit_selector(X_train=train_x_data, y_train=train_y_data, X_test=test_x_data)
+    selector.fit_selector(
+        X_train=train_x_data, y_train=train_y_data, X_test=test_x_data
+    )
     pred = selector.select_and_predict(predict=True, saveFeatures=True)
     assert np.array_equal(pred, np.array([0, 1]))
-    assert np.array_equal(selector.get_features(), np.array([[0, 1, 1, 1], [0, 0, 1, 1]]))
+    assert np.array_equal(
+        selector.get_features(), np.array([[0, 1, 1, 1], [0, 0, 1, 1]])
+    )
     assert selector.get_score(test_y_data, pred)["accuracy"] == 0.0  # accuracy
     assert selector.get_score(test_y_data, pred)["1"]["recall"] == 0.0  # sensitivity
     assert selector.get_score(test_y_data, pred)["0"]["recall"] == 0.0  # specivity
@@ -125,10 +132,14 @@ def test_HNBs(data):
 def test_RNB(data):
     small_DAG, train_x_data, train_y_data, test_x_data, test_y_data = data
     selector = RNB(hierarchy=small_DAG, k=2)
-    selector.fit_selector(X_train=train_x_data, y_train=train_y_data, X_test=test_x_data)
+    selector.fit_selector(
+        X_train=train_x_data, y_train=train_y_data, X_test=test_x_data
+    )
     pred = selector.select_and_predict(predict=True, saveFeatures=True)
     assert np.array_equal(pred, np.array([0, 1]))
-    assert np.array_equal(selector.get_features(), np.array([[0, 1, 1, 0], [0, 1, 1, 0]]))
+    assert np.array_equal(
+        selector.get_features(), np.array([[0, 1, 1, 0], [0, 1, 1, 0]])
+    )
 
 
 @pytest.mark.parametrize(
@@ -189,7 +200,7 @@ def test_HIP(data):
 )
 def test_TAN(data):
     hierarchy, X_train_ones, X_train, y_train, X_test, y_test, resulted_features = data
-    selector = Tan(nx.to_numpy_array(hierarchy))
+    selector = TAN(nx.to_numpy_array(hierarchy))
     selector.fit_selector(X_train=X_train_ones, y_train=y_train, X_test=X_test)
     selector._xtrain = X_train
     selector._hierarchy = hierarchy

@@ -40,7 +40,7 @@ def process_data(
     graph = extended_data.attrs["hierarchy"]
     cleaned_data = extended_data[
         [column for column in extended_data.columns if "type" in column]
-    ]
+    ].copy()
     column_names_mapping = dict(
         zip(
             cleaned_data.columns,

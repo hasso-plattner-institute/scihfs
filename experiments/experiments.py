@@ -3,10 +3,10 @@ import pathlib
 
 import networkx as nx
 import pandas as pd
-from sklearn.naive_bayes import BernoulliNB
 from sklearn.metrics import accuracy_score, classification_report
-from hfs.data.data_utils import create_mapping_columns_to_nodes
+from sklearn.naive_bayes import BernoulliNB
 
+from hfs.data.data_utils import create_mapping_columns_to_nodes
 from hfs.hip import HIP
 from hfs.hnb import HNB
 from hfs.hnbs import HNBs
@@ -110,7 +110,7 @@ def naive_bayes(hierarchy, train, y_train, test, y_test, k, columns,path):
         file.write(json.dumps(score))
 
 
-# Evalueate feature selection of HNB
+# Evaluate feature selection of HNB
 def evaluate(data, k):
     hierarchy, train, y_train, test, y_test, columns = data()
     preprocessor = HierarchicalPreprocessor(hierarchy=hierarchy)

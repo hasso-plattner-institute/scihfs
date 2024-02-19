@@ -1,5 +1,0 @@
-outs:
-- md5: 0288d0d6da7830fd0bcc9448ea9591eb
-  size: 4842
-  hash: md5
-  path: visualize.py

@@ -1,6 +1,7 @@
 # %%
 import random
 from enum import Enum, auto
+from typing import Dict
 
 import networkx as nx
 import numpy as np
@@ -11,11 +12,6 @@ class BranchDistribution(Enum):
     SHALLOW = auto()
     BALANCED = auto()
 
-
-import random
-from typing import Dict
-
-import networkx as nx
 
 ##TODO make branches be able to be shorter than the max depth, think about skip connections
 ## Joint probability von allen Paaren,

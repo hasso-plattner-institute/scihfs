@@ -1,6 +1,4 @@
-====================================================
 hfs - A library for hierarchical feature selection
-====================================================
 
 Introduction
 =============
@@ -60,4 +58,12 @@ poetry run black .
 ```
 poetry run pytest hfs
 ```
-Happy feature selecting!
+
+Pre-Commit Hooks
+To run the pre-commit hooks, you can use the following command:
+```
+pre-commit run --all-files
+```
+
+Happy feature selecting!🌟
+```

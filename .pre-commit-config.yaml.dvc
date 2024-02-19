@@ -1,0 +1,5 @@
+outs:
+- md5: c495c59e917978183ca6945eaee6351e
+  size: 341
+  hash: md5
+  path: .pre-commit-config.yaml

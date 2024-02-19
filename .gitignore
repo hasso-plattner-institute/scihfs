@@ -82,3 +82,4 @@ wandb
 
 # Weird file kgextension generates
 rate_limits.db
+/.pre-commit-config.yaml

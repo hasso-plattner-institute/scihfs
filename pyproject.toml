@@ -25,6 +25,9 @@ numpydoc = "^1.6.0"
 sphinxcontrib-bibtex = "^2.6.1"
 pytest = "^7.4.4"
 dit = "^1.5"
+pre-commit = "^3.6.2"
+dvc = "^3.45.0"
+prettytable = "^3.9.0"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -19,7 +19,6 @@ nxontology = "^0.5.0"
 scipy = "^1.11.4"
 scikit-learn = "^1.3.2"
 pytz = "^2023.3.post1"
-pandas = "1.5.3"
 wandb = "^0.16.1"
 numpydoc = "^1.6.0"
 sphinxcontrib-bibtex = "^2.6.1"
@@ -28,6 +27,7 @@ dit = "^1.5"
 pre-commit = "^3.6.2"
 dvc = "^3.45.0"
 prettytable = "^3.9.0"
+jupyter = "^1.0.0"
 
 
 [tool.poetry.group.dev.dependencies]

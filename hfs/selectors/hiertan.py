@@ -9,13 +9,13 @@ from scipy import sparse
 from sklearn.naive_bayes import BernoulliNB
 from sklearn.utils.validation import check_X_y
 
-from .eagerHierarchicalFeatureSelector import EagerHierarchicalFeatureSelector
-from .helpers import compute_aggregated_values, get_leaves, get_paths
-from .metrics import (
+from ..helpers import compute_aggregated_values, get_leaves, get_paths
+from ..metrics import (
     conditional_mutual_information,
     information_gain,
     pearson_correlation,
 )
+from .eagerHierarchicalFeatureSelector import EagerHierarchicalFeatureSelector
 
 
 class HierTan(EagerHierarchicalFeatureSelector):

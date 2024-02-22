@@ -24,6 +24,7 @@ COPY poetry.lock pyproject.toml ./
 
 # Install all required packages with poetry, including the "dev" group packages
 RUN poetry config virtualenvs.create false \
+    && poetry lock --no-update \
     && poetry install --no-interaction --no-root --no-cache --quiet --sync
 
 # In case of running a Jupyter service inside the container, this is a requirement to make it available outside of it

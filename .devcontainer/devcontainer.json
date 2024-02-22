@@ -1,0 +1,53 @@
+{
+	"name": "hfs-dev",
+	// Configure Dockerfile for devcontainer
+	"build": {
+		"context": "..",
+		"dockerfile": "../Dockerfile"
+	},
+	// Configure tool-specific properties.
+	"customizations": {
+		// Configure properties specific to VS Code.
+		"vscode": {
+			// Set *default* container specific settings.json values on container create.
+			"settings": {
+				"terminal.integrated.profiles.linux": {
+					"zsh": {
+						"path": "/bin/zsh"
+					}
+				},
+				"terminal.integrated.defaultProfile.linux": "zsh",
+				"python.defaultInterpreterPath": "/usr/local/bin/python",
+				"python.languageServer": "Default",
+				"python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
+				"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+				"python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf"
+			},
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"ms-python.python",
+				"ms-python.pylint",
+				"ms-python.vscode-pylance",
+				"ms-toolsai.jupyter",
+				"ms-toolsai.jupyter-keymap",
+				"ms-toolsai.jupyter-renderers"
+			]
+		}
+	},
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// However, use "appPort": ["<local_port>:<container_port>"] to make the specified container port available to a different port number on the host.
+	"forwardPorts": [
+		8888
+	],
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "pip3 install -r requirements.txt",
+	// Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+	// "remoteUser": "leastprivilegeduser",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/hfs,type=bind",
+	"workspaceFolder": "/hfs",
+	"runArgs": [
+		"--rm"
+	]
+	// Comment in to use Jupyter Lab on port 8888 (change port here and in the EXPOSE section of the Dockerfile if necessary)
+	// "postCreateCommand": "jupyter lab --ip='0.0.0.0' --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''"
+}

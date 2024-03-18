@@ -18,6 +18,15 @@ class BranchDistribution(Enum):
 ## Echten Datensatz analysieren und gucken welche zusammenhänge es tatsächlich gibt, und komplex wir die modellieren müssen
 
 
+def remove_redundant_edges(dag: nx.DiGraph):
+    """Entfernen redundanter direkter Verbindungen, die durch längere Pfade impliziert werden."""
+    for edge in list(dag.edges):
+        if nx.has_path(dag, edge[0], edge[1]) and dag.has_edge(edge[0], edge[1]):
+            dag.remove_edge(edge[0], edge[1])
+            if not nx.is_directed_acyclic_graph(dag):
+                dag.add_edge(edge[0], edge[1])
+
+
 def generate_dag(
     num_features: int = 10,
     max_depth: int = 6,
@@ -128,6 +137,8 @@ def generate_dag(
             dag.add_node(new_node)
             dag.add_edge(existing_node, new_node)
 
+    # remove_redundant_edges(dag)
+
     return dag
 
 
@@ -213,3 +224,6 @@ def generate_labels(X: np.ndarray, dag: nx.DiGraph) -> np.ndarray:
     labels = (non_linear_scores > 0.5).astype(int)
 
     return labels
+
+
+# %%

@@ -105,12 +105,6 @@ X, y, dag = generate_synthetic_dataset(
 # Visualize the DAG
 visualize_dag(dag)
 
-# Visualize the distribution of the first feature
-visualize_feature_distribution(X)
-
-# Visualize the interaction between the first two features
-visualize_feature_interaction(X, y)
-
 
 # %%
 # TODO Multiple roots?

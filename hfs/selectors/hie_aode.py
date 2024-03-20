@@ -80,58 +80,63 @@ class HieAODE(LazyHierarchicalFeatureSelector):
         sample_sum = np.zeros((n_samples, self.n_classes_))
         for sample_idx in range(n_samples):
             sample = self._xtest[sample_idx]
-
             descendant_product = np.ones(self.n_classes_)
             ancestor_product = np.ones(self.n_classes_)
             for feature_idx in range(self.n_features_in_):
-                self.calculate_class_prior(feature_idx=feature_idx)
-
                 ancestors = list(nx.ancestors(self._hierarchy, feature_idx))
-                for ancestor_idx in ancestors:
-                    self.calculate_prob_given_ascendant_class(ancestor=ancestor_idx)
-
-                descendants = [
-                    feature
-                    for feature in range(self.n_features_in_)
-                    if feature != feature_idx and feature not in ancestors
-                ]
-                # P (x_j=sample[descendant_idx]|y, x_i=sample[feature_idx])
-                for descendant_idx in descendants:
-                    self.calculate_prob_descendant_given_class_feature(
-                        descendant_idx=descendant_idx, feature_idx=feature_idx
-                    )
-
-                if len(ancestors) <= 0:
-                    ancestor_product = np.zeros((self.n_classes_))
-                else:
-                    ancestor_product = np.prod(
-                        self.cpts["ancestors"][ancestors, :, sample[ancestors]], axis=0
-                    )
-                if len(descendants) <= 0:
-                    descendant_product = np.zeros((self.n_classes_))
-                else:
-                    descendant_product = np.prod(
-                        self.cpts["descendants"][
-                            descendants,
-                            feature_idx,
-                            :,
-                            sample[feature_idx],
-                            sample[descendants],
-                        ],
-                        axis=0,
-                    )
-
-                feature_prior = np.prod(
-                    self.cpts["prior"][feature_idx, :, sample[feature_idx]]
+                feature_product = np.multiply(
+                    self.ancestors_product(sample=sample, ancestors=ancestors),
+                    self.descendants_product(
+                        sample=sample, feature_idx=feature_idx, ancestors=ancestors
+                    ),
                 )
-
-                feature_product = np.multiply(ancestor_product, descendant_product)
-                feature_product = np.multiply(feature_product, feature_prior)
-
+                feature_product = np.multiply(
+                    feature_product,
+                    self.prior_term(sample=sample, feature_idx=feature_idx),
+                )
                 sample_sum[sample_idx] = np.add(sample_sum[sample_idx], feature_product)
 
         y = np.argmax(sample_sum, axis=1)
         return y if predict else np.array([])
+
+    def prior_term(self, sample, feature_idx):
+        self.calculate_class_prior(feature_idx=feature_idx)
+        return np.prod(self.cpts["prior"][feature_idx, :, sample[feature_idx]])
+
+    def ancestors_product(self, sample, ancestors):
+        for ancestor_idx in ancestors:
+            self.calculate_prob_given_ascendant_class(ancestor=ancestor_idx)
+        if len(ancestors) <= 0:
+            return np.zeros(self.n_classes_)
+        else:
+            return np.prod(
+                self.cpts["ancestors"][ancestors, :, sample[ancestors]], axis=0
+            )
+
+    def descendants_product(self, sample, feature_idx, ancestors):
+        descendants = [
+            feature
+            for feature in range(self.n_features_in_)
+            if feature != feature_idx and feature not in ancestors
+        ]
+        # P (x_j=sample[descendant_idx]|y, x_i=sample[feature_idx])
+        for descendant_idx in descendants:
+            self.calculate_prob_descendant_given_class_feature(
+                descendant_idx=descendant_idx, feature_idx=feature_idx
+            )
+        if len(descendants) <= 0:
+            return np.zeros(self.n_classes_)
+        else:
+            return np.prod(
+                self.cpts["descendants"][
+                    descendants,
+                    feature_idx,
+                    :,
+                    sample[feature_idx],
+                    sample[descendants],
+                ],
+                axis=0,
+            )
 
     def calculate_class_prior(self, feature_idx):
         n_samples = self._ytrain.shape[0]
@@ -169,9 +174,12 @@ class HieAODE(LazyHierarchicalFeatureSelector):
                     if descendant_idx != feature_idx:
                         # Calculate P(y, x_i = feature_value, x_j = descendant_value)
                         descendant = self._xtrain[:, descendant_idx]
-                        p_class_feature_descendant = np.sum(descendant[mask] == descendant_value)
+                        p_class_feature_descendant = np.sum(
+                            descendant[mask] == descendant_value
+                        )
                         prob_descendant_given_c_feature = (
-                            p_class_feature_descendant + SMOOTHING_FACTOR * PRIOR_PROBABILITY
+                            p_class_feature_descendant
+                            + SMOOTHING_FACTOR * PRIOR_PROBABILITY
                         ) / (p_class_feature + SMOOTHING_FACTOR)
 
                         self.cpts["descendants"][descendant_idx][feature_idx][c][

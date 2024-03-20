@@ -8,6 +8,7 @@ from .fixtures.fixtures import *
 SMOOTHING = 1
 PRIOR = 0.5
 
+
 @pytest.fixture
 def expected_prior_lazy_data2():
     return np.array(
@@ -61,22 +62,22 @@ def expected_ancestors_lazy_data2():
     ancestors = np.full((4, 2, 2), -1, dtype=float)  # ancestor idx, class, value
     ancestors[0] = [  # feature 0 as ancestor
         [  # Class 0
-            (0.0+SMOOTHING*PRIOR)/(2.0+SMOOTHING),  # Value 0
-            (2.0+SMOOTHING*PRIOR)/(2.0+SMOOTHING),  # Value 1
+            (0.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Value 0
+            (2.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Value 1
         ],
         [  # Class 1
-            (0.0+SMOOTHING*PRIOR)/(2.0+SMOOTHING),  # Value 0
-            (2.0+SMOOTHING*PRIOR)/(2.0+SMOOTHING),  # Value 1
+            (0.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Value 0
+            (2.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Value 1
         ],
     ]
     ancestors[1] = [  # feature 1 as ancestor
         [  # Class 0
-            (1.0+SMOOTHING*PRIOR)/(2.0+SMOOTHING),  # Value 0
-            (1.0+SMOOTHING*PRIOR)/(2.0+SMOOTHING),  # Value 1
+            (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Value 0
+            (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Value 1
         ],
         [  # Class 1
-            (0.0+SMOOTHING*PRIOR)/(2.0+SMOOTHING),  # Value 0
-            (2.0+SMOOTHING*PRIOR)/(2.0+SMOOTHING),  # Value 1
+            (0.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Value 0
+            (2.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Value 1
         ],
     ]
     return ancestors
@@ -90,191 +91,158 @@ def expected_descendants_lazy_data2():
     descendants[1][0] = [  # feature 1 is a descendant of feature 0
         [  # Class 0
             [  # Descendant value 0
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
         ],
         [  # Class 1
             [  # Descendant value 0
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (0.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (0.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (2.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (2.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
         ],
     ]
     descendants[2][0] = [  # feature 2 is a descendant of feature 0
         [  # Class 0
             [  # Descendant value 0
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (2.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (2.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (0.0+SMOOTHING*PRIOR)/(0.0+SMOOTHING),  # Feature value 0
-                (0.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (0.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
         ],
         [  # Class 1
             [  # Descendant value 0
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (0.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (0.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (2.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (2.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
         ],
     ]
     descendants[3][0] = [  # feature 3 is a descendant of feature 0
         [  # Class 0
             [  # Descendant value 0
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
         ],
         [  # Class 1
             [  # Descendant value 0
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
         ],
     ]
     descendants[2][1] = [  # feature 2 is a descendant of feature 1
         [  # Class 0
             [  # Descendant value 0
-                (1.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 1
+                (1.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (0.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 0
-                (0.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 0
+                (0.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 1
             ],
         ],
         [  # Class 1
             [  # Descendant value 0
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (0.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (0.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (2.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (2.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
         ],
     ]
     descendants[3][1] = [  # feature 3 is a descendant of feature 1
         [  # Class 0
             [  # Descendant value 0
-                (1.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 0
-                (0.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 1
+                (1.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 0
+                (0.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (0.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 1
             ],
         ],
         [  # Class 1
             [  # Descendant value 0
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
         ],
     ]
     descendants[3][2] = [  # feature 3 is a descendant of feature 2
         [  # Class 0
             [  # Descendant value 0
-                (1.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 0
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 1
+                (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 0
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (1.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 0
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 1
+                (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 0
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 1
             ],
         ],
         [  # Class 1
             [  # Descendant value 0
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (0.0+SMOOTHING*PRIOR) / (0.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (2.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (0.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (2.0 + SMOOTHING),  # Feature value 1
             ],
         ],
     ]
     descendants[2][3] = [  # feature 2 is a descendant of feature 3
         [  # Class 0
             [  # Descendant value 0
-                (1.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 1
+                (1.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (0.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 0
-                (0.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 0
+                (0.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 1
             ],
         ],
         [  # Class 1
             [  # Descendant value 0
-                (0.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 0
-                (0.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 1
+                (0.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 0
+                (0.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 1
             ],
             [  # Descendant value 1
-                (1.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 0
-                (1.0+SMOOTHING*PRIOR) / (1.0+SMOOTHING),  # Feature value 1
+                (1.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 0
+                (1.0 + SMOOTHING * PRIOR) / (1.0 + SMOOTHING),  # Feature value 1
             ],
         ],
     ]
     return descendants
-
-
-
-
-@pytest.mark.parametrize(
-    "data",
-    [
-        lazy_data2(),
-    ],
-)
-def test_calculate_dependency_ascendant_class(data):
-    small_DAG, train_x_data, train_y_data, test_x_data, test_y_data = data
-    selector = HieAODE(hierarchy=small_DAG)
-    selector.fit_selector(
-        X_train=train_x_data, y_train=train_y_data, X_test=test_x_data
-    )
-    sample_idx = 1
-    sample = test_x_data[1]
-    feature_idx = 2
-    expected = np.full((selector.n_features_in_, selector.n_classes_, 2), -1)
-    expected[0][0][0] = 0.0
-    expected[0][1][0] = 0.0
-    expected[0][0][1] = 1.0
-    expected[0][1][1] = 1.0
-    expected[1][0][0] = 0.0
-    expected[1][1][0] = 0.0
-    expected[1][0][1] = 0.0
-    expected[1][1][1] = 1.0
-    ancestors = nx.ancestors(selector._hierarchy, feature_idx)
-
-    for a in range(len(ancestors)):
-        selector.calculate_prob_given_ascendant_class(ancestor=a)
-    assert np.array_equal(selector.cpts["ancestors"], expected)
 
 
 @pytest.mark.parametrize(

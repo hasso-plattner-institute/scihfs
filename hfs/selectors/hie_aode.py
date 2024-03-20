@@ -8,7 +8,7 @@ SMOOTHING_FACTOR = 1
 PRIOR_PROBABILITY = 0.5
 
 
-class HieAODE(LazyHierarchicalFeatureSelector):
+class HieAODEBase(LazyHierarchicalFeatureSelector):
     """
     Select non-redundant features following the algorithm proposed by Wan and Freitas.
     """
@@ -22,7 +22,7 @@ class HieAODE(LazyHierarchicalFeatureSelector):
             The hierarchy graph as an adjacency matrix.
         """
         self.cpts = dict()
-        super(HieAODE, self).__init__(hierarchy)
+        super(HieAODEBase, self).__init__(hierarchy)
 
     def fit_selector(self, X_train, y_train, X_test, columns=None):
         """
@@ -36,7 +36,7 @@ class HieAODE(LazyHierarchicalFeatureSelector):
         P (x_j|y, x_i)
         feature_descendants_class_cpt = (self.n_features_in, self._n_descendants, self.n_classes_, n_values)
         """
-        super(HieAODE, self).fit_selector(X_train, y_train, X_test, columns)
+        super(HieAODEBase, self).fit_selector(X_train, y_train, X_test, columns)
         self.cpts = dict(
             # prior = P(y, x_i)
             prior=np.full(
@@ -185,3 +185,48 @@ class HieAODE(LazyHierarchicalFeatureSelector):
                         self.cpts["descendants"][descendant_idx][feature_idx][c][
                             descendant_value
                         ][feature_value] = prob_descendant_given_c_feature
+
+
+class HieAODE(HieAODEBase):
+    def select_and_predict(
+        self, predict=True, saveFeatures=False, estimator=BernoulliNB()
+    ):
+        """
+        Select features lazy for each test instance and optionally predict target value of test instances
+        using the HieAODE algorithm by Wan and Freitas
+
+        Parameters
+        ----------
+        predict : bool
+            true if predictions shall be obtained.
+        saveFeatures : bool
+            true if features selected for each test instance shall be saved.
+        estimator : sklearn-compatible estimator
+            Estimator to use for predictions.
+
+        Returns
+        -------
+        predictions for test input samples, if predict = false, returns empty array.
+        """
+        n_samples = self._xtest.shape[0]
+        sample_sum = np.zeros((n_samples, self.n_classes_))
+        for sample_idx in range(n_samples):
+            sample = self._xtest[sample_idx]
+            descendant_product = np.ones(self.n_classes_)
+            ancestor_product = np.ones(self.n_classes_)
+            for feature_idx in range(self.n_features_in_):
+                ancestors = list(nx.ancestors(self._hierarchy, feature_idx))
+                feature_product = np.multiply(
+                    self.ancestors_product(sample=sample, ancestors=ancestors),
+                    self.descendants_product(
+                        sample=sample, feature_idx=feature_idx, ancestors=ancestors
+                    ),
+                )
+                feature_product = np.multiply(
+                    feature_product,
+                    self.prior_term(sample=sample, feature_idx=feature_idx),
+                )
+                sample_sum[sample_idx] = np.add(sample_sum[sample_idx], feature_product)
+
+        y = np.argmax(sample_sum, axis=1)
+        return y if predict else np.array([])

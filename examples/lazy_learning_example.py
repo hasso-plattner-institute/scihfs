@@ -12,7 +12,7 @@ import networkx as nx
 import numpy as np
 
 from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.selectors import HIP, HNB, MR, RNB, TAN, HieAODE, HNBs
+from hfs.selectors import HIP, HNB, MR, RNB, TAN, HieAODEBase, HNBs
 
 
 # Define data
@@ -46,7 +46,7 @@ HieAODE -
 
 print("\nHieAODE:")
 # Initialize and fit HNB model with threshold k = 3 features to select
-model = HieAODE(hierarchy=hierarchy)
+model = HieAODEBase(hierarchy=hierarchy)
 model.fit_selector(X_train=train, y_train=train_y_data, X_test=test)
 # %%
 # Select features and predict

@@ -28,6 +28,9 @@ from hfs.selectors.hill_climbing import (
 from hfs.selectors.lazyHierarchicalFeatureSelector import (
     LazyHierarchicalFeatureSelector,
 )
+from hfs.selectors.gasel import (
+    gasel
+)
 
 __all__ = [
     "TSELSelector",

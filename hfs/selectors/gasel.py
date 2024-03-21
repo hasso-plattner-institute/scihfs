@@ -12,10 +12,11 @@ class gasel(HierarchicalEstimator):
     """Genetic Algorithm for Hierarchical Feature Selection"""
     #to think about the default size and number of generations
     #in general: problem of default values choosing
-    def __init__(self, hierarchy=None, estimator=BernoulliNB(), n_population=50, n_generations=100, crossover_prob=0.8,
-                 mutation_prob=0.02, she_mutation_prob=0.3, epsilon=0.15):
+    def __init__(self, hierarchy=None, estimator=BernoulliNB(), cv=5, n_population=50, n_generations=20, crossover_prob=0.8,
+                 mutation_prob=0.02, she_mutation_prob=0.3, epsilon=0.05):
         super().__init__(hierarchy=hierarchy)
         self.estimator = estimator
+        self.cv = cv
         self.n_population = n_population
         self.n_generations = n_generations
         self.crossover_prob = crossover_prob
@@ -39,11 +40,10 @@ class gasel(HierarchicalEstimator):
         if individual.sum() == 0:
             return 0
         X_selected = X[:, individual == 1]
-        # Scorer for GM
         gm_scorer = make_scorer(self.geometric_mean_sensitivity_specificity)
 
         # X-Validation procedure
-        scores = cross_val_score(self.estimator, X_selected, y, cv=StratifiedKFold(5), scoring=gm_scorer)
+        scores = cross_val_score(self.estimator, X_selected, y, cv=StratifiedKFold(self.cv), scoring=gm_scorer)
 
         # Penalization for redundant features -- to be changed
         penalty_for_features = 0.01 * X_selected.shape[1] / X.shape[1]  # Proportional decrease
@@ -106,6 +106,7 @@ class gasel(HierarchicalEstimator):
 
         population = self._initialize_population(n_features)
         print(len(population))
+
         for generation in range(self.n_generations):
             fitness_scores = np.array([self._fitness(ind, X, y) for ind in population])
             print(len(fitness_scores))
@@ -120,9 +121,11 @@ class gasel(HierarchicalEstimator):
                 new_population.extend([child1, child2])
             #to be checked
             population = np.array(new_population)[:self.n_population]
+            print(population)
 
                 #new population is not yet evaluated !!!
                 #reevaluate and revice again
+            fitness_scores = np.array([self._fitness(ind, X, y) for ind in population])
             best_score_idx = np.argmax(fitness_scores)
             print(best_score_idx)
             best_score = fitness_scores[best_score_idx]

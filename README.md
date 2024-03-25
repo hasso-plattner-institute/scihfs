@@ -61,9 +61,3 @@ poetry run black .
 poetry run pytest hfs
 ```
 Happy feature selecting!
-
-
-
-
-
-

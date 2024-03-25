@@ -1,0 +1,36 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1 # Use the latest version
+    hooks:
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+
+  - repo: https://github.com/psf/black
+    rev: 22.3.0 # Use the latest version of Black
+    hooks:
+      - id: black
+        language_version: python3.9 # Specify your Python version
+
+  # Example: Adding isort for import sorting
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.8.0 # Use the latest version of isort
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  # If you're using Poetry for dependency management and want to run pre-commit within the poetry environment:
+  - repo: local
+    hooks:
+      - id: poetry-check
+        name: poetry-check
+        entry: poetry check
+        language: system
+        pass_filenames: false
+      - id: poetry-lock
+        name: poetry-lock
+        entry: poetry lock
+        language: system
+        pass_filenames: false

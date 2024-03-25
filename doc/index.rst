@@ -1,8 +1,8 @@
 Welcome to the hfs documentation!
 ============================================
 
-This project includes the implementation of several hierarchical feature selection methods. In this documentation you 
-can find more information about how they work and how they can be used. 
+This project includes the implementation of several hierarchical feature selection methods. In this documentation you
+can find more information about how they work and how they can be used.
 
 .. toctree::
     :caption: Introduction
@@ -30,4 +30,3 @@ can find more information about how they work and how they can be used.
     :caption: Experiments
 
     experiments/index
-

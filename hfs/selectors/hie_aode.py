@@ -103,15 +103,19 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
         self.calculate_class_prior(feature_idx=feature_idx)
         return np.prod(self.cpts["prior"][feature_idx, :, sample[feature_idx]])
 
-    def ancestors_product(self, sample, ancestors):
+    def ancestors_product(self, sample, ancestors, use_positive_only=False):
         for ancestor_idx in ancestors:
             self.calculate_prob_given_ascendant_class(ancestor=ancestor_idx)
         if len(ancestors) <= 0:
             return np.zeros(self.n_classes_)
         else:
-            return np.prod(
-                self.cpts["ancestors"][ancestors, :, sample[ancestors]], axis=0
-            )
+            ancestors_cpt = self.cpts["ancestors"][ancestors, :, sample[ancestors]]
+            breakpoint()
+            if use_positive_only:
+                indices = np.where(ancestors_cpt[:, :, 1] == 1)
+                ancestors_cpt = ancestors_cpt[indices]
+
+            return np.prod(ancestors_cpt, axis=0)
 
     def descendants_product(self, sample, feature_idx, ancestors):
         descendants = [
@@ -265,6 +269,34 @@ class HieAODELite(HieAODEBase):
                     self.descendants_product(
                         sample=sample, feature_idx=feature_idx, ancestors=ancestors
                     ),
+                    self.prior_term(sample=sample, feature_idx=feature_idx),
+                )
+                sample_sum[sample_idx] = np.add(sample_sum[sample_idx], feature_product)
+
+        y = np.argmax(sample_sum, axis=1)
+        return y if predict else np.array([])
+
+
+class HieAODE_plus(HieAODEBase):
+    def select_and_predict(
+            self, predict=True, saveFeatures=False, estimator=BernoulliNB()
+    ):
+        n_samples = self._xtest.shape[0]
+        sample_sum = np.zeros((n_samples, self.n_classes_))
+        for sample_idx in range(n_samples):
+            sample = self._xtest[sample_idx]
+            descendant_product = np.ones(self.n_classes_)
+            ancestor_product = np.ones(self.n_classes_)
+            for feature_idx in range(self.n_features_in_):
+                ancestors = list(nx.ancestors(self._hierarchy, feature_idx))
+                feature_product = np.multiply(
+                    self.ancestors_product(sample=sample, ancestors=ancestors, use_positive_only=True),
+                    self.descendants_product(
+                        sample=sample, feature_idx=feature_idx, ancestors=ancestors
+                    ),
+                )
+                feature_product = np.multiply(
+                    feature_product,
                     self.prior_term(sample=sample, feature_idx=feature_idx),
                 )
                 sample_sum[sample_idx] = np.add(sample_sum[sample_idx], feature_product)

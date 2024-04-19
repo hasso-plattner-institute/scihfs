@@ -104,20 +104,24 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
         return np.prod(self.cpts["prior"][feature_idx, :, sample[feature_idx]])
 
     def ancestors_product(self, sample, ancestors, use_positive_only=False):
+        # Calculate probabilities for each ancestor
         for ancestor_idx in ancestors:
             self.calculate_prob_given_ascendant_class(ancestor=ancestor_idx)
+        # Handle case with no ancestors
         if len(ancestors) <= 0:
             return np.zeros(self.n_classes_)
-        else:
-            ancestors_cpt = self.cpts["ancestors"][ancestors, :, sample[ancestors]]
-            breakpoint()
-            if use_positive_only:
-                indices = np.where(ancestors_cpt[:, :, 1] == 1)
-                ancestors_cpt = ancestors_cpt[indices]
+        # Extract values for ancestors from the sample
+        ancestors_value = sample[ancestors]
+        # Extract corresponding CPT entries for the specific ancestors
+        # and their values
+        ancestors_cpt = self.cpts["ancestors"][ancestors, :, ancestors_value]
+        # If using only positive ancestors, filter the CPTs accordingly
+        if use_positive_only and np.any(ancestors_value == 1):
+            ancestors_cpt = ancestors_cpt[ancestors_value == 1]
 
-            return np.prod(ancestors_cpt, axis=0)
+        return np.prod(ancestors_cpt, axis=0)
 
-    def descendants_product(self, sample, feature_idx, ancestors):
+    def descendants_product(self, sample, feature_idx, ancestors, use_positive_only=False):
         descendants = [
             feature
             for feature in range(self.n_features_in_)
@@ -130,17 +134,49 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
             )
         if len(descendants) <= 0:
             return np.zeros(self.n_classes_)
+
+        descendants_value = sample[descendants]
+        feature_value = sample[feature_idx]
+        descendants_cpt = self.cpts["descendants"][
+                descendants,
+                feature_idx,
+                :,
+                feature_value,
+                descendants_value,
+            ]
+
+        if use_positive_only and np.any(descendants_value == 1):
+            descendants_cpt = descendants_cpt[descendants_value == 1]
+
+        return np.prod(
+            descendants_cpt,
+            axis=0,
+        )
+
+    def descendants_product_negative(self, sample, feature_idx, ancestors):
+        descendants = [
+            feature
+            for feature in range(self.n_features_in_)
+            if feature != feature_idx and feature not in ancestors
+        ]
+
+        for descendant_idx in descendants:
+            self.calculate_prob_given_ascendant_class(ancestor=descendant_idx)
+
+        if len(descendants) <= 0:
+            return np.zeros(self.n_classes_)
+
+        descendants_value = sample[descendants]
+
+        ancestors_cpt = self.cpts["ancestors"][descendants, :, descendants_value]
+
+        if np.any(descendants_value == 0):
+            ancestors_cpt = ancestors_cpt[descendants_value == 0]
+            return np.prod(ancestors_cpt, axis=0)
         else:
-            return np.prod(
-                self.cpts["descendants"][
-                    descendants,
-                    feature_idx,
-                    :,
-                    sample[feature_idx],
-                    sample[descendants],
-                ],
-                axis=0,
-            )
+            return np.zeros(self.n_classes_)
+
+
 
     def calculate_class_prior(self, feature_idx):
         n_samples = self._ytrain.shape[0]

@@ -279,6 +279,15 @@ class HieAODELite(HieAODEBase):
 
 class HieAODE_plus(HieAODEBase):
     def select_and_predict(
+        self, predict=True, saveFeatures=False, estimator=BernoulliNB()
+    ):
+        ...
+
+
+
+
+class HieAODE_plus_plus(HieAODEBase):
+    def select_and_predict(
             self, predict=True, saveFeatures=False, estimator=BernoulliNB()
     ):
         n_samples = self._xtest.shape[0]

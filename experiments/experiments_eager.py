@@ -7,7 +7,7 @@ from sklearn.naive_bayes import BernoulliNB
 
 from hfs.data_utils import create_mapping_columns_to_nodes, load_data
 from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.selectors import (
+from hfs.hierarchical_selectors import (
     BottomUpSelector,
     GreedyTopDownSelector,
     SHSELSelector,

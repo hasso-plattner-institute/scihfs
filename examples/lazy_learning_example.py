@@ -12,7 +12,7 @@ import networkx as nx
 import numpy as np
 
 from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.selectors import HIP, HNB, MR, RNB, TAN, HieAODEBase, HNBs
+from hfs.hierarchical_selectors import HIP, HNB, MR, RNB, TAN, HieAODEBase, HNBs
 
 
 # Define data

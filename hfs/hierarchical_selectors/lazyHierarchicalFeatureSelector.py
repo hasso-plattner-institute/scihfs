@@ -7,7 +7,7 @@ from sklearn.naive_bayes import BernoulliNB
 
 from hfs.helpers import checkData, getRelevance
 from hfs.metrics import conditional_mutual_information
-from hfs.selectors import HierarchicalEstimator
+from hfs.hierarchical_selectors import HierarchicalEstimator
 
 
 class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):

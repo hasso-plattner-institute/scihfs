@@ -1,7 +1,7 @@
 from .base import HierarchicalEstimator
 from .eagerHierarchicalFeatureSelector import EagerHierarchicalFeatureSelector
 from .gtd import GreedyTopDownSelector
-from .hie_aode import HieAODEBase, HieAODE, HieAODE_plus
+from .hie_aode import HieAODEBase, HieAODE, HieAODE_plus_plus
 from .hill_climbing import BottomUpSelector, HillClimbingSelector, TopDownSelector
 from .hip import HIP
 from .hnb import HNB

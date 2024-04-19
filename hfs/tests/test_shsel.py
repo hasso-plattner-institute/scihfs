@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from hfs.selectors import SHSELSelector
+from hfs.hierarchical_selectors import SHSELSelector
 
 from .fixtures.fixtures import (
     data1,

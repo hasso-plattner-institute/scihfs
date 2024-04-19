@@ -8,7 +8,7 @@ from sklearn.naive_bayes import BernoulliNB
 
 from hfs.data_utils import create_mapping_columns_to_nodes
 from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.selectors import HIP, HNB, MR, RNB, TAN, HNBs
+from hfs.hierarchical_selectors import HIP, HNB, MR, RNB, TAN, HNBs
 
 
 def data():

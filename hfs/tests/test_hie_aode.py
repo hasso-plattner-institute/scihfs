@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from hfs.selectors import HieAODE, HieAODE_plus
+from hfs.hierarchical_selectors import HieAODE, HieAODE_plus_plus
 
 from .fixtures.fixtures import *
 
@@ -320,7 +320,7 @@ def assert_arrays_equal(actual, expected, header_name):
 )
 def test_hieaode_plus_plus(data):
     small_DAG, train_x_data, train_y_data, test_x_data, test_y_data = data
-    selector = HieAODE_plus(hierarchy=small_DAG)
+    selector = HieAODE_plus_plus(hierarchy=small_DAG)
     selector.fit_selector(
         X_train=train_x_data, y_train=train_y_data, X_test=test_x_data
     )

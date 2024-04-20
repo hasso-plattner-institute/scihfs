@@ -111,14 +111,18 @@ class HieAODEBase(LazyHierarchicalFeatureSelector, abc.ABC):
         ancestors_value = sample[ancestors]
         # Extract corresponding CPT entries for the specific ancestors
         # and their values
-        ancestors_cpt = self.cpts["prob_feature_given_class"][ancestors, :, ancestors_value]
+        ancestors_cpt = self.cpts["prob_feature_given_class"][
+            ancestors, :, ancestors_value
+        ]
         # If using only positive ancestors, filter the CPTs accordingly
         if use_positive_only and np.any(ancestors_value == 1):
             ancestors_cpt = ancestors_cpt[ancestors_value == 1]
 
         return np.prod(ancestors_cpt, axis=0)
 
-    def descendants_product(self, sample, parent_idx, ancestors, use_positive_only=False):
+    def descendants_product(
+        self, sample, parent_idx, ancestors, use_positive_only=False
+    ):
         descendants = [
             feature
             for feature in range(self.n_features_in_)
@@ -165,15 +169,15 @@ class HieAODEBase(LazyHierarchicalFeatureSelector, abc.ABC):
 
         descendants_value = sample[descendants]
 
-        descendants_cpt = self.cpts["prob_feature_given_class"][descendants, :, descendants_value]
+        descendants_cpt = self.cpts["prob_feature_given_class"][
+            descendants, :, descendants_value
+        ]
 
         if np.any(descendants_value == 0):
             descendants_cpt = descendants_cpt[descendants_value == 0]
             return np.prod(descendants_cpt, axis=0)
         else:
             return np.zeros(self.n_classes_)
-
-
 
     def calculate_class_prior(self, feature_idx):
         n_samples = self._ytrain.shape[0]
@@ -197,9 +201,7 @@ class HieAODEBase(LazyHierarchicalFeatureSelector, abc.ABC):
                     p_class_ascendant + SMOOTHING_FACTOR * PRIOR_PROBABILITY
                 ) / (p_class + SMOOTHING_FACTOR)
 
-    def calculate_prob_feature_given_class_and_parent(
-        self, feature_idx, parent_idx
-    ):
+    def calculate_prob_feature_given_class_and_parent(self, feature_idx, parent_idx):
         for c in range(self.n_classes_):
             for parent_value in range(2):
                 # Calculate P(y, x_i = parent_value)
@@ -219,9 +221,11 @@ class HieAODEBase(LazyHierarchicalFeatureSelector, abc.ABC):
                             + SMOOTHING_FACTOR * PRIOR_PROBABILITY
                         ) / (p_class_feature + SMOOTHING_FACTOR)
 
-                        self.cpts["prob_feature_given_class_and_parent"][feature_idx][parent_idx][c][
-                            feature_value
-                        ][parent_value] = prob_descendant_given_c_feature
+                        self.cpts["prob_feature_given_class_and_parent"][feature_idx][
+                            parent_idx
+                        ][c][feature_value][
+                            parent_value
+                        ] = prob_descendant_given_c_feature
 
 
 class HieAODE(HieAODEBase):
@@ -239,6 +243,7 @@ class HieAODE(HieAODEBase):
 
         return feature_product
 
+
 class HieAODELite(HieAODEBase):
     def compute_product(self, sample, parent_idx, ancestors):
         feature_product = np.multiply(
@@ -249,6 +254,7 @@ class HieAODELite(HieAODEBase):
         )
         return feature_product
 
+
 class HieAODE_plus(HieAODEBase):
     def select_and_predict(
         self, predict=True, saveFeatures=False, estimator=BernoulliNB()
@@ -256,14 +262,17 @@ class HieAODE_plus(HieAODEBase):
         ...
 
 
-
-
 class HieAODE_plus_plus(HieAODEBase):
     def compute_product(self, sample, parent_idx, ancestors):
         feature_product = np.multiply(
-            self.ancestors_product(sample=sample, ancestors=ancestors, use_positive_only=True),
+            self.ancestors_product(
+                sample=sample, ancestors=ancestors, use_positive_only=True
+            ),
             self.descendants_product(
-                sample=sample, parent_idx=parent_idx, ancestors=ancestors, use_positive_only=True
+                sample=sample,
+                parent_idx=parent_idx,
+                ancestors=ancestors,
+                use_positive_only=True,
             ),
         )
         feature_product = np.multiply(

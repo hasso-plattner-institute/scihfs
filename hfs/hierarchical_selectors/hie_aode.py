@@ -106,7 +106,7 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
     def ancestors_product(self, sample, ancestors, use_positive_only=False):
         # Calculate probabilities for each ancestor
         for ancestor_idx in ancestors:
-            self.calculate_prob_given_ascendant_class(ancestor=ancestor_idx)
+            self.calculate_prob_feature_given_class(feature=ancestor_idx)
         # Handle case with no ancestors
         if len(ancestors) <= 0:
             return np.zeros(self.n_classes_)
@@ -129,8 +129,8 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
         ]
         # P (x_j=sample[descendant_idx]|y, x_i=sample[feature_idx])
         for descendant_idx in descendants:
-            self.calculate_prob_descendant_given_class_feature(
-                descendant_idx=descendant_idx, feature_idx=feature_idx
+            self.calculate_prob_feature_given_class_and_parent(
+                feature_idx=descendant_idx, parent_idx=feature_idx
             )
         if len(descendants) <= 0:
             return np.zeros(self.n_classes_)
@@ -161,7 +161,7 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
         ]
 
         for descendant_idx in descendants:
-            self.calculate_prob_given_ascendant_class(ancestor=descendant_idx)
+            self.calculate_prob_feature_given_class(feature=descendant_idx)
 
         if len(descendants) <= 0:
             return np.zeros(self.n_classes_)
@@ -188,43 +188,43 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
                     )
                     self.cpts["prior"][feature_idx][c][value] = value_sum / n_samples
 
-    def calculate_prob_given_ascendant_class(self, ancestor):
+    def calculate_prob_feature_given_class(self, feature):
         # Calculate P(x_k | y) where x_k=ascendant and y = c
         for c in range(self.n_classes_):
             p_class = np.sum(self._ytrain == c)
             for value in range(2):
                 p_class_ascendant = np.sum(
-                    (self._ytrain == c) & (self._xtrain[:, ancestor] == value)
+                    (self._ytrain == c) & (self._xtrain[:, feature] == value)
                 )
-                self.cpts["prob_feature_given_class"][ancestor][c][value] = (
+                self.cpts["prob_feature_given_class"][feature][c][value] = (
                     p_class_ascendant + SMOOTHING_FACTOR * PRIOR_PROBABILITY
                 ) / (p_class + SMOOTHING_FACTOR)
 
-    def calculate_prob_descendant_given_class_feature(
-        self, descendant_idx, feature_idx
+    def calculate_prob_feature_given_class_and_parent(
+        self, feature_idx, parent_idx
     ):
         for c in range(self.n_classes_):
-            for feature_value in range(2):
-                # Calculate P(y, x_i = feature_value)
-                mask = (self._xtrain[:, feature_idx] == feature_value) & (
+            for parent_value in range(2):
+                # Calculate P(y, x_i = parent_value)
+                mask = (self._xtrain[:, parent_idx] == parent_value) & (
                     self._ytrain == c
                 )
                 p_class_feature = np.sum(mask)
-                for descendant_value in range(2):
-                    if descendant_idx != feature_idx:
-                        # Calculate P(y, x_i = feature_value, x_j = descendant_value)
-                        descendant = self._xtrain[:, descendant_idx]
+                for feature_value in range(2):
+                    if feature_idx != parent_idx:
+                        # Calculate P(y, x_i = parent_value, x_j = feature_value)
+                        descendant = self._xtrain[:, feature_idx]
                         p_class_feature_descendant = np.sum(
-                            descendant[mask] == descendant_value
+                            descendant[mask] == feature_value
                         )
                         prob_descendant_given_c_feature = (
                             p_class_feature_descendant
                             + SMOOTHING_FACTOR * PRIOR_PROBABILITY
                         ) / (p_class_feature + SMOOTHING_FACTOR)
 
-                        self.cpts["prob_feature_given_class_and_parent"][descendant_idx][feature_idx][c][
-                            descendant_value
-                        ][feature_value] = prob_descendant_given_c_feature
+                        self.cpts["prob_feature_given_class_and_parent"][feature_idx][parent_idx][c][
+                            feature_value
+                        ][parent_value] = prob_descendant_given_c_feature
 
 
 class HieAODE(HieAODEBase):

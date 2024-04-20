@@ -265,8 +265,8 @@ def test_calculate_dependency_ascendant_class(
 
     pred = selector.select_and_predict(predict=True, saveFeatures=True)
     result_prior_lazy_data2 = selector.cpts["prior"]
-    result_ancestors_lazydata2 = selector.cpts["ancestors"]
-    result_descendants_lazydata2 = selector.cpts["descendants"]
+    result_ancestors_lazydata2 = selector.cpts["prob_feature_given_class"]
+    result_descendants_lazydata2 = selector.cpts["prob_feature_given_class_and_parent"]
     assert assert_arrays_equal(
         result_prior_lazy_data2, expected_prior_lazy_data2, "prior"
     )

@@ -1,6 +1,7 @@
 import networkx as nx
 import numpy as np
 from sklearn.naive_bayes import BernoulliNB
+import abc
 
 from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
@@ -8,7 +9,7 @@ SMOOTHING_FACTOR = 1
 PRIOR_PROBABILITY = 0.5
 
 
-class HieAODEBase(LazyHierarchicalFeatureSelector):
+class HieAODEBase(LazyHierarchicalFeatureSelector, abc.ABC):
     """
     Select non-redundant features following the algorithm proposed by Wan and Freitas.
     """
@@ -75,6 +76,23 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
         Returns
         -------
         predictions for test input samples, if predict = false, returns empty array.
+        """
+        n_samples = self._xtest.shape[0]
+        sample_sum = np.zeros((n_samples, self.n_classes_))
+        for sample_idx in range(n_samples):
+            sample = self._xtest[sample_idx]
+            for parent_idx in range(self.n_features_in_):
+                ancestors = list(nx.ancestors(self._hierarchy, parent_idx))
+                feature_product = self.compute_product(sample, parent_idx, ancestors)
+                sample_sum[sample_idx] = np.add(sample_sum[sample_idx], feature_product)
+
+        y = np.argmax(sample_sum, axis=1)
+        return y if predict else np.array([])
+
+    @abc.abstractmethod
+    def compute_product(self, sample, parent_idx, ancestors):
+        """
+        Subclasses should implement this method to define how feature products are computed.
         """
         raise NotImplementedError
 
@@ -207,90 +225,29 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
 
 
 class HieAODE(HieAODEBase):
-    def select_and_predict(
-        self, predict=True, saveFeatures=False, estimator=BernoulliNB()
-    ):
-        """
-        Select features lazy for each test instance and optionally predict target value of test instances
-        using the HieAODE algorithm by Wan and Freitas
+    def compute_product(self, sample, parent_idx, ancestors):
+        feature_product = np.multiply(
+            self.ancestors_product(sample=sample, ancestors=ancestors),
+            self.descendants_product(
+                sample=sample, parent_idx=parent_idx, ancestors=ancestors
+            ),
+        )
+        feature_product = np.multiply(
+            feature_product,
+            self.prior_term(sample=sample, parent_idx=parent_idx),
+        )
 
-        Parameters
-        ----------
-        predict : bool
-            true if predictions shall be obtained.
-        saveFeatures : bool
-            true if features selected for each test instance shall be saved.
-        estimator : sklearn-compatible estimator
-            Estimator to use for predictions.
-
-        Returns
-        -------
-        predictions for test input samples, if predict = false, returns empty array.
-        """
-        n_samples = self._xtest.shape[0]
-        sample_sum = np.zeros((n_samples, self.n_classes_))
-        for sample_idx in range(n_samples):
-            sample = self._xtest[sample_idx]
-            descendant_product = np.ones(self.n_classes_)
-            ancestor_product = np.ones(self.n_classes_)
-            for parent_idx in range(self.n_features_in_):
-                ancestors = list(nx.ancestors(self._hierarchy, parent_idx))
-                feature_product = np.multiply(
-                    self.ancestors_product(sample=sample, ancestors=ancestors),
-                    self.descendants_product(
-                        sample=sample, parent_idx=parent_idx, ancestors=ancestors
-                    ),
-                )
-                feature_product = np.multiply(
-                    feature_product,
-                    self.prior_term(sample=sample, parent_idx=parent_idx),
-                )
-                sample_sum[sample_idx] = np.add(sample_sum[sample_idx], feature_product)
-
-        y = np.argmax(sample_sum, axis=1)
-        return y if predict else np.array([])
-
+        return feature_product
 
 class HieAODELite(HieAODEBase):
-    def select_and_predict(
-        self, predict=True, saveFeatures=False, estimator=BernoulliNB()
-    ):
-        """
-        Select features lazy for each test instance and optionally predict target value of test instances
-        using the HieAODELite algorithm by Wan and Freitas
-
-        Parameters
-        ----------
-        predict : bool
-            true if predictions shall be obtained.
-        saveFeatures : bool
-            true if features selected for each test instance shall be saved.
-        estimator : sklearn-compatible estimator
-            Estimator to use for predictions.
-
-        Returns
-        -------
-        predictions for test input samples, if predict = false, returns empty array.
-        """
-        n_samples = self._xtest.shape[0]
-        sample_sum = np.zeros((n_samples, self.n_classes_))
-        for sample_idx in range(n_samples):
-            sample = self._xtest[sample_idx]
-            descendant_product = np.ones(self.n_classes_)
-            ancestor_product = np.ones(self.n_classes_)
-            for parent_idx in range(self.n_features_in_):
-                ancestors = list(nx.ancestors(self._hierarchy, parent_idx))
-                feature_product = np.multiply(
-                    self.descendants_product(
-                        sample=sample, parent_idx=parent_idx, ancestors=ancestors
-                    ),
-                    self.prior_term(sample=sample, parent_idx=parent_idx),
-                )
-                sample_sum[sample_idx] = np.add(sample_sum[sample_idx], feature_product)
-
-        y = np.argmax(sample_sum, axis=1)
-        return y if predict else np.array([])
-
+    def compute_product(self, sample, parent_idx, ancestors):
+        feature_product = np.multiply(
+            self.descendants_product(
+                sample=sample, parent_idx=parent_idx, ancestors=ancestors
+            ),
+            self.prior_term(sample=sample, parent_idx=parent_idx),
+        )
+        return feature_product
 
 class HieAODE_plus(HieAODEBase):
     def select_and_predict(
@@ -302,28 +259,15 @@ class HieAODE_plus(HieAODEBase):
 
 
 class HieAODE_plus_plus(HieAODEBase):
-    def select_and_predict(
-            self, predict=True, saveFeatures=False, estimator=BernoulliNB()
-    ):
-        n_samples = self._xtest.shape[0]
-        sample_sum = np.zeros((n_samples, self.n_classes_))
-        for sample_idx in range(n_samples):
-            sample = self._xtest[sample_idx]
-            descendant_product = np.ones(self.n_classes_)
-            ancestor_product = np.ones(self.n_classes_)
-            for parent_idx in range(self.n_features_in_):
-                ancestors = list(nx.ancestors(self._hierarchy, parent_idx))
-                feature_product = np.multiply(
-                    self.ancestors_product(sample=sample, ancestors=ancestors, use_positive_only=True),
-                    self.descendants_product(
-                        sample=sample, parent_idx=parent_idx, ancestors=ancestors, use_positive_only=True
-                    ),
-                )
-                feature_product = np.multiply(
-                    feature_product,
-                    self.prior_term(sample=sample, parent_idx=parent_idx),
-                )
-                sample_sum[sample_idx] = np.add(sample_sum[sample_idx], feature_product)
-
-        y = np.argmax(sample_sum, axis=1)
-        return y if predict else np.array([])
+    def compute_product(self, sample, parent_idx, ancestors):
+        feature_product = np.multiply(
+            self.ancestors_product(sample=sample, ancestors=ancestors, use_positive_only=True),
+            self.descendants_product(
+                sample=sample, parent_idx=parent_idx, ancestors=ancestors, use_positive_only=True
+            ),
+        )
+        feature_product = np.multiply(
+            feature_product,
+            self.prior_term(sample=sample, parent_idx=parent_idx),
+        )
+        return feature_product

@@ -337,7 +337,7 @@ class HieAODE_plus_plus(HieAODEBase):
                 feature_product = np.multiply(
                     self.ancestors_product(sample=sample, ancestors=ancestors, use_positive_only=True),
                     self.descendants_product(
-                        sample=sample, feature_idx=feature_idx, ancestors=ancestors
+                        sample=sample, feature_idx=feature_idx, ancestors=ancestors, use_positive_only=True
                     ),
                 )
                 feature_product = np.multiply(

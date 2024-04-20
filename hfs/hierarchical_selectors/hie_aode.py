@@ -244,25 +244,34 @@ class HieAODE(HieAODEBase):
         return feature_product
 
 
-class HieAODELite(HieAODEBase):
+class HieAODEPlus(HieAODEBase):
     def compute_product(self, sample, parent_idx, ancestors):
-        feature_product = np.multiply(
+        product = np.multiply(
             self.descendants_product(
-                sample=sample, parent_idx=parent_idx, ancestors=ancestors
+                sample=sample,
+                parent_idx=parent_idx,
+                ancestors=ancestors,
+                use_positive_only=True,
             ),
-            self.prior_term(sample=sample, parent_idx=parent_idx),
+            self.descendants_product_negative(
+                sample=sample,
+                parent_idx=parent_idx,
+                ancestors=ancestors,
+            ),
         )
-        return feature_product
+        product = np.multiply(
+            product,
+            self.ancestors_product(
+                sample=sample, ancestors=ancestors, use_positive_only=True
+            ),
+        )
+        product = np.multiply(
+            product, self.prior_term(sample=sample, parent_idx=parent_idx)
+        )
+        return product
 
 
-class HieAODE_plus(HieAODEBase):
-    def select_and_predict(
-        self, predict=True, saveFeatures=False, estimator=BernoulliNB()
-    ):
-        ...
-
-
-class HieAODE_plus_plus(HieAODEBase):
+class HieAODEPlusPlus(HieAODEBase):
     def compute_product(self, sample, parent_idx, ancestors):
         feature_product = np.multiply(
             self.ancestors_product(
@@ -277,6 +286,51 @@ class HieAODE_plus_plus(HieAODEBase):
         )
         feature_product = np.multiply(
             feature_product,
+            self.prior_term(sample=sample, parent_idx=parent_idx),
+        )
+        return feature_product
+
+
+class HieAODELite(HieAODEBase):
+    def compute_product(self, sample, parent_idx, ancestors):
+        feature_product = np.multiply(
+            self.descendants_product(
+                sample=sample, parent_idx=parent_idx, ancestors=ancestors
+            ),
+            self.prior_term(sample=sample, parent_idx=parent_idx),
+        )
+        return feature_product
+
+
+class HieAODELitePlus(HieAODEBase):
+    def compute_product(self, sample, parent_idx, ancestors):
+        feature_product = np.multiply(
+            self.descendants_product(
+                sample=sample,
+                parent_idx=parent_idx,
+                ancestors=ancestors,
+                use_positive_only=True,
+            ),
+            self.descendants_product_negative(
+                sample=sample, parent_idx=parent_idx, ancestors=ancestors
+            ),
+        )
+        feature_product = np.multiply(
+            feature_product,
+            self.prior_term(sample=sample, parent_idx=parent_idx),
+        )
+        return feature_product
+
+
+class HieAODELitePlusPlus(HieAODEBase):
+    def compute_product(self, sample, parent_idx, ancestors):
+        feature_product = np.multiply(
+            self.descendants_product(
+                sample=sample,
+                parent_idx=parent_idx,
+                ancestors=ancestors,
+                use_positive_only=True,
+            ),
             self.prior_term(sample=sample, parent_idx=parent_idx),
         )
         return feature_product

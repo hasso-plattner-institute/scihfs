@@ -45,12 +45,12 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
                 dtype=float,
             ),
             # (x_j (descendent), x_i (current feature), class, value)  )
-            descendants=np.full(
+            prob_feature_given_class_and_parent=np.full(
                 (self.n_features_in_, self.n_features_in_, self.n_classes_, 2, 2),
                 -1,
                 dtype=float,
             ),  # P(x_j|y, x_i)
-            ancestors=np.full(
+            prob_feature_given_class=np.full(
                 (self.n_features_in_, self.n_classes_, 2), -1, dtype=float
             ),  # P(x_k|y)
         )
@@ -114,7 +114,7 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
         ancestors_value = sample[ancestors]
         # Extract corresponding CPT entries for the specific ancestors
         # and their values
-        ancestors_cpt = self.cpts["ancestors"][ancestors, :, ancestors_value]
+        ancestors_cpt = self.cpts["prob_feature_given_class"][ancestors, :, ancestors_value]
         # If using only positive ancestors, filter the CPTs accordingly
         if use_positive_only and np.any(ancestors_value == 1):
             ancestors_cpt = ancestors_cpt[ancestors_value == 1]
@@ -137,7 +137,7 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
 
         descendants_value = sample[descendants]
         feature_value = sample[feature_idx]
-        descendants_cpt = self.cpts["descendants"][
+        descendants_cpt = self.cpts["prob_feature_given_class_and_parent"][
                 descendants,
                 feature_idx,
                 :,
@@ -168,7 +168,7 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
 
         descendants_value = sample[descendants]
 
-        ancestors_cpt = self.cpts["ancestors"][descendants, :, descendants_value]
+        ancestors_cpt = self.cpts["prob_feature_given_class"][descendants, :, descendants_value]
 
         if np.any(descendants_value == 0):
             ancestors_cpt = ancestors_cpt[descendants_value == 0]
@@ -196,7 +196,7 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
                 p_class_ascendant = np.sum(
                     (self._ytrain == c) & (self._xtrain[:, ancestor] == value)
                 )
-                self.cpts["ancestors"][ancestor][c][value] = (
+                self.cpts["prob_feature_given_class"][ancestor][c][value] = (
                     p_class_ascendant + SMOOTHING_FACTOR * PRIOR_PROBABILITY
                 ) / (p_class + SMOOTHING_FACTOR)
 
@@ -222,7 +222,7 @@ class HieAODEBase(LazyHierarchicalFeatureSelector):
                             + SMOOTHING_FACTOR * PRIOR_PROBABILITY
                         ) / (p_class_feature + SMOOTHING_FACTOR)
 
-                        self.cpts["descendants"][descendant_idx][feature_idx][c][
+                        self.cpts["prob_feature_given_class_and_parent"][descendant_idx][feature_idx][c][
                             descendant_value
                         ][feature_value] = prob_descendant_given_c_feature
 

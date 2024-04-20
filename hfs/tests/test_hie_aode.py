@@ -271,10 +271,10 @@ def test_calculate_dependency_ascendant_class(
         result_prior_lazy_data2, expected_prior_lazy_data2, "prior"
     )
     assert assert_arrays_equal(
-        result_ancestors_lazydata2, expected_ancestors_lazy_data2, "ancestors"
+        result_ancestors_lazydata2, expected_ancestors_lazy_data2, "prob_feature_given_class"
     )
     assert assert_arrays_equal(
-        result_descendants_lazydata2, expected_descendants_lazy_data2, "descendants"
+        result_descendants_lazydata2, expected_descendants_lazy_data2, "prob_feature_given_class_and_parent"
     )
 
 

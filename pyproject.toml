@@ -25,11 +25,11 @@ numpydoc = "^1.6.0"
 sphinxcontrib-bibtex = "^2.6.1"
 pytest = "^7.4.4"
 dit = "^1.5"
+black = "24.4.0"
 
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.27.1"
-black = "^23.12.1"
 
 [build-system]
 requires = ["poetry-core"]

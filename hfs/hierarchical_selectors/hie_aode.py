@@ -35,7 +35,6 @@ class HieAODEBase(LazyHierarchicalFeatureSelector, abc.ABC):
                 -1,
                 dtype=float,
             ),
-
             # P(x_j|y, x_i)
             # Shape (x_j (feature), x_i (parent), class, value)
             prob_feature_given_class_and_parent=np.full(

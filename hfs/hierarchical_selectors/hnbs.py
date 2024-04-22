@@ -7,7 +7,6 @@ from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
 
 class HNBs(LazyHierarchicalFeatureSelector):
-
     """
     Select non-redundant features following the algorithm proposed by Wan and Freitas.
     """

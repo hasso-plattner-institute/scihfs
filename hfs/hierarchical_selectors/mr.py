@@ -7,7 +7,6 @@ from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
 
 class MR(LazyHierarchicalFeatureSelector):
-
     """
     Select non-redundant features with the highest relevance on each path following the algorithm proposed by Wan and Freitas
     """

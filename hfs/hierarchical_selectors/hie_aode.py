@@ -11,7 +11,7 @@ PRIOR_PROBABILITY = 0.5
 
 class HieAODEBase(LazyHierarchicalFeatureSelector, abc.ABC):
     """
-    Select non-redundant features following the algorithm proposed by Wan and Freitas.
+    Base Class for selecting non-redundant features following the algorithms proposed by Wan and Freitas.
     """
 
     def __init__(self, hierarchy=None):
@@ -26,34 +26,28 @@ class HieAODEBase(LazyHierarchicalFeatureSelector, abc.ABC):
         super(HieAODEBase, self).__init__(hierarchy)
 
     def fit_selector(self, X_train, y_train, X_test, columns=None):
-        """
-        P (y, x_i )
-        class_prior
-
-        self.n_ancestors = self._n_descendants = self.n_features_in_
-        P (x_k|y)
-        ancestors_class_cpt = (self.n_ancestors, self.n_classes, self.n_features_in, n_values)
-
-        P (x_j|y, x_i)
-        feature_descendants_class_cpt = (self.n_features_in, self._n_descendants, self.n_classes_, n_values)
-        """
         super(HieAODEBase, self).fit_selector(X_train, y_train, X_test, columns)
         self.cpts = dict(
-            # prior = P(y, x_i)
+            # P(y, x_i)
+            # Shape (x_i, y, value)
             prior=np.full(
-                (self.n_features_in_, self.n_classes_, 2),  # x_i  # y  # value
+                (self.n_features_in_, self.n_classes_, 2),
                 -1,
                 dtype=float,
             ),
-            # (x_j (descendent), x_i (current feature), class, value)  )
+
+            # P(x_j|y, x_i)
+            # Shape (x_j (feature), x_i (parent), class, value)
             prob_feature_given_class_and_parent=np.full(
                 (self.n_features_in_, self.n_features_in_, self.n_classes_, 2, 2),
                 -1,
                 dtype=float,
-            ),  # P(x_j|y, x_i)
+            ),
+            # P(x_k|y)
+            # Shape (x_k (feature), class, value)
             prob_feature_given_class=np.full(
                 (self.n_features_in_, self.n_classes_, 2), -1, dtype=float
-            ),  # P(x_k|y)
+            ),
         )
 
     def select_and_predict(
@@ -61,7 +55,7 @@ class HieAODEBase(LazyHierarchicalFeatureSelector, abc.ABC):
     ):
         """
         Select features lazy for each test instance and optionally predict target value of test instances
-        using the HieAODE algorithm by Wan and Freitas
+        using the one of de HieAODE algorithms by Wan and Freitas
 
         Parameters
         ----------
@@ -128,8 +122,9 @@ class HieAODEBase(LazyHierarchicalFeatureSelector, abc.ABC):
             for feature in range(self.n_features_in_)
             if feature != parent_idx and feature not in ancestors
         ]
-        # P (x_j=sample[descendant_idx]|y, x_i=sample[parent_idx])
+
         for descendant_idx in descendants:
+            # Calculates P(x_j=sample[descendant_idx]|y, x_i=sample[parent_idx])
             self.calculate_prob_feature_given_class_and_parent(
                 feature_idx=descendant_idx, parent_idx=parent_idx
             )

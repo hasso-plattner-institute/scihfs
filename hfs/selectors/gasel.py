@@ -100,6 +100,9 @@ class GASel(HierarchicalEstimator):
         self.selected_features_ = None
 
     def _initialize_population(self, n_features):
+        """Initialize the population with n_features.
+
+        """
         return np.random.randint(2, size=(self.n_population, n_features))
 
     def _fitness(self, individual, X, y):
@@ -136,7 +139,6 @@ class GASel(HierarchicalEstimator):
         self.selected_features_ = population[np.argmax(fitness_scores)]
 
     def fit(self, X, y=None, columns=None):
-        #super().fit(X, y, columns)
         self._columns = columns if columns is not None else list(range(X.shape[1]))
         self._fit(X, y)
         self._is_fitted = True

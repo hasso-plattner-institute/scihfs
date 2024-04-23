@@ -4,7 +4,7 @@ import numpy as np
 from hfs.helpers import get_columns_for_numpy_hierarchy
 from hfs import gasel
 
-'''
+"""
 # Synthetic dataset with 5 features and 20 elements
 X = np.array([
     [0, 0, 1, 1, 0],
@@ -31,7 +31,7 @@ X = np.array([
 
 # Synthetic labels for the dataset
 y = np.array([0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1])
-'''
+"""
 
 
 X = np.random.randint(2, size=(30, 7))

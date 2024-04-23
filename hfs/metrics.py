@@ -7,6 +7,7 @@ import numpy as np
 from info_gain.info_gain import info_gain, info_gain_ratio
 from numpy.linalg import norm
 from scipy import sparse
+from sklearn.metrics import make_scorer, recall_score, confusion_matrix
 
 from hfs.lib.pyitlib import information_mutual_conditional as imc
 
@@ -156,3 +157,6 @@ def pearson_correlation(i: np.ndarray, j: np.ndarray):
     float : The pearson correlation between the input vectors.
     """
     return np.corrcoef(i, j)[0, 1]
+
+
+

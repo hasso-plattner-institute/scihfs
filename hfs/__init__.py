@@ -30,7 +30,7 @@ from hfs.selectors.lazyHierarchicalFeatureSelector import (
     LazyHierarchicalFeatureSelector,
 )
 from hfs.selectors.gasel import (
-    gasel
+    GASel
 )
 
 __all__ = [

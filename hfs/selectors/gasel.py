@@ -5,88 +5,92 @@ from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.metrics import make_scorer, recall_score, confusion_matrix
 from hfs.selectors import HierarchicalEstimator  # assuming the base class is imported
 from sklearn.naive_bayes import BernoulliNB
+
 def _crossover(parent1, parent2):
     """
-    Crossover two parents and get two children.
+    Perform a crossover between two parent individuals to produce two offspring.
 
     Parameters
-    __________
-    parent1 : np.ndarray or list
-        The first parent of the crossover.
-    parent2 : np.ndarray or list
-        The second parent of the crossover.
+    ----------
+    parent1 : np.ndarray
+        The first parent individual's feature presence array.
+    parent2 : np.ndarray
+        The second parent individual's feature presence array.
 
     Returns
-    __________
-    child1 : np.ndarray or list
-        The first child of the crossover.
-    child2 : np.ndarray or list
-        The second child of the crossover.
+    -------
+    tuple
+        A tuple containing two np.ndarrays representing the offspring.
     """
     point = np.random.randint(len(parent1))
     child1 = np.concatenate([parent1[:point], parent2[point:]])
     child2 = np.concatenate([parent2[:point], parent1[point:]])
     return child1, child2
 
-
 def geometric_mean_sensitivity_specificity(y_true, y_pred):
     """
-    Compute the geometric mean of sensitivity and specificity scores.
+    Calculate the geometric mean of sensitivity and specificity.
 
     Parameters
-    __________
+    ----------
     y_true : array-like
-        The true labels.
+        True class labels.
     y_pred : array-like
-        Predicted labels.
+        Predicted class labels by the model.
 
     Returns
-    __________
-    gmss: float
-        The geometric mean of sensitivity and specificity scores.
-
+    -------
+    float
+        The geometric mean of sensitivity and specificity.
     """
     conf_matrix = confusion_matrix(y_true, y_pred)
     sensitivity = recall_score(y_true, y_pred)
-
-    # Division by zero check
     denominator = conf_matrix[0, 0] + conf_matrix[0, 1]
-    if denominator == 0:
-        # If TN, FP = 0 specificity is not defined
-        specificity = 0
-    else:
-        specificity = conf_matrix[0, 0] / denominator
-
+    specificity = conf_matrix[0, 0] / denominator if denominator != 0 else 0
     return np.sqrt(sensitivity * specificity)
 
 class GASel(HierarchicalEstimator):
-    """Genetic Algorithm Based Feature Selector
-
-    Implements approach from da Silva et al.
-
     """
-    def __init__(self,
-                 hierarchy=None,
-                 n_population=50,
-                 n_generations=50,
-                 mutation_prob=0.02,
-                 she_mutation_prob=0.3,
-                 epsilon=0.05
-                 ):
-        """Initialize the GA selector.
+    A genetic algorithm-based feature selector for hierarchical feature spaces.
+
+    This class implements a genetic algorithm approach based on the model proposed by
+    da Silva et al., designed for optimizing feature selection in hierarchical feature
+    spaces typical in high-dimensional datasets.
+
+    Attributes
+    ----------
+    n_population : int
+        Number of individuals in the population.
+    n_generations : int
+        Number of generations to evolve the population.
+    mutation_prob : float
+        Probability of mutating an individual's feature presence.
+    she_mutation_prob : float
+        Probability of a simple hierarchical elimination mutation.
+    epsilon : float
+        Threshold defining elitism, retaining the top epsilon fraction of individuals.
+    selected_features_ : np.ndarray
+        Array of indices representing the selected features after fitting the model.
+    """
+    def __init__(self, hierarchy=None, n_population=50, n_generations=50,
+                 mutation_prob=0.02, she_mutation_prob=0.3, epsilon=0.05):
+        """
+        Initialize the genetic algorithm-based feature selector.
 
         Parameters
-        __________
-        hierarchy : np.ndarray
-                    The hierarchy of the model in its adjacency matrix representation.
-        n_population : int
-                    The population size.
-        mutation_prob : float
-                    The mutation probability.
-        she_mutation_prob : float
-                     The Simple Hierarchical Elimination mutation probability.
-        epsilon : float
-                     Epsilon parameter of genetic algorithm elitism.
+        ----------
+        hierarchy : np.ndarray, optional
+            The hierarchy of the model represented as an adjacency matrix.
+        n_population : int, optional
+            The size of the population.
+        n_generations : int, optional
+            The number of generations for the genetic algorithm.
+        mutation_prob : float, optional
+            The probability of mutating an individual gene.
+        she_mutation_prob : float, optional
+            The probability of applying a simple hierarchical elimination mutation.
+        epsilon : float, optional
+            The elitism threshold used in the genetic algorithm.
         """
         super().__init__(hierarchy=hierarchy)
         # Hierarchy setting in both ways: nx.Digraph and adj matrix
@@ -98,56 +102,95 @@ class GASel(HierarchicalEstimator):
         self.she_mutation_prob = she_mutation_prob
         self.epsilon = epsilon
         self.selected_features_ = None
-
     def _initialize_population(self, n_features):
-        """Initialize the population with n_features.
+        """Initialize the population with binary feature presence arrays.
 
+        Parameters
+        ----------
+        n_features : int
+            Number of features based on which the initial population will be generated.
+
+        Returns
+        -------
+        np.ndarray
+            An array representing the initial population with binary values.
         """
         return np.random.randint(2, size=(self.n_population, n_features))
 
     def _fitness(self, individual, X, y):
-        """Calculate the fitness of the individual according to the GA selector.
-
-        Fitness function is defined as a geometric mean of sensitivity and specificity
-        obtained from 5-fold cross-validation.
+        """
+        Calculate the fitness of an individual based on the geometric mean of sensitivity
+        and specificity from a cross-validated model.
 
         Parameters
-        __________
-        individual: numpy.ndarray
-                The individual.
-        X: numpy.ndarray
-                The features.
-        y: numpy.ndarray
-                The labels.
+        ----------
+        individual : np.ndarray
+            The individual's genome representing feature inclusion as a binary array.
+        X : np.ndarray
+            Feature dataset.
+        y : np.ndarray
+            Label array.
 
         Returns
-        __________
-        score: float
-                The fitness of the individual according to the GA selector.
+        -------
+        float
+            The calculated fitness score of the individual.
         """
-
         if individual.sum() == 0:
-            return 0
+            return 0  # Return a fitness of 0 if no features are selected
 
         X_selected = X[:, individual == 1]
         gm_scorer = make_scorer(geometric_mean_sensitivity_specificity)
         scores = cross_val_score(self.estimator, X_selected, y, cv=StratifiedKFold(5), scoring=gm_scorer)
         penalty_for_features = 0.01 * X_selected.shape[1] / X.shape[1]
-        score = scores.mean() - penalty_for_features
-        return score
+        return scores.mean() - penalty_for_features
 
     def _selection(self, fitness_scores):
+        """
+        Select parents for the next generation based on their fitness scores.
+
+        Parameters
+        ----------
+        fitness_scores : np.ndarray
+            Array of fitness scores from which parents will be selected.
+
+        Returns
+        -------
+        np.ndarray
+            Indices of the selected parents.
+        """
         return np.random.choice(len(fitness_scores), 2, replace=False)
 
     def _mutation(self, individual):
+        """
+        Mutate an individual's genome based on the mutation probability.
+
+        Parameters
+        ----------
+        individual : np.ndarray
+            The individual's genome to be mutated.
+
+        Returns
+        -------
+        np.ndarray
+            The mutated genome.
+        """
         for i in range(len(individual)):
             if np.random.rand() < self.mutation_prob:
                 individual[i] = 1 - individual[i]
         return individual
 
     def _fit(self, X, y):
-        """Do the genetic algorithm procedure."""
+        """
+        Run the genetic algorithm to select the best feature subset.
 
+        Parameters
+        ----------
+        X : np.ndarray
+            The feature dataset.
+        y : np.ndarray
+            The label dataset.
+        """
         n_features = X.shape[1]
         population = self._initialize_population(n_features)
         for _ in range(self.n_generations):
@@ -163,57 +206,97 @@ class GASel(HierarchicalEstimator):
         self.selected_features_ = population[np.argmax(fitness_scores)]
 
     def fit(self, X, y=None, columns=None):
+        """
+        Fit the genetic algorithm model to the data.
+
+        Parameters
+        ----------
+        X : np.ndarray
+            The feature dataset.
+        y : np.ndarray, optional
+            The label dataset.
+        columns : list, optional
+            Column indices that align features with the hierarchy.
+
+        Returns
+        -------
+        self
+            The fitted model.
+        """
         self._columns = columns if columns is not None else list(range(X.shape[1]))
         self._fit(X, y)
         self._is_fitted = True
         return self
 
     def transform(self, X):
+        """
+        Transform the dataset to include only the selected features.
+
+        Parameters
+        ----------
+        X : np.ndarray
+            The dataset to transform.
+
+        Returns
+        -------
+        np.ndarray
+            The transformed dataset with only the selected features included.
+        """
         if not hasattr(self, 'selected_features_') or self.selected_features_ is None:
             raise ValueError("The model has not been fitted yet.")
         return X[:, self.selected_features_ == 1]
 
     def has_successors(self, feature_index):
+        """
+        Check if a feature index has any successors in the hierarchy.
+
+        Parameters
+        ----------
+        feature_index : int
+            Index of the feature to check in the hierarchy graph.
+
+        Returns
+        -------
+        bool
+            True if the feature has successors, False otherwise.
+        """
         node = self.get_columns()[feature_index]
         return any(True for _ in self._hierarchy.successors(node))
 
     def has_ancestors(self, feature_index):
-        """Check if the feature has ancectors in the hierarchy.
-
-        The function is needed for advanced mutation procedures.
+        """
+        Check if a feature index has any ancestors in the hierarchy.
 
         Parameters
-        __________
+        ----------
         feature_index : int
-                Feature
+            Index of the feature to check in the hierarchy graph.
 
         Returns
-        __________
-
+        -------
+        bool
+            True if the feature has ancestors, False otherwise.
         """
         graph = self._hierarchy
         node = feature_index
-        anc = (nx.ancestors(graph, node))
-        anc.remove('ROOT')
-
+        anc = nx.ancestors(graph, node)
+        anc.discard('ROOT')  # Assuming 'ROOT' should not be considered as a valid ancestor.
         return bool(anc)
 
     def has_descendants(self, feature_index):
-        """Check if the feature has ancectors in the hierarchy.
-
-        The function is needed for advanced mutation procedures.
+        """
+        Check if a feature index has any descendants in the hierarchy.
 
         Parameters
-        __________
+        ----------
         feature_index : int
-                Feature
+            Index of the feature to check in the hierarchy graph.
 
         Returns
-        __________
-
+        -------
+        bool
+            True if the feature has descendants, False otherwise.
         """
         graph = self._hierarchy
         node = feature_index
-        desc = (nx.descendants(graph, node))
-
-        return bool(desc)
+        return bool(nx.descendants(graph, node))

@@ -73,7 +73,7 @@ class GASel(HierarchicalEstimator):
         Array of indices representing the selected features after fitting the model.
     """
     def __init__(self, hierarchy=None, n_population=50, n_generations=20,
-                 mutation_prob=0.02, she_mutation_prob=0.3, epsilon=0.05):
+                 mutation_prob=0.02, she_mutation_prob=0.3, epsilon=0.05, she_mode=False):
         """
         Initialize the genetic algorithm-based feature selector.
 
@@ -91,6 +91,8 @@ class GASel(HierarchicalEstimator):
             The probability of applying a simple hierarchical elimination mutation.
         epsilon : float, optional
             The elitism threshold used in the genetic algorithm.
+        she_mode : bool, optional
+            Whether the genetic algorithm includes Simple Hierarchical elimination.
         """
         super().__init__(hierarchy=hierarchy)
         # Hierarchy setting in both ways: nx.Digraph and adj matrix
@@ -102,6 +104,7 @@ class GASel(HierarchicalEstimator):
         self.she_mutation_prob = she_mutation_prob
         self.epsilon = epsilon
         self.selected_features_ = None
+        self.she_mode = she_mode
     def _initialize_population(self, n_features):
         """Initialize the population with binary feature presence arrays.
 
@@ -175,9 +178,16 @@ class GASel(HierarchicalEstimator):
         np.ndarray
             The mutated genome.
         """
+        # Standard bitwise mutation
         for i in range(len(individual)):
             if np.random.rand() < self.mutation_prob:
                 individual[i] = 1 - individual[i]
+
+        if self.she_mode:
+            if self.has_ancestors(i) & self.has_descendants(i):
+                if np.random.rand() < self.she_mutation_prob:
+                    individual[i] = 1 - individual[i]
+
         return individual
 
     def _fit(self, X, y):

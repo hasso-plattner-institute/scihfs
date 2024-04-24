@@ -72,7 +72,7 @@ class GASel(HierarchicalEstimator):
     selected_features_ : np.ndarray
         Array of indices representing the selected features after fitting the model.
     """
-    def __init__(self, hierarchy=None, n_population=50, n_generations=50,
+    def __init__(self, hierarchy=None, n_population=50, n_generations=20,
                  mutation_prob=0.02, she_mutation_prob=0.3, epsilon=0.05):
         """
         Initialize the genetic algorithm-based feature selector.

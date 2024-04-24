@@ -1,3 +1,4 @@
+import networkx as nx
 import numpy as np
 from sklearn.utils.validation import check_X_y
 from sklearn.model_selection import cross_val_score, StratifiedKFold
@@ -91,7 +92,6 @@ class GASel(HierarchicalEstimator):
         # Hierarchy setting in both ways: nx.Digraph and adj matrix
         super()._set_hierarchy()
         self.estimator = BernoulliNB()  # Assume a default estimator if None provided
-        self.cv = cv
         self.n_population = n_population
         self.n_generations = n_generations
         self.mutation_prob = mutation_prob
@@ -106,13 +106,35 @@ class GASel(HierarchicalEstimator):
         return np.random.randint(2, size=(self.n_population, n_features))
 
     def _fitness(self, individual, X, y):
+        """Calculate the fitness of the individual according to the GA selector.
+
+        Fitness function is defined as a geometric mean of sensitivity and specificity
+        obtained from 5-fold cross-validation.
+
+        Parameters
+        __________
+        individual: numpy.ndarray
+                The individual.
+        X: numpy.ndarray
+                The features.
+        y: numpy.ndarray
+                The labels.
+
+        Returns
+        __________
+        score: float
+                The fitness of the individual according to the GA selector.
+        """
+
         if individual.sum() == 0:
             return 0
+
         X_selected = X[:, individual == 1]
         gm_scorer = make_scorer(geometric_mean_sensitivity_specificity)
-        scores = cross_val_score(self.estimator, X_selected, y, cv=StratifiedKFold(self.cv), scoring=gm_scorer)
+        scores = cross_val_score(self.estimator, X_selected, y, cv=StratifiedKFold(5), scoring=gm_scorer)
         penalty_for_features = 0.01 * X_selected.shape[1] / X.shape[1]
-        return scores.mean() - penalty_for_features
+        score = scores.mean() - penalty_for_features
+        return score
 
     def _selection(self, fitness_scores):
         return np.random.choice(len(fitness_scores), 2, replace=False)
@@ -124,6 +146,8 @@ class GASel(HierarchicalEstimator):
         return individual
 
     def _fit(self, X, y):
+        """Do the genetic algorithm procedure."""
+
         n_features = X.shape[1]
         population = self._initialize_population(n_features)
         for _ in range(self.n_generations):
@@ -152,3 +176,44 @@ class GASel(HierarchicalEstimator):
     def has_successors(self, feature_index):
         node = self.get_columns()[feature_index]
         return any(True for _ in self._hierarchy.successors(node))
+
+    def has_ancestors(self, feature_index):
+        """Check if the feature has ancectors in the hierarchy.
+
+        The function is needed for advanced mutation procedures.
+
+        Parameters
+        __________
+        feature_index : int
+                Feature
+
+        Returns
+        __________
+
+        """
+        graph = self._hierarchy
+        node = feature_index
+        anc = (nx.ancestors(graph, node))
+        anc.remove('ROOT')
+
+        return bool(anc)
+
+    def has_descendants(self, feature_index):
+        """Check if the feature has ancectors in the hierarchy.
+
+        The function is needed for advanced mutation procedures.
+
+        Parameters
+        __________
+        feature_index : int
+                Feature
+
+        Returns
+        __________
+
+        """
+        graph = self._hierarchy
+        node = feature_index
+        desc = (nx.descendants(graph, node))
+
+        return bool(desc)

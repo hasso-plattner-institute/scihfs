@@ -1,6 +1,7 @@
 """
 Different metric functions.
 """
+
 from collections import Counter
 
 import numpy as np
@@ -157,6 +158,3 @@ def pearson_correlation(i: np.ndarray, j: np.ndarray):
     float : The pearson correlation between the input vectors.
     """
     return np.corrcoef(i, j)[0, 1]
-
-
-

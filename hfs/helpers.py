@@ -1,6 +1,7 @@
 """
 Collection of helper methods for the feature selection algorithms.
 """
+
 import math
 from fractions import Fraction
 
@@ -344,4 +345,3 @@ def compute_aggregated_values(
         column_index = columns.index(node)
         X[:, column_index] = aggregated
     return X
-

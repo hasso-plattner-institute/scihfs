@@ -6,6 +6,7 @@ from sklearn.metrics import make_scorer, recall_score, confusion_matrix
 from hfs.selectors import HierarchicalEstimator  # assuming the base class is imported
 from sklearn.naive_bayes import BernoulliNB
 
+
 def _crossover(parent1, parent2):
     """
     Perform a crossover between two parent individuals to produce two offspring.
@@ -26,6 +27,7 @@ def _crossover(parent1, parent2):
     child1 = np.concatenate([parent1[:point], parent2[point:]])
     child2 = np.concatenate([parent2[:point], parent1[point:]])
     return child1, child2
+
 
 def geometric_mean_sensitivity_specificity(y_true, y_pred):
     """
@@ -48,6 +50,7 @@ def geometric_mean_sensitivity_specificity(y_true, y_pred):
     denominator = conf_matrix[0, 0] + conf_matrix[0, 1]
     specificity = conf_matrix[0, 0] / denominator if denominator != 0 else 0
     return np.sqrt(sensitivity * specificity)
+
 
 class GASel(HierarchicalEstimator):
     """
@@ -72,8 +75,17 @@ class GASel(HierarchicalEstimator):
     selected_features_ : np.ndarray
         Array of indices representing the selected features after fitting the model.
     """
-    def __init__(self, hierarchy=None, n_population=50, n_generations=20,
-                 mutation_prob=0.02, she_mutation_prob=0.3, epsilon=0.05, she_mode=False):
+
+    def __init__(
+        self,
+        hierarchy=None,
+        n_population=50,
+        n_generations=20,
+        mutation_prob=0.02,
+        she_mutation_prob=0.3,
+        epsilon=0.05,
+        she_mode=False,
+    ):
         """
         Initialize the genetic algorithm-based feature selector.
 
@@ -105,6 +117,7 @@ class GASel(HierarchicalEstimator):
         self.epsilon = epsilon
         self.selected_features_ = None
         self.she_mode = she_mode
+
     def _initialize_population(self, n_features):
         """Initialize the population with binary feature presence arrays.
 
@@ -144,7 +157,9 @@ class GASel(HierarchicalEstimator):
 
         X_selected = X[:, individual == 1]
         gm_scorer = make_scorer(geometric_mean_sensitivity_specificity)
-        scores = cross_val_score(self.estimator, X_selected, y, cv=StratifiedKFold(5), scoring=gm_scorer)
+        scores = cross_val_score(
+            self.estimator, X_selected, y, cv=StratifiedKFold(5), scoring=gm_scorer
+        )
         penalty_for_features = 0.01 * X_selected.shape[1] / X.shape[1]
         return scores.mean() - penalty_for_features
 
@@ -205,14 +220,19 @@ class GASel(HierarchicalEstimator):
         population = self._initialize_population(n_features)
         for _ in range(self.n_generations):
             fitness_scores = np.array([self._fitness(ind, X, y) for ind in population])
-            best_indices = fitness_scores >= np.quantile(fitness_scores, 1 - self.epsilon)
+            best_indices = fitness_scores >= np.quantile(
+                fitness_scores, 1 - self.epsilon
+            )
             new_population = population[best_indices].tolist()
             while len(new_population) < self.n_population:
                 parent_indices = self._selection(fitness_scores)
-                parent1, parent2 = population[parent_indices[0]], population[parent_indices[1]]
+                parent1, parent2 = (
+                    population[parent_indices[0]],
+                    population[parent_indices[1]],
+                )
                 children = _crossover(parent1, parent2)
                 new_population.extend([self._mutation(child) for child in children])
-            population = np.array(new_population[:self.n_population])
+            population = np.array(new_population[: self.n_population])
         self.selected_features_ = population[np.argmax(fitness_scores)]
 
     def fit(self, X, y=None, columns=None):
@@ -252,7 +272,7 @@ class GASel(HierarchicalEstimator):
         np.ndarray
             The transformed dataset with only the selected features included.
         """
-        if not hasattr(self, 'selected_features_') or self.selected_features_ is None:
+        if not hasattr(self, "selected_features_") or self.selected_features_ is None:
             raise ValueError("The model has not been fitted yet.")
         return X[:, self.selected_features_ == 1]
 
@@ -290,7 +310,9 @@ class GASel(HierarchicalEstimator):
         graph = self._hierarchy
         node = feature_index
         anc = nx.ancestors(graph, node)
-        anc.discard('ROOT')  # Assuming 'ROOT' should not be considered as a valid ancestor.
+        anc.discard(
+            "ROOT"
+        )  # Assuming 'ROOT' should not be considered as a valid ancestor.
         return bool(anc)
 
     def has_descendants(self, feature_index):

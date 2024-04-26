@@ -84,7 +84,7 @@ class GASel(HierarchicalEstimator):
         mutation_prob=0.02,
         she_mutation_prob=0.3,
         epsilon=0.05,
-        she_mode=False,
+        mode="",
     ):
         """
         Initialize the genetic algorithm-based feature selector.
@@ -103,7 +103,7 @@ class GASel(HierarchicalEstimator):
             The probability of applying a simple hierarchical elimination mutation.
         epsilon : float, optional
             The elitism threshold used in the genetic algorithm.
-        she_mode : bool, optional
+        mode : str, optional
             Whether the genetic algorithm includes Simple Hierarchical elimination.
         """
         super().__init__(hierarchy=hierarchy)
@@ -116,7 +116,7 @@ class GASel(HierarchicalEstimator):
         self.she_mutation_prob = she_mutation_prob
         self.epsilon = epsilon
         self.selected_features_ = None
-        self.she_mode = she_mode
+        self.mode = mode
 
     def _initialize_population(self, n_features):
         """Initialize the population with binary feature presence arrays.
@@ -194,19 +194,22 @@ class GASel(HierarchicalEstimator):
             The mutated genome.
         """
         # Standard bitwise mutation
-        if self.she_mode:
+        if self.mode == "she":
             for i in range(len(individual)):
-                if individual[i] == 1 & (self.has_ancestors(i) or self.has_descendants(i)):
+                if individual[i] == 1 & (
+                    self.has_ancestors(i) or self.has_descendants(i)
+                ):
                     if np.random.rand() < self.she_mutation_prob:
                         individual[i] = 0
                 else:
                     if np.random.rand() < self.mutation_prob:
                         individual[i] = 1 - individual[i]
+        elif self.mode == "cbhe":
+            pass
         else:
             for i in range(len(individual)):
                 if np.random.rand() < self.mutation_prob:
                     individual[i] = 1 - individual[i]
-
 
         return individual
 
@@ -280,6 +283,27 @@ class GASel(HierarchicalEstimator):
         if not hasattr(self, "selected_features_") or self.selected_features_ is None:
             raise ValueError("The model has not been fitted yet.")
         return X[:, self.selected_features_ == 1]
+
+    def is_redundant(self, feature_index):
+        """
+        Check if a feature is redundant.
+
+        Feature is considered to be redundant iff it has successors and/or ancestors.
+
+        Parameters
+        __________
+        feature_index : int
+            The feature index.
+
+        Returns
+        ___________
+        bool
+            Whether the feature is redundant.
+        """
+
+        if self.has_ancestors(feature_index) and self.has_descendants(feature_index):
+            return True
+        return False
 
     def has_successors(self, feature_index):
         """

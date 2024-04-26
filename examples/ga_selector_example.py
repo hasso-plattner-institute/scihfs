@@ -19,7 +19,7 @@ hierarchy = nx.to_numpy_array(graph)
 
 
 # Initialize selector
-selector = GASel(hierarchy, she_mode=True)
+selector = GASel(hierarchy, mode="she")
 
 
 # Fit selector and transform data

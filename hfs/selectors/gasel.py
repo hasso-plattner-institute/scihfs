@@ -194,14 +194,19 @@ class GASel(HierarchicalEstimator):
             The mutated genome.
         """
         # Standard bitwise mutation
-        for i in range(len(individual)):
-            if np.random.rand() < self.mutation_prob:
-                individual[i] = 1 - individual[i]
-
         if self.she_mode:
-            if self.has_ancestors(i) & self.has_descendants(i):
-                if np.random.rand() < self.she_mutation_prob:
+            for i in range(len(individual)):
+                if individual[i] == 1 & (self.has_ancestors(i) or self.has_descendants(i)):
+                    if np.random.rand() < self.she_mutation_prob:
+                        individual[i] = 0
+                else:
+                    if np.random.rand() < self.mutation_prob:
+                        individual[i] = 1 - individual[i]
+        else:
+            for i in range(len(individual)):
+                if np.random.rand() < self.mutation_prob:
                     individual[i] = 1 - individual[i]
+
 
         return individual
 

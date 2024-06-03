@@ -5,6 +5,7 @@ from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.metrics import make_scorer, recall_score, confusion_matrix
 from hfs.selectors import HierarchicalEstimator  # assuming the base class is imported
 from sklearn.naive_bayes import BernoulliNB
+from scipy.stats.stats import pearsonr
 
 
 def _crossover(parent1, parent2):
@@ -193,7 +194,7 @@ class GASel(HierarchicalEstimator):
         np.ndarray
             The mutated genome.
         """
-        # Standard bitwise mutation
+        # Simple Hierarchical Elimination Mutation Mode
         if self.mode == "she":
             for i in range(len(individual)):
                 if individual[i] == 1 & (
@@ -204,9 +205,27 @@ class GASel(HierarchicalEstimator):
                 else:
                     if np.random.rand() < self.mutation_prob:
                         individual[i] = 1 - individual[i]
+        # Correlation-Based Hierarchical Mutation Mode
         elif self.mode == "cbhe":
-            pass
-        else:
+            for i in range(len(individual)):
+                if individual[i] == 1:
+                    corr = 0
+                    ancestors = self.ancestors(i)
+                    descendants = self.descendants(i)
+
+                    for feature in ancestors:
+                        corr += self.corrmatrix[i][feature]
+                    for feature in descendants:
+                        corr += self.corrmatrix[i][feature]
+                    corr /= (len(ancestors) + len(descendants))
+
+                    if np.random.rand() < corr:
+                        individual[i] = 1 - individual[i]
+                else:
+                    if np.random.rand() < self.mutation_prob:
+                        individual[i] = 1 - individual[i]
+        # Standard Bitwise Mutation
+        elif self.mode == "" or self.mode is None:
             for i in range(len(individual)):
                 if np.random.rand() < self.mutation_prob:
                     individual[i] = 1 - individual[i]
@@ -224,6 +243,9 @@ class GASel(HierarchicalEstimator):
         y : np.ndarray
             The label dataset.
         """
+        if self.mode == "cbhe":
+            self.corrmatrix = np.corrcoef(X)
+
         n_features = X.shape[1]
         population = self._initialize_population(n_features)
         for _ in range(self.n_generations):
@@ -322,6 +344,15 @@ class GASel(HierarchicalEstimator):
         node = self.get_columns()[feature_index]
         return any(True for _ in self._hierarchy.successors(node))
 
+    def ancestors(self, feature_index):
+        graph = self._hierarchy
+        node = feature_index
+        anc = nx.ancestors(graph, node)
+        anc.discard(
+            "ROOT"
+        )
+        return anc
+
     def has_ancestors(self, feature_index):
         """
         Check if a feature index has any ancestors in the hierarchy.
@@ -343,6 +374,11 @@ class GASel(HierarchicalEstimator):
             "ROOT"
         )  # Assuming 'ROOT' should not be considered as a valid ancestor.
         return bool(anc)
+
+    def descendants(self, feature_index):
+        graph = self._hierarchy
+        node = feature_index
+        return nx.descendants(graph, node)
 
     def has_descendants(self, feature_index):
         """

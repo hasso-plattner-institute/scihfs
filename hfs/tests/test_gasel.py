@@ -50,6 +50,3 @@ def test_crossover():
     assert isinstance(child1, np.ndarray)
     assert isinstance(child2, np.ndarray)
 
-
-def test_hierarchy():
-    pass

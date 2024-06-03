@@ -189,8 +189,10 @@ class GASel(HierarchicalEstimator):
         selected_parents = []
 
         for _ in range(2):
-        # Randomly select k individuals for the tournament
-            tournament_indices = np.random.choice(len(fitness_scores), self.tournament_size, replace=False)
+            # Randomly select k individuals for the tournament
+            tournament_indices = np.random.choice(
+                len(fitness_scores), self.tournament_size, replace=False
+            )
 
             # Get the fitness scores of the tournament participants
             tournament_fitness_scores = fitness_scores[tournament_indices]
@@ -202,7 +204,6 @@ class GASel(HierarchicalEstimator):
             selected_parents.append(winner_index)
 
         return np.array(selected_parents)
-
 
     def _mutation(self, individual):
         """
@@ -242,7 +243,7 @@ class GASel(HierarchicalEstimator):
                         corr += self.corrmatrix[i][feature]
                     for feature in descendants:
                         corr += self.corrmatrix[i][feature]
-                    corr /= (len(ancestors) + len(descendants))
+                    corr /= len(ancestors) + len(descendants)
 
                     if np.random.rand() < corr:
                         individual[i] = 1 - individual[i]
@@ -255,7 +256,9 @@ class GASel(HierarchicalEstimator):
                 if np.random.rand() < self.mutation_prob:
                     individual[i] = 1 - individual[i]
         else:
-            raise ValueError(f"Invalid mode: {self.mode}. Expected 'she', 'cbhe', or ''.")
+            raise ValueError(
+                f"Invalid mode: {self.mode}. Expected 'she', 'cbhe', or ''."
+            )
 
         return individual
 
@@ -361,14 +364,11 @@ class GASel(HierarchicalEstimator):
             return True
         return False
 
-
     def ancestors(self, feature_index):
         graph = self._hierarchy
         node = feature_index
         anc = nx.ancestors(graph, node)
-        anc.discard(
-            "ROOT"
-        )
+        anc.discard("ROOT")
         return anc
 
     def has_ancestors(self, feature_index):

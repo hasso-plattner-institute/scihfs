@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from hfs import GASel
+from hfs.selectors import GASel
 from hfs.selectors.gasel import _crossover, geometric_mean_sensitivity_specificity
 
 
@@ -49,4 +49,3 @@ def test_crossover():
 
     assert isinstance(child1, np.ndarray)
     assert isinstance(child2, np.ndarray)
-

@@ -73,6 +73,10 @@ class GASel(HierarchicalEstimator):
         Probability of a simple hierarchical elimination mutation.
     epsilon : float
         Threshold defining elitism, retaining the top epsilon fraction of individuals.
+    mode : str
+        Mutation mode defining the logic of mutation.
+    tournament_size : int
+        Size of tournament selection algorithm.
     selected_features_ : np.ndarray
         Array of indices representing the selected features after fitting the model.
     """
@@ -82,6 +86,7 @@ class GASel(HierarchicalEstimator):
         hierarchy=None,
         n_population=50,
         n_generations=20,
+        tournament_size=5,
         mutation_prob=0.02,
         she_mutation_prob=0.3,
         epsilon=0.05,
@@ -98,6 +103,8 @@ class GASel(HierarchicalEstimator):
             The size of the population.
         n_generations : int, optional
             The number of generations for the genetic algorithm.
+        tournament_size : int, optional
+            The size of the tournament for parent selection.
         mutation_prob : float, optional
             The probability of mutating an individual gene.
         she_mutation_prob : float, optional
@@ -113,6 +120,7 @@ class GASel(HierarchicalEstimator):
         self.estimator = BernoulliNB()  # Assume a default estimator if None provided
         self.n_population = n_population
         self.n_generations = n_generations
+        self.tournament_size = tournament_size
         self.mutation_prob = mutation_prob
         self.she_mutation_prob = she_mutation_prob
         self.epsilon = epsilon
@@ -178,7 +186,23 @@ class GASel(HierarchicalEstimator):
         np.ndarray
             Indices of the selected parents.
         """
-        return np.random.choice(len(fitness_scores), 2, replace=False)
+        selected_parents = []
+
+        for _ in range(2):
+        # Randomly select k individuals for the tournament
+            tournament_indices = np.random.choice(len(fitness_scores), self.tournament_size, replace=False)
+
+            # Get the fitness scores of the tournament participants
+            tournament_fitness_scores = fitness_scores[tournament_indices]
+
+            # Find the index of the individual with the highest fitness score in the tournament
+            winner_index = tournament_indices[np.argmax(tournament_fitness_scores)]
+
+            # Add the winner to the selected parents
+            selected_parents.append(winner_index)
+
+        return np.array(selected_parents)
+
 
     def _mutation(self, individual):
         """
@@ -205,10 +229,11 @@ class GASel(HierarchicalEstimator):
                 else:
                     if np.random.rand() < self.mutation_prob:
                         individual[i] = 1 - individual[i]
+
         # Correlation-Based Hierarchical Mutation Mode
         elif self.mode == "cbhe":
             for i in range(len(individual)):
-                if individual[i] == 1:
+                if individual[i] == 1 and self.is_redundant(i):
                     corr = 0
                     ancestors = self.ancestors(i)
                     descendants = self.descendants(i)
@@ -229,6 +254,8 @@ class GASel(HierarchicalEstimator):
             for i in range(len(individual)):
                 if np.random.rand() < self.mutation_prob:
                     individual[i] = 1 - individual[i]
+        else:
+            raise ValueError(f"Invalid mode: {self.mode}. Expected 'she', 'cbhe', or ''.")
 
         return individual
 
@@ -248,12 +275,17 @@ class GASel(HierarchicalEstimator):
 
         n_features = X.shape[1]
         population = self._initialize_population(n_features)
+
         for _ in range(self.n_generations):
+            # Fitness Scores Evaluation
             fitness_scores = np.array([self._fitness(ind, X, y) for ind in population])
+
+            # Elitism: Find EPS best and Add Them to the New Generation
             best_indices = fitness_scores >= np.quantile(
                 fitness_scores, 1 - self.epsilon
             )
             new_population = population[best_indices].tolist()
+
             while len(new_population) < self.n_population:
                 parent_indices = self._selection(fitness_scores)
                 parent1, parent2 = (
@@ -263,6 +295,8 @@ class GASel(HierarchicalEstimator):
                 children = _crossover(parent1, parent2)
                 new_population.extend([self._mutation(child) for child in children])
             population = np.array(new_population[: self.n_population])
+
+        fitness_scores = np.array([self._fitness(ind, X, y) for ind in population])
         self.selected_features_ = population[np.argmax(fitness_scores)]
 
     def fit(self, X, y=None, columns=None):
@@ -323,26 +357,10 @@ class GASel(HierarchicalEstimator):
             Whether the feature is redundant.
         """
 
-        if self.has_ancestors(feature_index) and self.has_descendants(feature_index):
+        if self.has_ancestors(feature_index) or self.has_descendants(feature_index):
             return True
         return False
 
-    def has_successors(self, feature_index):
-        """
-        Check if a feature index has any successors in the hierarchy.
-
-        Parameters
-        ----------
-        feature_index : int
-            Index of the feature to check in the hierarchy graph.
-
-        Returns
-        -------
-        bool
-            True if the feature has successors, False otherwise.
-        """
-        node = self.get_columns()[feature_index]
-        return any(True for _ in self._hierarchy.successors(node))
 
     def ancestors(self, feature_index):
         graph = self._hierarchy

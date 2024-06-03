@@ -16,7 +16,7 @@ from hfs.selectors import (
     HNBs,
     SHSELSelector,
     TSELSelector,
-    gasel,
+    GASel,
 )
 from hfs.selectors.eagerHierarchicalFeatureSelector import (
     EagerHierarchicalFeatureSelector,

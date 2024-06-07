@@ -1,11 +1,9 @@
 import networkx as nx
 import numpy as np
-from sklearn.utils.validation import check_X_y
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.metrics import make_scorer, recall_score, confusion_matrix
-from hfs.selectors import HierarchicalEstimator  # assuming the base class is imported
+from hfs.selectors import HierarchicalEstimator
 from sklearn.naive_bayes import BernoulliNB
-from scipy.stats.stats import pearsonr
 
 
 def _crossover(parent1, parent2):
@@ -87,7 +85,7 @@ class GASel(HierarchicalEstimator):
         n_population=50,
         n_generations=20,
         tournament_size=5,
-        mutation_prob=0.02,
+        mutation_prob=0.1,
         she_mutation_prob=0.3,
         epsilon=0.05,
         mode="",
@@ -114,10 +112,12 @@ class GASel(HierarchicalEstimator):
         mode : str, optional
             Whether the genetic algorithm includes Simple Hierarchical elimination.
         """
+        # Hierarchy Adj Matrix
         super().__init__(hierarchy=hierarchy)
-        # Hierarchy setting in both ways: nx.Digraph and adj matrix
+
+        # Hierarchy DiGraph Derived from the Adj Matrix
         super()._set_hierarchy()
-        self.estimator = BernoulliNB()  # Assume a default estimator if None provided
+        self.estimator = BernoulliNB()
         self.n_population = n_population
         self.n_generations = n_generations
         self.tournament_size = tournament_size

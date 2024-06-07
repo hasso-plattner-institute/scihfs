@@ -1,6 +1,7 @@
 """
 Estimators for feature selection on hierarchical data.
 """
+
 from hfs._version import __version__
 from hfs.data_utils import create_mapping_columns_to_nodes
 from hfs.helpers import get_columns_for_numpy_hierarchy
@@ -15,6 +16,7 @@ from hfs.selectors import (
     HNBs,
     SHSELSelector,
     TSELSelector,
+    GASel,
 )
 from hfs.selectors.eagerHierarchicalFeatureSelector import (
     EagerHierarchicalFeatureSelector,
@@ -28,6 +30,7 @@ from hfs.selectors.hill_climbing import (
 from hfs.selectors.lazyHierarchicalFeatureSelector import (
     LazyHierarchicalFeatureSelector,
 )
+from hfs.selectors.gasel import GASel
 
 __all__ = [
     "TSELSelector",

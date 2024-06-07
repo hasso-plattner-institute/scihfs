@@ -12,3 +12,4 @@ from .rnb import RNB
 from .shsel import SHSELSelector
 from .tan import TAN
 from .tsel import TSELSelector
+from .gasel import GASel

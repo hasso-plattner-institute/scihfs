@@ -89,6 +89,7 @@ class GASel(HierarchicalEstimator):
         she_mutation_prob=0.3,
         epsilon=0.05,
         mode="",
+        expert_knowledge=None
     ):
         """
         Initialize the genetic algorithm-based feature selector.
@@ -111,6 +112,8 @@ class GASel(HierarchicalEstimator):
             The elitism threshold used in the genetic algorithm.
         mode : str, optional
             Whether the genetic algorithm includes Simple Hierarchical elimination.
+        expert_knowledge : list, optional
+            Proportions of selected features for each level of the hierarchy.
         """
         # Hierarchy Adj Matrix
         super().__init__(hierarchy=hierarchy)
@@ -126,6 +129,7 @@ class GASel(HierarchicalEstimator):
         self.epsilon = epsilon
         self.selected_features_ = None
         self.mode = mode
+        self.expert_knowledge = expert_knowledge
 
     def _initialize_population(self, n_features):
         """Initialize the population with binary feature presence arrays.

@@ -89,7 +89,8 @@ class GASel(HierarchicalEstimator):
         she_mutation_prob=0.3,
         epsilon=0.05,
         mode="",
-        expert_knowledge=None
+        expert_knowledge=None,
+        use_expert_knowledge=False
     ):
         """
         Initialize the genetic algorithm-based feature selector.
@@ -130,6 +131,7 @@ class GASel(HierarchicalEstimator):
         self.selected_features_ = None
         self.mode = mode
         self.expert_knowledge = expert_knowledge
+        self.use_expert_knowledge = use_expert_knowledge
 
     def _initialize_population(self, n_features):
         """Initialize the population with binary feature presence arrays.

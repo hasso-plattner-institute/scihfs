@@ -211,7 +211,7 @@ class GASel(HierarchicalEstimator):
 
         return np.array(selected_parents)
 
-    def _calculate_proportions(selfs, individual):
+    def _calculate_proportions(self, individual):
         """
         Calculate the proportion of selected features (1's) for each level in the hierarchy.
 
@@ -240,7 +240,7 @@ class GASel(HierarchicalEstimator):
 
     def _mutation(self, individual):
         """
-        Mutate an individual's genome based on the mutation probability.
+        Mutate an individual's genome based on the mutation mode and optional expert knowledge.
 
         Parameters
         ----------
@@ -252,21 +252,24 @@ class GASel(HierarchicalEstimator):
         np.ndarray
             The mutated genome.
         """
-        # Simple Hierarchical Elimination Mutation Mode
-        if self.mode == "she":
-            for i in range(len(individual)):
-                if individual[i] == 1 & (
-                    self.has_ancestors(i) or self.has_descendants(i)
-                ):
+        if self.use_expert_knowledge and self.expert_knowledge is not None:
+            p_obs = self._calculate_proportions(individual)
+
+        for i in range(len(individual)):
+            level = self.get_level(i) if self.use_expert_knowledge else None
+            p_obs_level = p_obs[level] if self.use_expert_knowledge else None
+            p_exp = self.expert_knowledge[level] if self.use_expert_knowledge else None
+            delta = abs(p_exp - p_obs_level) if self.use_expert_knowledge else None
+
+            if self.mode == "she":
+                if individual[i] == 1 and (self.has_ancestors(i) or self.has_descendants(i)):
                     if np.random.rand() < self.she_mutation_prob:
                         individual[i] = 0
                 else:
                     if np.random.rand() < self.mutation_prob:
                         individual[i] = 1 - individual[i]
 
-        # Correlation-Based Hierarchical Mutation Mode
-        elif self.mode == "cbhe":
-            for i in range(len(individual)):
+            elif self.mode == "cbhe":
                 if individual[i] == 1 and self.is_redundant(i):
                     corr = 0
                     ancestors = self.ancestors(i)
@@ -283,15 +286,14 @@ class GASel(HierarchicalEstimator):
                 else:
                     if np.random.rand() < self.mutation_prob:
                         individual[i] = 1 - individual[i]
-        # Standard Bitwise Mutation
-        elif self.mode == "" or self.mode is None:
-            for i in range(len(individual)):
-                if np.random.rand() < self.mutation_prob:
-                    individual[i] = 1 - individual[i]
-        else:
-            raise ValueError(
-                f"Invalid mode: {self.mode}. Expected 'she', 'cbhe', or ''."
-            )
+
+            if self.use_expert_knowledge:
+                if p_obs_level > p_exp:
+                    if individual[i] == 1 and np.random.rand() < delta / p_obs_level:
+                        individual[i] = 0
+                elif p_obs_level < p_exp:
+                    if individual[i] == 0 and np.random.rand() < delta / (1 - p_obs_level):
+                        individual[i] = 1
 
         return individual
 
@@ -448,3 +450,33 @@ class GASel(HierarchicalEstimator):
         graph = self._hierarchy
         node = feature_index
         return bool(nx.descendants(graph, node))
+
+    def get_level(self, feature_index):
+        """
+        Determine the hierarchy level for the given feature (feature_index).
+
+        Parameters
+        ----------
+        feature_index : int
+            The index of the feature for which the hierarchy level needs to be determined.
+
+        Returns
+        -------
+        int
+            The hierarchy level for the given feature.
+        """
+        graph = self._hierarchy
+        node = self._columns[feature_index]  # Map the feature index to the graph node
+
+        # If the node is the root, it is at level 0
+        if node == 'ROOT':
+            return 0
+
+        # The level is defined as the number of steps from the root to the given node
+        try:
+            return nx.shortest_path_length(graph, source='ROOT', target=node)
+        except nx.NetworkXNoPath:
+            raise ValueError(f"No path from the root to node {node}. Check the hierarchy's validity.")
+
+
+

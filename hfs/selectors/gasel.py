@@ -209,6 +209,33 @@ class GASel(HierarchicalEstimator):
 
         return np.array(selected_parents)
 
+    def _calculate_proportions(selfs, individual):
+        """
+        Calculate the proportion of selected features (1's) for each level in the hierarchy.
+
+        Parameters
+        ----------
+        individual : np.ndarray
+            The individual's genome.
+
+        Returns
+        -------
+        list
+            A list of proportions of selected features for each level.
+        """
+        levels = {}
+        for i in range(len(individual)):
+            level = self.get_level(i)
+            if level not in levels:
+                levels[level] = []
+            levels[level].append(individual[i])
+
+        proportions = []
+        for level, genes in levels.items():
+            proportions.append(np.sum(genes) / len(genes))
+
+        return proportions
+
     def _mutation(self, individual):
         """
         Mutate an individual's genome based on the mutation probability.

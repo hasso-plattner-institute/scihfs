@@ -90,7 +90,7 @@ class GASel(HierarchicalEstimator):
         epsilon=0.05,
         mode="",
         expert_knowledge=None,
-        use_expert_knowledge=False
+        use_expert_knowledge=False,
     ):
         """
         Initialize the genetic algorithm-based feature selector.
@@ -262,7 +262,9 @@ class GASel(HierarchicalEstimator):
             delta = abs(p_exp - p_obs_level) if self.use_expert_knowledge else None
 
             if self.mode == "she":
-                if individual[i] == 1 and (self.has_ancestors(i) or self.has_descendants(i)):
+                if individual[i] == 1 and (
+                    self.has_ancestors(i) or self.has_descendants(i)
+                ):
                     if np.random.rand() < self.she_mutation_prob:
                         individual[i] = 0
                 else:
@@ -292,7 +294,9 @@ class GASel(HierarchicalEstimator):
                     if individual[i] == 1 and np.random.rand() < delta / p_obs_level:
                         individual[i] = 0
                 elif p_obs_level < p_exp:
-                    if individual[i] == 0 and np.random.rand() < delta / (1 - p_obs_level):
+                    if individual[i] == 0 and np.random.rand() < delta / (
+                        1 - p_obs_level
+                    ):
                         individual[i] = 1
 
         return individual
@@ -469,14 +473,13 @@ class GASel(HierarchicalEstimator):
         node = self._columns[feature_index]  # Map the feature index to the graph node
 
         # If the node is the root, it is at level 0
-        if node == 'ROOT':
+        if node == "ROOT":
             return 0
 
         # The level is defined as the number of steps from the root to the given node
         try:
-            return nx.shortest_path_length(graph, source='ROOT', target=node)
+            return nx.shortest_path_length(graph, source="ROOT", target=node)
         except nx.NetworkXNoPath:
-            raise ValueError(f"No path from the root to node {node}. Check the hierarchy's validity.")
-
-
-
+            raise ValueError(
+                f"No path from the root to node {node}. Check the hierarchy's validity."
+            )

@@ -8,6 +8,9 @@ on:
   pull_request:
   workflow_dispatch:  # Allows manual triggering for the auto-fix job
 
+permissions:
+  contents: write  # Grants write permissions for GITHUB_TOKEN
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -78,7 +81,7 @@ jobs:
       # And finally run tests. I'm using pytest and all my pytest config is in my `pyproject.toml`
       # so this line is super-simple. But it could be as complex as you need.
       - run: poetry run pytest hfs 
-      
+
   lint-fix:
     if: github.event_name == 'workflow_dispatch'  # Run only if manually triggered
     runs-on: ubuntu-latest

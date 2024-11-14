@@ -6,6 +6,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:  # Allows manual triggering for the auto-fix job
 
 jobs:
   lint:
@@ -77,3 +78,22 @@ jobs:
       # And finally run tests. I'm using pytest and all my pytest config is in my `pyproject.toml`
       # so this line is super-simple. But it could be as complex as you need.
       - run: poetry run pytest hfs 
+      
+  lint-fix:
+    if: github.event_name == 'workflow_dispatch'  # Run only if manually triggered
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: psf/black@stable
+        with:
+          options: '.'  # Runs `black` without `--check` to auto-fix code
+
+      # Commit and push changes if auto-fix is applied
+      - name: Commit Changes
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git diff --quiet || git commit -am "fix: Auto-fixed code formatting"
+      - name: Push Changes
+        if: success()
+        run: git push

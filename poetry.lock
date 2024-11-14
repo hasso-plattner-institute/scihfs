@@ -2651,16 +2651,17 @@ pybtex = ">=0.16"
 
 [[package]]
 name = "pycddlib"
-version = "3.0.0"
+version = "3.0.1"
 description = "A Python wrapper for cddlib"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "pycddlib-3.0.0-cp310-cp310-win_amd64.whl", hash = "sha256:8462d0c0df04b644cfe04f6b8b10841ee51712443e76a04d969b83e89c3c954e"},
-    {file = "pycddlib-3.0.0-cp311-cp311-win_amd64.whl", hash = "sha256:5a06026eddfad170f062b5e1f0b88bf3919f240817a52d58bc592d2bdd79bbf0"},
-    {file = "pycddlib-3.0.0-cp312-cp312-win_amd64.whl", hash = "sha256:cccec54e0450d2119acdf6f93c6e82a5a272bf98de92d2ed8a425b3cdf67b639"},
-    {file = "pycddlib-3.0.0-cp39-cp39-win_amd64.whl", hash = "sha256:e53b5cd95aab8f3d657a81fe8c626727ac8db68e1682aecc65682fc4c8d84953"},
-    {file = "pycddlib-3.0.0.tar.gz", hash = "sha256:799aa64c6f2e3d88d65f420931322a03a080d956a7d9c540b0aa56e9ba5b6b55"},
+    {file = "pycddlib-3.0.1-cp310-cp310-win_amd64.whl", hash = "sha256:25cda3f75f02695a67d033528e88a32266f0c34c91a71aaaa80a5cabf2e1b915"},
+    {file = "pycddlib-3.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:63490fddfe8540ed6c22641dcf6219c674dc45f553069ea91c2909252f3f7c61"},
+    {file = "pycddlib-3.0.1-cp312-cp312-win_amd64.whl", hash = "sha256:fa3b810487c7f54efc32a4ac3833dadc942f5d858361a72fab5a0b04abc1b7c4"},
+    {file = "pycddlib-3.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:3e47cb4025d3ba7f9eb7d9b1617801a4317c9b5f8548c81de35439e1e4f9736e"},
+    {file = "pycddlib-3.0.1-cp39-cp39-win_amd64.whl", hash = "sha256:d630e9dad797ea305a759d419473dd7909c56c9a23595fad5c72f3d5c8e16d87"},
+    {file = "pycddlib-3.0.1.tar.gz", hash = "sha256:ff9fe83fa58e5c6b107683f16ddf1068d6ca23b4a0e423b4413a67a0b76e531b"},
 ]
 
 [package.extras]

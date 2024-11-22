@@ -3,21 +3,14 @@ import pytest
 
 from hfs.selectors import GreedyTopDownSelector
 
-from .fixtures.fixtures import (
-    data2,
-    data2_1,
-    data2_2,
-    result_gtd_selection2,
-    result_gtd_selection2_1,
-    result_gtd_selection2_2,
-)
-
 
 @pytest.mark.parametrize(
     "data, result",
-    [(data2(), result_gtd_selection2()), (data2_1(), result_gtd_selection2_1())],
+    [("data2", "result_gtd_selection2"), ("data2_1", "result_gtd_selection2_1")],
 )
-def test_greedy_top_down_selection(data, result):
+def test_greedy_top_down_selection(data, result, request):
+    data = request.getfixturevalue(data)
+    result = request.getfixturevalue(result)
     X, y, hierarchy, columns = data
     expected, support = result
     selector = GreedyTopDownSelector(hierarchy)
@@ -31,9 +24,13 @@ def test_greedy_top_down_selection(data, result):
 
 @pytest.mark.parametrize(
     "data, result_redundant, result_not_redundant",
-    [(data2_2(), result_gtd_selection2_1(), result_gtd_selection2_2())],
+    [("data2_2", "result_gtd_selection2_1", "result_gtd_selection2_2")],
 )
-def test_greedy_top_down_selection_dag(data, result_redundant, result_not_redundant):
+def test_greedy_top_down_selection_dag(
+    data, result_redundant, result_not_redundant, request
+):
+    data = request.getfixturevalue(data)
+    result_redundant = request.getfixturevalue(result_redundant)
     X, y, hierarchy, columns = data
     expected_redundant, support_redundant = result_redundant
     selector = GreedyTopDownSelector(hierarchy)

@@ -13,16 +13,6 @@ from ..helpers import (
     shrink_dag,
 )
 from ..metrics import gain_ratio, information_gain
-from .fixtures.fixtures import (
-    data1,
-    data2,
-    lazy_data2,
-    lazy_data4,
-    result_aggregated1,
-    result_aggregated2,
-    result_gr_values2,
-    result_ig_values2,
-)
 
 
 def test_shrink_dag():
@@ -75,14 +65,8 @@ def test_shrink_dag():
         assert not (node in graph.nodes())
 
 
-@pytest.mark.parametrize(
-    "data",
-    [
-        lazy_data4(),
-    ],
-)
-def test_connect_dag(data):
-    small_DAG, big_DAG = data
+def test_connect_dag(lazy_data4):
+    small_DAG, big_DAG = lazy_data4
     graph = nx.DiGraph(big_DAG)
     x_identifiers = [0, 1, 2, 5, 6, 7, 8]
     graph = connect_dag(hierarchy=graph, x_identifiers=x_identifiers)
@@ -90,52 +74,36 @@ def test_connect_dag(data):
     assert nx.is_isomorphic(graph, new_graph)
 
 
-@pytest.mark.parametrize(
-    "data",
-    [
-        lazy_data2(),
-    ],
-)
-def test_relevance(data):
-    small_DAG, train_x_data, train_y_data, test_x_data, test_y_data = data
+def test_relevance(lazy_data2):
+    small_DAG, train_x_data, train_y_data, test_x_data, test_y_data = lazy_data2
     results = [Fraction(1, 2), Fraction(8, 9), 2, 0]
     for node_idx in range(len(small_DAG)):
         value = getRelevance(train_x_data, train_y_data, node_idx)
         assert value == results[node_idx]
 
 
-@pytest.mark.parametrize(
-    "data, result",
-    [
-        (data2(), result_ig_values2()),
-    ],
-)
-def test_information_gain(data, result):
-    X, y, _, _ = data
+def test_information_gain(data2, result_ig_values2):
+    X, y, _, _ = data2
     ig = information_gain(X, y)
-    assert ig == result
+    assert ig == result_ig_values2
 
 
-@pytest.mark.parametrize(
-    "data, result",
-    [
-        (data2(), result_gr_values2()),
-    ],
-)
-def test_gain_ratio(data, result):
-    X, y, _, _ = data
+def test_gain_ratio(data2, result_gr_values2):
+    X, y, _, _ = data2
     gr = gain_ratio(X, y)
-    assert result == gr
+    assert gr == result_gr_values2
 
 
 @pytest.mark.parametrize(
     "data, result",
     [
-        (data1(), result_aggregated1()),
-        (data2(), result_aggregated2()),
+        ("data1", "result_aggregated1"),
+        ("data2", "result_aggregated2"),
     ],
 )
-def test_compute_aggregated_values(data, result):
+def test_compute_aggregated_values(data, result, request):
+    data = request.getfixturevalue(data)
+    result = request.getfixturevalue(result)
     X, _, hierarchy, columns = data
     hierarchy = create_hierarchy(nx.DiGraph(hierarchy))
     X_transformed = compute_aggregated_values(X, hierarchy, columns)

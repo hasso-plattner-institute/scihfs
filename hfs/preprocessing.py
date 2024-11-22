@@ -1,6 +1,7 @@
 """
 Sklearn compatible estimators for preprocessing hierarchical data.
 """
+
 from __future__ import annotations
 
 from typing import Optional

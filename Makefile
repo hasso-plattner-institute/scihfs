@@ -10,6 +10,6 @@ mypy:
 	poetry run mypy hfs/
 
 pytest:
-	poetry run pytest hfs
+	poetry run pytest hfs/
 
 precommit: autolint pytest

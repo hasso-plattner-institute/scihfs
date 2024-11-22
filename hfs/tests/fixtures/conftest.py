@@ -4,12 +4,14 @@ import random
 import networkx as nx
 import numpy as np
 import pandas as pd
+import pytest
 from info_gain.info_gain import info_gain, info_gain_ratio
 
 from hfs.helpers import get_columns_for_numpy_hierarchy
 from hfs.metrics import cosine_similarity
 
 
+@pytest.fixture()
 def data1():
     X = np.array(
         [
@@ -27,6 +29,7 @@ def data1():
     return (X, y, hierarchy, columns)
 
 
+@pytest.fixture()
 def data1_2():
     X = np.array(
         [
@@ -44,6 +47,7 @@ def data1_2():
     return (X, y, hierarchy, columns)
 
 
+@pytest.fixture()
 def data2():
     X = np.array(
         [
@@ -61,6 +65,7 @@ def data2():
     return (X, y, hierarchy, columns)
 
 
+@pytest.fixture()
 def data2_1():
     X = np.array(
         [
@@ -80,6 +85,7 @@ def data2_1():
     return (X, y, hierarchy, columns)
 
 
+@pytest.fixture()
 def data2_2():
     X = np.array(
         [
@@ -100,6 +106,7 @@ def data2_2():
     return (X, y, hierarchy, columns)
 
 
+@pytest.fixture()
 def data3():
     X = np.array(
         [
@@ -118,6 +125,7 @@ def data3():
     return (X, y, hierarchy, columns)
 
 
+@pytest.fixture()
 def data4():
     X = np.array(
         [
@@ -136,6 +144,7 @@ def data4():
     return (X, y, hierarchy, columns)
 
 
+@pytest.fixture()
 def data_numerical():
     X = np.array(
         [
@@ -153,27 +162,32 @@ def data_numerical():
     return (X, y, hierarchy, columns)
 
 
+@pytest.fixture()
 def hierarchy1():
     edges = [(0, 1), (1, 2), (0, 3), (0, 4)]
     return nx.DiGraph(edges)
 
 
+@pytest.fixture()
 def hierarchy1_2():
     edges = [(0, 4), (0, 3), (0, 1), (1, 2)]
     return nx.DiGraph(edges)
 
 
+@pytest.fixture()
 def hierarchy2():
     edges = [(0, 1), (1, 2), (2, 3), (0, 4)]
     return nx.DiGraph(edges)
 
 
+@pytest.fixture()
 def hierarchy3():
     hierarchy = nx.DiGraph()
     hierarchy.add_nodes_from([0, 1, 2, 3, 4])
     return hierarchy
 
 
+@pytest.fixture()
 def dataframe():
     return pd.DataFrame(
         {
@@ -186,12 +200,14 @@ def dataframe():
     )
 
 
+@pytest.fixture()
 def result_tsel1():
     result = np.array([[0], [0], [0], [0], [1]])
     support = np.array([True, False, False, False, False])
     return (result, support)
 
 
+@pytest.fixture()
 def result_tsel2():
     result = np.array(
         [
@@ -206,20 +222,24 @@ def result_tsel2():
     return (result, support)
 
 
+@pytest.fixture()
 def result_tsel3():
     result = data3()[0]
     support = np.array([True, True, True, True, True])
     return (result, support)
 
 
+@pytest.fixture()
 def result_shsel1():
     return result_tsel1()
 
 
+@pytest.fixture()
 def result_shsel_hfe1():
     return result_shsel1()
 
 
+@pytest.fixture()
 def result_shsel2():
     result = np.array(
         [
@@ -234,6 +254,7 @@ def result_shsel2():
     return (result, support)
 
 
+@pytest.fixture()
 def result_shsel_hfe2():
     result = np.array(
         [
@@ -248,6 +269,7 @@ def result_shsel_hfe2():
     return (result, support)
 
 
+@pytest.fixture()
 def result_shsel_hfe4():
     result = np.array(
         [
@@ -262,10 +284,12 @@ def result_shsel_hfe4():
     return (result, support)
 
 
+@pytest.fixture()
 def result_shsel3():
     return result_tsel3()
 
 
+@pytest.fixture()
 def data_shsel_selection():
     X = data2()[0]
     y = data2()[1]
@@ -275,6 +299,7 @@ def data_shsel_selection():
     return (X, y, hierarchy, columns)
 
 
+@pytest.fixture()
 def result_shsel_selection():
     result = np.array(
         [
@@ -289,6 +314,7 @@ def result_shsel_selection():
     return (result, support)
 
 
+@pytest.fixture()
 def result_gtd_selection2():
     result = np.array(
         [
@@ -303,6 +329,7 @@ def result_gtd_selection2():
     return (result, support)
 
 
+@pytest.fixture()
 def result_gtd_selection2_1():
     result = np.array(
         [
@@ -317,6 +344,7 @@ def result_gtd_selection2_1():
     return (result, support)
 
 
+@pytest.fixture()
 def result_gtd_selection2_2():
     result = np.array(
         [
@@ -331,6 +359,7 @@ def result_gtd_selection2_2():
     return (result, support)
 
 
+@pytest.fixture()
 def result_hill_selection_td():
     result = pd.DataFrame(
         [
@@ -345,6 +374,7 @@ def result_hill_selection_td():
     return (result, support)
 
 
+@pytest.fixture()
 def result_hill_selection_bu():
     k = 3
     result = np.array(
@@ -360,6 +390,7 @@ def result_hill_selection_bu():
     return (result, support, k)
 
 
+@pytest.fixture()
 def wrong_hierarchy_X():
     X = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
     hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))
@@ -367,6 +398,7 @@ def wrong_hierarchy_X():
     return (X, hierarchy, columns)
 
 
+@pytest.fixture()
 def wrong_hierarchy_X1():
     X = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
     hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1), (1, 2), (3, 4), (0, 5)]))
@@ -374,6 +406,7 @@ def wrong_hierarchy_X1():
     return (X, hierarchy, columns)
 
 
+@pytest.fixture()
 def result_score_matrix1():
     return np.array(
         [
@@ -386,6 +419,7 @@ def result_score_matrix1():
     )
 
 
+@pytest.fixture()
 def result_score_matrix_numerical():
     return np.array(
         [
@@ -428,6 +462,7 @@ def result_score_matrix_numerical():
     )
 
 
+@pytest.fixture()
 def result_comparison_matrix_td1():
     return np.array(
         [
@@ -440,6 +475,7 @@ def result_comparison_matrix_td1():
     )
 
 
+@pytest.fixture()
 def result_comparison_matrix_bu(matrix: np.ndarray):
     result = np.zeros((5, 5))
     for x in range(5):
@@ -448,11 +484,13 @@ def result_comparison_matrix_bu(matrix: np.ndarray):
     return result
 
 
+@pytest.fixture()
 def result_comparison_matrix_bu1():
     matrix = result_score_matrix1()
     return result_comparison_matrix_bu(matrix)
 
 
+@pytest.fixture()
 def result_fitness_funtion_td1():
     alpha = 0.99
     doc1 = math.sqrt(22) / (1 + alpha * (math.sqrt(2) + math.sqrt(7) + math.sqrt(15)))
@@ -464,6 +502,7 @@ def result_fitness_funtion_td1():
     return doc1 + doc2 + doc3 + doc4 + doc5
 
 
+@pytest.fixture()
 def result_fitness_funtion_bu1():
     alpha = 3
     n = 5
@@ -475,6 +514,7 @@ def result_fitness_funtion_bu1():
     return (result, k)
 
 
+@pytest.fixture()
 def result_score_matrix2():
     return np.array(
         [
@@ -487,11 +527,13 @@ def result_score_matrix2():
     )
 
 
+@pytest.fixture()
 def result_comparison_matrix_bu2():
     matrix = result_score_matrix2()
     return result_comparison_matrix_bu(matrix)
 
 
+@pytest.fixture()
 def result_score_matrix3():
     return np.array(
         [
@@ -504,11 +546,13 @@ def result_score_matrix3():
     )
 
 
+@pytest.fixture()
 def result_comparison_matrix_bu3():
     matrix = result_score_matrix3()
     return result_comparison_matrix_bu(matrix)
 
 
+@pytest.fixture()
 def result_gr_values2():
     y = np.array([1, 0, 0, 1, 1])
     return [
@@ -520,6 +564,7 @@ def result_gr_values2():
     ]
 
 
+@pytest.fixture()
 def result_ig_values2():
     y = np.array([1, 0, 0, 1, 1])
     return [
@@ -531,6 +576,7 @@ def result_ig_values2():
     ]
 
 
+@pytest.fixture()
 def result_aggregated1():
     return np.array(
         [
@@ -543,6 +589,7 @@ def result_aggregated1():
     )
 
 
+@pytest.fixture()
 def result_aggregated2():
     return np.array(
         [
@@ -555,9 +602,11 @@ def result_aggregated2():
     )
 
 
+# TODO should this be capitalised if its a constant?
 _feature_number = 9
 
 
+# TODO is this a fixture or a method? if method move to helpers?
 def getFixedDag():
     return nx.to_numpy_array(
         nx.DiGraph(
@@ -566,11 +615,12 @@ def getFixedDag():
     )
 
 
+# TODO what is this rand about? where is it used?
 def rand():
     return random.getrandbits(1)
 
 
-def randomLinesWithAssertions(y):
+def random_lines_with_assertions(y):
     b = rand()
     c = rand()
     d = rand()
@@ -582,14 +632,16 @@ def randomLinesWithAssertions(y):
     return (1, b, c, d, e, f, g, h, i)
 
 
-def getFixedData(instance_number):
+# TODO not used anywhere?
+def get_fixed_data(instance_number):
     df = pd.DataFrame(columns=[i for i in range(0, _feature_number)])
     y = np.random.randint(0, 2, instance_number)
     for row in range(0, instance_number):
-        df.loc[len(df)] = randomLinesWithAssertions(y)
+        df.loc[len(df)] = random_lines_with_assertions(y)
     return df.to_numpy(), y
 
 
+@pytest.fixture()
 def lazy_data1():
     edges = [
         (9, 3),
@@ -627,6 +679,7 @@ def lazy_data1():
     )
 
 
+@pytest.fixture()
 def lazy_data2():
     small_DAG = nx.to_numpy_array(nx.DiGraph([(0, 1), (0, 2), (1, 2), (1, 3)]))
     train_x_data = np.array([[1, 1, 0, 1], [1, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]])
@@ -636,6 +689,7 @@ def lazy_data2():
     return (small_DAG, train_x_data, train_y_data, test_x_data, test_y_data)
 
 
+@pytest.fixture()
 def lazy_data3():
     edges = [(4, 0), (0, 3), (2, 3), (5, 2), (5, 1)]
     hierarchy = nx.DiGraph(edges)
@@ -670,6 +724,7 @@ def lazy_data3():
     )
 
 
+@pytest.fixture()
 def lazy_data4():
     big_DAG = getFixedDag()
     small_DAG = nx.to_numpy_array(nx.DiGraph([(0, 1), (0, 2), (1, 2), (1, 3)]))

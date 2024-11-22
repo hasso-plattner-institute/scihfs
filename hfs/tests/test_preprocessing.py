@@ -6,34 +6,34 @@ from hfs.data_utils import create_mapping_columns_to_nodes, load_data
 from hfs.helpers import get_columns_for_numpy_hierarchy
 from hfs.preprocessing import HierarchicalPreprocessor
 
+# def data1():
+#     X = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
 
-def data1():
-    X = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
+#     edges = [(1, 3), (3, 2), (0, 4), (0, 1)]
+#     hierarchy_original = nx.DiGraph(edges)
+#     columns = get_columns_for_numpy_hierarchy(hierarchy_original, X.shape[1])
+#     hierarchy_original = nx.to_numpy_array(hierarchy_original)
+#     hierarchy_transformed = nx.to_numpy_array(nx.DiGraph([(1, 3), (3, 2), (0, 1)]))
+#     X_transformed = np.array([[1, 1, 1, 1], [1, 1, 0, 0], [1, 0, 0, 0]])
 
-    edges = [(1, 3), (3, 2), (0, 4), (0, 1)]
-    hierarchy_original = nx.DiGraph(edges)
-    columns = get_columns_for_numpy_hierarchy(hierarchy_original, X.shape[1])
-    hierarchy_original = nx.to_numpy_array(hierarchy_original)
-    hierarchy_transformed = nx.to_numpy_array(nx.DiGraph([(1, 3), (3, 2), (0, 1)]))
-    X_transformed = np.array([[1, 1, 1, 1], [1, 1, 0, 0], [1, 0, 0, 0]])
-
-    return (X, X_transformed, hierarchy_original, columns, hierarchy_transformed)
-
-
-def data2():
-    X = np.array([[0, 0, 1], [0, 1, 0], [0, 1, 0]])
-
-    edges = [(1, 2), (1, 3), (3, 4), (0, 1)]
-    hierarchy_original = nx.DiGraph(edges)
-    columns = get_columns_for_numpy_hierarchy(hierarchy_original, X.shape[1])
-    hierarchy_original = nx.to_numpy_array(hierarchy_original)
-    edges_tranformed = [(1, 2), (0, 1)]
-    hierarchy_transformed = nx.to_numpy_array(nx.DiGraph(edges_tranformed))
-    X_transformed = np.array([[1, 1, 1], [1, 1, 0], [1, 1, 0]])
-
-    return (X, X_transformed, hierarchy_original, columns, hierarchy_transformed)
+#     return (X, X_transformed, hierarchy_original, columns, hierarchy_transformed)
 
 
+# def data2():
+#     X = np.array([[0, 0, 1], [0, 1, 0], [0, 1, 0]])
+
+#     edges = [(1, 2), (1, 3), (3, 4), (0, 1)]
+#     hierarchy_original = nx.DiGraph(edges)
+#     columns = get_columns_for_numpy_hierarchy(hierarchy_original, X.shape[1])
+#     hierarchy_original = nx.to_numpy_array(hierarchy_original)
+#     edges_tranformed = [(1, 2), (0, 1)]
+#     hierarchy_transformed = nx.to_numpy_array(nx.DiGraph(edges_tranformed))
+#     X_transformed = np.array([[1, 1, 1], [1, 1, 0], [1, 1, 0]])
+
+#     return (X, X_transformed, hierarchy_original, columns, hierarchy_transformed)
+
+
+# currently only used for test_shrink_dag
 @pytest.fixture
 def data3():
     edges = [
@@ -67,9 +67,10 @@ def data3():
 
 @pytest.mark.parametrize(
     "data",
-    [data1(), data2()],
+    ["data1", "data2"],
 )
-def test_HP(data):
+def test_hierarchical_preprocessor(data, request):
+    request.getfixturevalue(data)
     X, X_transformed, hierarchy, columns, hierarchy_expected = data
 
     preprocessor = HierarchicalPreprocessor(hierarchy)
@@ -82,10 +83,12 @@ def test_HP(data):
     assert np.array_equal(hierarchy_transformed, hierarchy_expected)
 
 
-def test_shrink_dag(data3):
+# TODO rename to test_fit and update to check all submethods included in fit?
+def test_fit(data3):
     X, hierarchy, hierarchy_transformed, X_identifiers = data3
     preprocessor = HierarchicalPreprocessor(hierarchy)
     preprocessor.fit(X, columns=X_identifiers)
+    assert preprocessor.is_fitted_
     hierarchy = preprocessor.get_hierarchy()
     assert np.equal(hierarchy.all(), hierarchy_transformed.all())
 

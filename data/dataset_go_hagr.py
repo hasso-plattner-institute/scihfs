@@ -24,18 +24,18 @@ dataset_path = data_path + "datasets/"
 
 
 download_url = {
-    'Caenorhabditis elegans': 'https://current.geneontology.org/annotations/wb.gaf.gz',
-    'Mus musculus': 'https://current.geneontology.org/annotations/mgi.gaf.gz',
-    'Saccharomyces cerevisiae': 'https://current.geneontology.org/annotations/sgd.gaf.gz',
-    'Drosophila melanogaster': 'https://current.geneontology.org/annotations/fb.gaf.gz',
+    "Caenorhabditis elegans": "https://current.geneontology.org/annotations/wb.gaf.gz",
+    "Mus musculus": "https://current.geneontology.org/annotations/mgi.gaf.gz",
+    "Saccharomyces cerevisiae": "https://current.geneontology.org/annotations/sgd.gaf.gz",
+    "Drosophila melanogaster": "https://current.geneontology.org/annotations/fb.gaf.gz",
 }
 
 # TODO Should be replaced by the actual count of rows with an exclamation mark '!' in the respective files
 start_row = {
-    'Caenorhabditis elegans': 35,
-    'Mus musculus': 36,
-    'Saccharomyces cerevisiae': 35,
-    'Drosophila melanogaster': 33,
+    "Caenorhabditis elegans": 35,
+    "Mus musculus": 36,
+    "Saccharomyces cerevisiae": 35,
+    "Drosophila melanogaster": 33,
 }
 
 
@@ -50,7 +50,7 @@ def gaf_full_path(gaf_path, species):
 
 def mask(df: pd.DataFrame, col: int, term: str, strict: bool):
     if strict:
-        t = '^'
+        t = "^"
     else:
         t = ""
     return df[col].str.contains((t + term + "$"), regex=True, na=False)
@@ -137,7 +137,7 @@ for species in hagr_species:
                     (hagr["organism"] == species)
                     & (
                         hagr["longevity influence"].str.contains(
-                            'Pro-Longevity|Anti-Longevity'
+                            "Pro-Longevity|Anti-Longevity"
                         )
                     )
                 ),
@@ -239,10 +239,10 @@ for species in hagr_species:
         for annotatable_gene in gene_annotations.keys():
             if (
                 hagr.loc[
-                    (hagr["symbol"] == annotatable_gene) & (hagr['organism'] == species),
-                    ['longevity influence'],
+                    (hagr["symbol"] == annotatable_gene) & (hagr["organism"] == species),
+                    ["longevity influence"],
                 ].to_numpy()[0]
-                == 'Pro-Longevity'
+                == "Pro-Longevity"
             ):
                 target_variables.append(1)
             else:

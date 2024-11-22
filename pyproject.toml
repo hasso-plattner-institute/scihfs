@@ -39,7 +39,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 90
-skip-string-normalization = true
 exclude = '''
 /(
     \.git

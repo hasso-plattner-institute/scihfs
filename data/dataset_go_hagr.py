@@ -224,6 +224,6 @@ for species in hagr_species:
                 target_variables.append(0)
 
         # Save dataset as numpy arrays
-        dataset_full_path = dataset_path + 'dataset_' + species + '.npz'
+        dataset_full_path = dataset_path + 'dataset_' + species.split('_')[0] + '_' + species.split('_')[1] + '.npz'
         np.savez(file=dataset_full_path, dataset=dataset, dataset_rows=dataset_rows, dataset_columns=dataset_columns, target_variables=target_variables)
         

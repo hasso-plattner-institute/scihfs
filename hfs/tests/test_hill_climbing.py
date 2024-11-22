@@ -5,23 +5,19 @@ from hfs.selectors.hill_climbing import BottomUpSelector, TopDownSelector
 
 
 @pytest.mark.parametrize(
-    "data, result",
-    [
-        ("data1", "result_hill_selection_td"),
-        ("data1_2", "result_hill_selection_td"),
-    ],
+    "data",
+    ["data1", "data1_2"],
 )
-def test_top_down_selection(data, result, request):
+def test_top_down_selection(data, result_hill_selection_td, request):
     data = request.getfixturevalue(data)
-    result = request.getfixturevalue(result)
     X, y, hierarchy, columns = data
-    expected, support = result
+    expected, support = result_hill_selection_td
     selector = TopDownSelector(hierarchy, dataset_type="binary")
     selector.fit(X, y, columns)
     X = selector.transform(X)
     assert np.array_equal(X, expected)
 
-    support_mask = selector.get_support
+    support_mask = selector.get_support()
     assert np.array_equal(support_mask, support)
 
 

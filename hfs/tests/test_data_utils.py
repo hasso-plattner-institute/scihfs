@@ -31,17 +31,16 @@ def test_load_data():
 
 
 @pytest.mark.parametrize(
-    "hierarchy, dataframe",
+    "hierarchy",
     [
-        ("hierarchy1", "dataframe"),
-        ("hierarchy1_2", "dataframe"),
-        ("hierarchy2", "dataframe"),
-        ("hierarchy3", "dataframe"),
+        "hierarchy1",
+        "hierarchy1_2",
+        "hierarchy2",
+        "hierarchy3",
     ],
 )
 def test_create_mapping_columns_to_nodes(hierarchy, dataframe, request):
     hierarchy = request.getfixturevalue(hierarchy)
-    dataframe = request.getfixturevalue(dataframe)
     mapping = create_mapping_columns_to_nodes(dataframe, hierarchy)
     nodes = list(hierarchy.nodes)
     for index, node in enumerate(dataframe.columns):

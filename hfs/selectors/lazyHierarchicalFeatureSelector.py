@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics import classification_report
 from sklearn.naive_bayes import BernoulliNB
 
-from hfs.helpers import checkData, getRelevance
+from hfs.helpers import check_data, get_relevance
 from hfs.metrics import conditional_mutual_information
 from hfs.selectors import HierarchicalEstimator
 
@@ -96,12 +96,12 @@ class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
         self._feature_length = np.zeros(self._xtest.shape[1], dtype=int)
 
         # Validate data
-        checkData(self._hierarchy, self._xtrain, self._ytrain)
+        check_data(self._hierarchy, self._xtrain, self._ytrain)
 
         # Get relevance of each node
         self._relevance = {}
         for node in self._hierarchy:
-            self._relevance[node] = getRelevance(self._xtrain, self._ytrain, node)
+            self._relevance[node] = get_relevance(self._xtrain, self._ytrain, node)
         self._sorted_relevance = sorted(self._relevance, key=self._relevance.get)
 
         self._instance_status = {}

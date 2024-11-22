@@ -1,6 +1,7 @@
 """
 Different metric functions.
 """
+
 from collections import Counter
 
 import numpy as np

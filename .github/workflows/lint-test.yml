@@ -1,3 +1,5 @@
+# based on https://jacobian.org/til/github-actions-poetry/
+
 # Run this job on pushes to `main`, and for pull requests. If you don't specify
 # `branches: [main], then this actions runs _twice_ on pull requests, which is
 # annoying.
@@ -14,6 +16,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: psf/black@stable
         with:
+          # cannot use use_pyproject to use settings from pyproject.toml below python 3.11
           options: "--line-length 90 hfs"
   test:
     runs-on: ubuntu-latest

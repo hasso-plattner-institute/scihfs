@@ -15,9 +15,7 @@ from .fixtures.fixtures import *
 def test_hie_aode(data):
     small_DAG, train_x_data, train_y_data, test_x_data, test_y_data = data
     selector = HieAODE(hierarchy=small_DAG)
-    selector.fit_selector(
-        X_train=train_x_data, y_train=train_y_data, X_test=test_x_data
-    )
+    selector.fit_selector(X_train=train_x_data, y_train=train_y_data, X_test=test_x_data)
     pred = selector.select_and_predict(predict=True, saveFeatures=True)
 
 
@@ -30,9 +28,7 @@ def test_hie_aode(data):
 def test_calculate_dependency_ascendant_class(data):
     small_DAG, train_x_data, train_y_data, test_x_data, test_y_data = data
     selector = HieAODE(hierarchy=small_DAG)
-    selector.fit_selector(
-        X_train=train_x_data, y_train=train_y_data, X_test=test_x_data
-    )
+    selector.fit_selector(X_train=train_x_data, y_train=train_y_data, X_test=test_x_data)
     sample_idx = 1
     sample = test_x_data[1]
     feature_idx = 2

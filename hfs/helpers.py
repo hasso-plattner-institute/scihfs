@@ -197,9 +197,7 @@ def connect_dag(x_identifiers, hierarchy: nx.DiGraph):
 
     # remove all nodes (and edges) that are not in x_identifier
     x_identifiers_set = set(x_identifiers)
-    nodes_to_remove = [
-        node for node in hierarchy.nodes if node not in x_identifiers_set
-    ]
+    nodes_to_remove = [node for node in hierarchy.nodes if node not in x_identifiers_set]
     hierarchy.remove_nodes_from(nodes_to_remove)
 
     return hierarchy
@@ -300,9 +298,7 @@ def normalize_score(score, max_value):
     return score
 
 
-def compute_aggregated_values(
-    X, hierarchy: nx.DiGraph, columns: list[int], node="ROOT"
-):
+def compute_aggregated_values(X, hierarchy: nx.DiGraph, columns: list[int], node="ROOT"):
     """Recursively aggregate features in X by summing up their children's values.
 
     The method traverses the given Directed Acyclic Graph (DAG) hierarchy

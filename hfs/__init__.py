@@ -25,9 +25,7 @@ from hfs.selectors.hill_climbing import (
     HillClimbingSelector,
     TopDownSelector,
 )
-from hfs.selectors.lazyHierarchicalFeatureSelector import (
-    LazyHierarchicalFeatureSelector,
-)
+from hfs.selectors.lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
 __all__ = [
     "TSELSelector",

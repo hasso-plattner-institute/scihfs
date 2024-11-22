@@ -1,5 +1,6 @@
-from experiments.experiments_eager import classification_experiments
 import argparse
+
+from experiments.experiments_eager import classification_experiments
 
 
 def main():

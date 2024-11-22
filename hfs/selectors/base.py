@@ -1,6 +1,7 @@
 """
 Base class for Sklearn compatible estimators using hierarchical data.
 """
+
 import networkx as nx
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin

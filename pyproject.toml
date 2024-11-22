@@ -28,7 +28,7 @@ dit = "^1.5"
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.27.1"
 pytest = "^7.4.4"
-black = "^23.12.1"
+black = "^24"
 mypy = "^1.13.0"
 isort = "^5.13.2"
 

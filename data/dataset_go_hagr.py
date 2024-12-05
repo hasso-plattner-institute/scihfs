@@ -251,11 +251,11 @@ for species in hagr_species:
         # Save dataset as numpy arrays
         dataset_full_path = (
             dataset_path
-            + 'dataset_'
-            + species.split('_')[0]
-            + '_'
-            + species.split('_')[1]
-            + '.npz'
+            + "dataset_"
+            + species.split("_")[0]
+            + "_"
+            + species.split("_")[1]
+            + ".npz"
         )
         np.savez(
             file=dataset_full_path,

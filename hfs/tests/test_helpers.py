@@ -9,7 +9,7 @@ from ..helpers import (
     compute_aggregated_values,
     connect_dag,
     create_hierarchy,
-    getRelevance,
+    get_relevance,
     shrink_dag,
 )
 from ..metrics import gain_ratio, information_gain
@@ -78,7 +78,7 @@ def test_relevance(lazy_data2):
     small_DAG, train_x_data, train_y_data, test_x_data, test_y_data = lazy_data2
     results = [Fraction(1, 2), Fraction(8, 9), 2, 0]
     for node_idx in range(len(small_DAG)):
-        value = getRelevance(train_x_data, train_y_data, node_idx)
+        value = get_relevance(train_x_data, train_y_data, node_idx)
         assert value == results[node_idx]
 
 

@@ -1,7 +1,6 @@
 import networkx as nx
 import numpy as np
 import pytest
-from sklearn.utils.estimator_checks import check_estimator
 
 from hfs.selectors.hip import HIP
 from hfs.selectors.hnb import HNB

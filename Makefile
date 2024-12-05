@@ -4,7 +4,10 @@ black:
 isort:
 	poetry run isort .
 
-autolint: isort black
+flake8:
+	poetry run flake8 --max-line-length=90 --exclude=hfs/lib/,*/__init__.py --extend-ignore=E741,W503,W605,E501 hfs/
+
+autolint: isort black flake8
 
 mypy:
 	poetry run mypy hfs/
@@ -12,4 +15,4 @@ mypy:
 pytest:
 	poetry run pytest hfs/
 
-precommit: autolint pytest
+run-all: autolint pytest

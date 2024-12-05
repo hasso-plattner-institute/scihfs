@@ -9,33 +9,33 @@ import numpy as np
 import pandas as pd
 
 # Variables
-data_path = './go_hagr/'
-hagr_url = 'https://www.genomics.senescence.info/genes/models_genes.zip'
-hagr_path = data_path + 'hagr/'
-hagr_filename = 'hagr.zip'
+data_path = "./go_hagr/"
+hagr_url = "https://www.genomics.senescence.info/genes/models_genes.zip"
+hagr_path = data_path + "hagr/"
+hagr_filename = "hagr.zip"
 hagr_full_path = hagr_path + hagr_filename
-go_url = 'https://purl.obolibrary.org/obo/go.obo'
+go_url = "https://purl.obolibrary.org/obo/go.obo"
 # go_url = 'https://zenodo.org/records/10536401/files/go-release-archive.tgz' # TODO consider this in the future
-go_path = data_path + 'go/'
-go_filename = 'go.obo'
+go_path = data_path + "go/"
+go_filename = "go.obo"
 go_full_path = go_path + go_filename
-gaf_path = data_path + 'gaf/'
-dataset_path = data_path + 'datasets/'
+gaf_path = data_path + "gaf/"
+dataset_path = data_path + "datasets/"
 
 
 download_url = {
-    'Caenorhabditis elegans': 'https://current.geneontology.org/annotations/wb.gaf.gz',
-    'Mus musculus': 'https://current.geneontology.org/annotations/mgi.gaf.gz',
-    'Saccharomyces cerevisiae': 'https://current.geneontology.org/annotations/sgd.gaf.gz',
-    'Drosophila melanogaster': 'https://current.geneontology.org/annotations/fb.gaf.gz',
+    "Caenorhabditis elegans": "https://current.geneontology.org/annotations/wb.gaf.gz",
+    "Mus musculus": "https://current.geneontology.org/annotations/mgi.gaf.gz",
+    "Saccharomyces cerevisiae": "https://current.geneontology.org/annotations/sgd.gaf.gz",
+    "Drosophila melanogaster": "https://current.geneontology.org/annotations/fb.gaf.gz",
 }
 
 # TODO Should be replaced by the actual count of rows with an exclamation mark '!' in the respective files
 start_row = {
-    'Caenorhabditis elegans': 35,
-    'Mus musculus': 36,
-    'Saccharomyces cerevisiae': 35,
-    'Drosophila melanogaster': 33,
+    "Caenorhabditis elegans": 35,
+    "Mus musculus": 36,
+    "Saccharomyces cerevisiae": 35,
+    "Drosophila melanogaster": 33,
 }
 
 
@@ -50,10 +50,10 @@ def gaf_full_path(gaf_path, species):
 
 def mask(df: pd.DataFrame, col: int, term: str, strict: bool):
     if strict:
-        t = '^'
+        t = "^"
     else:
-        t = ''
-    return df[col].str.contains((t + term + '$'), regex=True, na=False)
+        t = ""
+    return df[col].str.contains((t + term + "$"), regex=True, na=False)
 
 
 # --------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ for path in [data_path, hagr_path, go_path, gaf_path, dataset_path]:
 
 # Unzip and read the relevant file from HAGR
 zf = ZipFile(hagr_full_path)
-hagr = pd.read_csv(zf.open('genage_models.csv'))
+hagr = pd.read_csv(zf.open("genage_models.csv"))
 
 # Extract all species from HAGR
 hagr_species = list(hagr.organism.unique())
@@ -99,7 +99,7 @@ for go_term in go:
                 go_dag.add_edge(str(go_term.id), str(clause.term))
 
 # Save GO DAG as GML file
-nx.write_gml(G=go_dag, path=(dataset_path + 'go_dag.gml'))
+nx.write_gml(G=go_dag, path=(dataset_path + "go_dag.gml"))
 
 # Per species: Download and process Gene Annotation Files (GAF) to assign GO terms to genes
 for species in hagr_species:
@@ -137,7 +137,7 @@ for species in hagr_species:
                     (hagr["organism"] == species)
                     & (
                         hagr["longevity influence"].str.contains(
-                            'Pro-Longevity|Anti-Longevity'
+                            "Pro-Longevity|Anti-Longevity"
                         )
                     )
                 ),
@@ -156,7 +156,7 @@ for species in hagr_species:
 
         gene_annotations = {}
 
-        not_mask = ~gaf[3].str.contains(('^NOT'), regex=True, na=False)
+        not_mask = ~gaf[3].str.contains(("^NOT"), regex=True, na=False)
 
         for gene in hagr_genes:
             gene_mask = mask(df=gaf, col=2, term=gene, strict=True)
@@ -170,7 +170,7 @@ for species in hagr_species:
                     count10 += 1
                 else:
                     try:
-                        gene_part = gene.split('_')[1]
+                        gene_part = gene.split("_")[1]
                         # print("After split", gene)
                         gene_mask = mask(df=gaf, col=2, term=gene_part, strict=True)
                         if (gene_mask & not_mask).any():
@@ -239,10 +239,10 @@ for species in hagr_species:
         for annotatable_gene in gene_annotations.keys():
             if (
                 hagr.loc[
-                    (hagr["symbol"] == annotatable_gene) & (hagr['organism'] == species),
-                    ['longevity influence'],
+                    (hagr["symbol"] == annotatable_gene) & (hagr["organism"] == species),
+                    ["longevity influence"],
                 ].to_numpy()[0]
-                == 'Pro-Longevity'
+                == "Pro-Longevity"
             ):
                 target_variables.append(1)
             else:
@@ -251,11 +251,11 @@ for species in hagr_species:
         # Save dataset as numpy arrays
         dataset_full_path = (
             dataset_path
-            + 'dataset_'
-            + species.split('_')[0]
-            + '_'
-            + species.split('_')[1]
-            + '.npz'
+            + "dataset_"
+            + species.split("_")[0]
+            + "_"
+            + species.split("_")[1]
+            + ".npz"
         )
         np.savez(
             file=dataset_full_path,

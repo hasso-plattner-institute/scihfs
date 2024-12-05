@@ -23,8 +23,6 @@ pandas = "1.5.3"
 wandb = "^0.16.1"
 numpydoc = "^1.6.0"
 sphinxcontrib-bibtex = "^2.6.1"
-pytest = "^7.4.4"
-dit = "^1.5"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -33,6 +31,7 @@ pytest = "^7.4.4"
 black = "^24"
 mypy = "^1.13.0"
 isort = "^5.13.2"
+pre-commit = "^4.0.1"
 
 [build-system]
 requires = ["poetry-core"]

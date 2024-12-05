@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1 # Use the latest version
+    rev: v5.0.0 # Use the latest version
     hooks:
       - id: trailing-whitespace
       - id: check-merge-conflict
@@ -12,7 +12,7 @@ repos:
     rev: 22.3.0 # Use the latest version of Black
     hooks:
       - id: black
-        language_version: python3.9 # Specify your Python version
+        # language_version: python3.9 # Specify your Python version
 
   # Example: Adding isort for import sorting
   - repo: https://github.com/pre-commit/mirrors-isort

@@ -8,7 +8,6 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-
 # Variables
 data_path = './go_hagr/'
 hagr_url = 'https://www.genomics.senescence.info/genes/models_genes.zip'
@@ -25,14 +24,10 @@ dataset_path = data_path + 'datasets/'
 
 
 download_url = {
-    'Caenorhabditis elegans':
-        'https://current.geneontology.org/annotations/wb.gaf.gz',
-    'Mus musculus':
-        'https://current.geneontology.org/annotations/mgi.gaf.gz',
-    'Saccharomyces cerevisiae':
-         'https://current.geneontology.org/annotations/sgd.gaf.gz',
-    'Drosophila melanogaster':
-        'https://current.geneontology.org/annotations/fb.gaf.gz'
+    'Caenorhabditis elegans': 'https://current.geneontology.org/annotations/wb.gaf.gz',
+    'Mus musculus': 'https://current.geneontology.org/annotations/mgi.gaf.gz',
+    'Saccharomyces cerevisiae': 'https://current.geneontology.org/annotations/sgd.gaf.gz',
+    'Drosophila melanogaster': 'https://current.geneontology.org/annotations/fb.gaf.gz',
 }
 
 # TODO Should be replaced by the actual count of rows with an exclamation mark '!' in the respective files
@@ -40,7 +35,7 @@ start_row = {
     'Caenorhabditis elegans': 35,
     'Mus musculus': 36,
     'Saccharomyces cerevisiae': 35,
-    'Drosophila melanogaster': 33
+    'Drosophila melanogaster': 33,
 }
 
 
@@ -48,17 +43,14 @@ start_row = {
 def gaf_filename(species):
     return str.lower(species).replace(" ", "_") + ".gaf.gz"
 
+
 def gaf_full_path(gaf_path, species):
     return gaf_path + gaf_filename(species)
 
-def mask(
-        df : pd.DataFrame,
-        col : int,
-        term : str,
-        strict : bool
-):
+
+def mask(df: pd.DataFrame, col: int, term: str, strict: bool):
     if strict:
-        t = '^'    
+        t = '^'
     else:
         t = ''
     return df[col].str.contains((t + term + '$'), regex=True, na=False)
@@ -128,10 +120,30 @@ for species in hagr_species:
         # Read the GAF files
         # TODO Calculate the number of skiprows from files, example follows (but requires prior unpacking)
         # num_lines = os.popen("grep -ic \"\!\" \"./wb.gaf\"").read().split("\n")[0]
-        gaf = pd.read_csv(gaf_species_full_path, compression="gzip", skiprows=start_row[species], header=None, sep="\t", quotechar='"', low_memory=False)
+        gaf = pd.read_csv(
+            gaf_species_full_path,
+            compression="gzip",
+            skiprows=start_row[species],
+            header=None,
+            sep="\t",
+            quotechar='"',
+            low_memory=False,
+        )
 
         # Extract unique gene symbols per species
-        hagr_genes = list(hagr.loc[((hagr["organism"]==species) & (hagr["longevity influence"].str.contains('Pro-Longevity|Anti-Longevity'))), "symbol"].unique())
+        hagr_genes = list(
+            hagr.loc[
+                (
+                    (hagr["organism"] == species)
+                    & (
+                        hagr["longevity influence"].str.contains(
+                            'Pro-Longevity|Anti-Longevity'
+                        )
+                    )
+                ),
+                "symbol",
+            ].unique()
+        )
 
         # Retrieve GO terms as dict from annotation file
         count3 = 0
@@ -150,12 +162,12 @@ for species in hagr_species:
             gene_mask = mask(df=gaf, col=2, term=gene, strict=True)
             if (gene_mask & not_mask).any():
                 go_list = list(gaf.loc[(gene_mask & not_mask), 4])
-                count3+=1
+                count3 += 1
             else:
                 synonym_mask = mask(df=gaf, col=10, term=gene, strict=False)
                 if (synonym_mask & not_mask).any():
                     go_list = list(gaf.loc[(synonym_mask & not_mask), 4])
-                    count10+=1
+                    count10 += 1
                 else:
                     try:
                         gene_part = gene.split('_')[1]
@@ -163,20 +175,23 @@ for species in hagr_species:
                         gene_mask = mask(df=gaf, col=2, term=gene_part, strict=True)
                         if (gene_mask & not_mask).any():
                             go_list = list(gaf.loc[(gene_mask & not_mask), 4])
-                            count3_+=1
+                            count3_ += 1
                         else:
-                            synonym_mask = mask(df=gaf, col=10, term=gene_part, strict=False)
+                            synonym_mask = mask(
+                                df=gaf, col=10, term=gene_part, strict=False
+                            )
                             if (synonym_mask & not_mask).any():
                                 go_list = list(gaf.loc[(synonym_mask & not_mask), 4])
-                                count10_+=1
+                                count10_ += 1
                             else:
-                                count0_+=1
+                                count0_ += 1
                                 go_list = []
                     except IndexError:
                         # print("Index error", gene)
                         go_list = []
-                        count0+=1
-            if go_list: gene_annotations[gene] = go_list
+                        count0 += 1
+            if go_list:
+                gene_annotations[gene] = go_list
 
         print("c3", count3)
         print("c10", count10)
@@ -187,7 +202,7 @@ for species in hagr_species:
         print("c0_", count0_)
 
         # Convert dict into dataset (numpy array: rows = genes, columns = dataset_go_terms)
-        num_rows = len(gene_annotations.keys()) # TODO Check if correct
+        num_rows = len(gene_annotations.keys())  # TODO Check if correct
         dataset_columns = []
         go_annotations = {}
 
@@ -203,27 +218,49 @@ for species in hagr_species:
                     column_values = np.logical_or(go_annotations[item], column_values)
                 go_annotations[item] = column_values
 
-        dataset = np.concatenate([x for x in go_annotations.values()], axis = 1)
+        dataset = np.concatenate([x for x in go_annotations.values()], axis=1)
 
         # Extract empty rows and delete them from the dataset
         empty_rows = []
         for row in range(dataset.shape[0]):
-            if dataset[row,:].any() == False:
+            if dataset[row, :].any() == False:
                 empty_rows.append(row)
         dataset = np.delete(dataset, empty_rows, axis=0)
 
         # Row description list
-        dataset_rows = [gene for gene_index, gene in enumerate(gene_annotations.keys()) if gene_index not in empty_rows]
+        dataset_rows = [
+            gene
+            for gene_index, gene in enumerate(gene_annotations.keys())
+            if gene_index not in empty_rows
+        ]
 
         # Generate list of target variables
         target_variables = []
         for annotatable_gene in gene_annotations.keys():
-            if hagr.loc[(hagr["symbol"]==annotatable_gene) & (hagr['organism']==species), ['longevity influence']].to_numpy()[0] == 'Pro-Longevity':
+            if (
+                hagr.loc[
+                    (hagr["symbol"] == annotatable_gene) & (hagr['organism'] == species),
+                    ['longevity influence'],
+                ].to_numpy()[0]
+                == 'Pro-Longevity'
+            ):
                 target_variables.append(1)
             else:
                 target_variables.append(0)
 
         # Save dataset as numpy arrays
-        dataset_full_path = dataset_path + 'dataset_' + species.split('_')[0] + '_' + species.split('_')[1] + '.npz'
-        np.savez(file=dataset_full_path, dataset=dataset, dataset_rows=dataset_rows, dataset_columns=dataset_columns, target_variables=target_variables)
-        
+        dataset_full_path = (
+            dataset_path
+            + 'dataset_'
+            + species.split('_')[0]
+            + '_'
+            + species.split('_')[1]
+            + '.npz'
+        )
+        np.savez(
+            file=dataset_full_path,
+            dataset=dataset,
+            dataset_rows=dataset_rows,
+            dataset_columns=dataset_columns,
+            target_variables=target_variables,
+        )

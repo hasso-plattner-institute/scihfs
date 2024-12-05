@@ -12,4 +12,4 @@ mypy:
 pytest:
 	poetry run pytest hfs
 
-precommit: autolint pytest
+run-all: autolint pytest

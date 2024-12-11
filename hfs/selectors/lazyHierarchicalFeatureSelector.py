@@ -10,7 +10,7 @@ from hfs.metrics import conditional_mutual_information
 from hfs.selectors import HierarchicalEstimator
 
 
-class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
+class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
     """
     Abstract class used for all lazy hierarchical feature selection methods.
 

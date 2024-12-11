@@ -9,7 +9,7 @@ from sklearn.utils.validation import check_array
 from hfs.helpers import create_hierarchy
 
 
-class HierarchicalEstimator(BaseEstimator, TransformerMixin):
+class HierarchicalEstimator(TransformerMixin, BaseEstimator):
     """Base class for estimators using hierarchical data.
 
     The HierarchicalEstimator implements scikit-learn's BaseEstimator and

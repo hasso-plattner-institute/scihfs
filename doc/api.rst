@@ -173,7 +173,3 @@ create_mapping_columns_to_nodes
    :template: function.rst
 
    create_mapping_columns_to_nodes
-
-
-
-

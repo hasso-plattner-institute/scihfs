@@ -63,18 +63,11 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
             the corresponding nodes in the hierarchy are expected to be in the
             same order.
 
-        Raises
-        ------
-        TypeError
-            If the passed hierarchy is None.
-
         Returns
         -------
         self : object
             Returns self.
         """
-        if self.hierarchy is None:
-            raise TypeError("Hierarchy is None but is required.")
         X = check_array(X, accept_sparse=True)
         super().fit(X, y, columns)
         if columns is None:

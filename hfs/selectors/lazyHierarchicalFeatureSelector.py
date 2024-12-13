@@ -267,7 +267,6 @@ class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
         """
         Build minium spanning tree for each possible edge in the feature tree.
         """
-        _ = self._hierarchy.edges
         self._edge_status = np.zeros((self.n_features_in_, self.n_features_in_))
         self._cmi = np.zeros((self.n_features_in_, self.n_features_in_))
         self._sorted_edges = []

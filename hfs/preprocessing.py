@@ -57,19 +57,24 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         y : None
             There is no need of a target in a transformer, yet the pipeline API
             requires this parameter.
-            X : {array-like, sparse matrix}, shape (n_samples, n_features)
-            The training input samples.
         columns: list or None, length n_features
             The mapping from the hierarchy graph's nodes to the columns in X.
             A list of ints. If this parameter is None the columns in X and
             the corresponding nodes in the hierarchy are expected to be in the
             same order.
 
+        Raises
+        ------
+        TypeError
+            If the passed hierarchy is None.
+
         Returns
         -------
         self : object
             Returns self.
         """
+        if self.hierarchy is None:
+            raise TypeError("Hierarchy is None but is required.")
         X = check_array(X, accept_sparse=True)
         super().fit(X, y, columns)
         if columns is None:

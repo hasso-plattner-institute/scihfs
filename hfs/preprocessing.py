@@ -132,19 +132,27 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
     def _extend_dag(self):
         """Adds missing nodes to the hierarchy graph.
 
-        For columns that no have a corresponding node in the hierarchy a
+        For columns that don't have a corresponding node in the hierarchy a
         node is added right under the "ROOT" node.
+        We then update the columns mapping to include the new nodes.
+        If a node in the hierarchy has a name conflict with a column in the
+        dataset we add a node with the next available id.
         """
-        max = len(self._hierarchy.nodes) - 1
-        for x in range(len(self._columns)):
-            if self._columns[x] == -1:
-                if x in self._hierarchy.nodes:
-                    self._hierarchy.add_edge("ROOT", max)
-                    self._columns[x] = max
-                    max += 1
+        # -1 to account for the "ROOT" node
+        next_available_node_id = len(self._hierarchy.nodes) - 1
+
+        for column_index, column_mapping in enumerate(self._columns):
+            if column_mapping == -1:  # no corresponding node yet
+                if column_index in self._hierarchy.nodes:
+                    # column_index has name conflict with an existing node
+                    # so we add a node with next available id
+                    self._hierarchy.add_edge("ROOT", next_available_node_id)
+                    self._columns[column_index] = next_available_node_id
+                    next_available_node_id += 1
                 else:
-                    self._hierarchy.add_edge("ROOT", x)
-                    self._columns[x] = x
+                    # directly add the column as a node under "ROOT"
+                    self._hierarchy.add_edge("ROOT", column_index)
+                    self._columns[column_index] = column_index
 
     def _shrink_dag(self):
         """Unnecessary nodes are removed from the hierarchy graph.

@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import networkx as nx
 import numpy as np
@@ -108,6 +108,7 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
         for node in self._hierarchy:
             self._instance_status[node] = 1
 
+    @abstractmethod
     def select_and_predict(
         self, predict=True, saveFeatures=False, estimator=BernoulliNB()
     ):

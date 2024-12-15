@@ -19,7 +19,7 @@ import networkx as nx
 import numpy as np
 
 from hfs.helpers import get_columns_for_numpy_hierarchy
-from hfs.selectors import SHSELSelector
+from hfs.hierarchical_selectors import SHSELSelector
 
 # Example dataset X with 3 samples and 5 features.
 X = np.array(

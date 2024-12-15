@@ -1,11 +1,12 @@
 """
 Estimators for feature selection on hierarchical data.
 """
+
 from hfs._version import __version__
 from hfs.data_utils import create_mapping_columns_to_nodes
 from hfs.helpers import get_columns_for_numpy_hierarchy
 from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.selectors import (
+from hfs.hierarchical_selectors import (
     HIP,
     HNB,
     MR,
@@ -16,16 +17,16 @@ from hfs.selectors import (
     SHSELSelector,
     TSELSelector,
 )
-from hfs.selectors.eagerHierarchicalFeatureSelector import (
+from hfs.hierarchical_selectors.eagerHierarchicalFeatureSelector import (
     EagerHierarchicalFeatureSelector,
     HierarchicalEstimator,
 )
-from hfs.selectors.hill_climbing import (
+from hfs.hierarchical_selectors.hill_climbing import (
     BottomUpSelector,
     HillClimbingSelector,
     TopDownSelector,
 )
-from hfs.selectors.lazyHierarchicalFeatureSelector import (
+from hfs.hierarchical_selectors.lazyHierarchicalFeatureSelector import (
     LazyHierarchicalFeatureSelector,
 )
 

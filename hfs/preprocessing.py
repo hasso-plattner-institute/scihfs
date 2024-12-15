@@ -1,19 +1,20 @@
 """
 Sklearn compatible estimators for preprocessing hierarchical data.
 """
+
 import networkx as nx
 import numpy as np
 from networkx.algorithms.dag import ancestors
 from sklearn.utils.validation import check_array, check_is_fitted
 
 from hfs.helpers import get_irrelevant_leaves
-from hfs.selectors import HierarchicalEstimator
+from hfs.hierarchical_selectors import HierarchicalEstimator
 
 
 class HierarchicalPreprocessor(HierarchicalEstimator):
     """Estimator for preprocessing hierarchical data for feature selection.
 
-    The hierarchical feature selectors expect the input data and the
+    The hierarchical feature hierarchical_selectors expect the input data and the
     hierarchy graph to conform to certain pre-conditions.
     This preprocessor prepares the data and graph for the feature
     selection.

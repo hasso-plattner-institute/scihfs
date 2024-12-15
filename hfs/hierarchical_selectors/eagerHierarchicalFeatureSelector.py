@@ -1,17 +1,18 @@
 """
 Base class for estimators for eager hierarchical feature selection.
 """
+
 import warnings
 
 import numpy as np
 from sklearn.feature_selection import SelectorMixin
 from sklearn.utils.validation import check_array
 
-from hfs.selectors import HierarchicalEstimator
+from hfs.hierarchical_selectors import HierarchicalEstimator
 
 
 class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
-    """Base class for eager feature selectors using hierarchical data."""
+    """Base class for eager feature hierarchical_selectors using hierarchical data."""
 
     def __init__(self, hierarchy: np.ndarray = None):
         """Initializes an EagerHierarchicalFeatureSelector.

@@ -1,6 +1,6 @@
 import pytest
 
-from hfs.selectors import EagerHierarchicalFeatureSelector
+from hfs.hierarchical_selectors import EagerHierarchicalFeatureSelector
 
 from .fixtures.fixtures import wrong_hierarchy_X, wrong_hierarchy_X1
 

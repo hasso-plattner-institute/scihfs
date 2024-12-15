@@ -1,6 +1,7 @@
 """
 Hill Climbing Feature Selectors.
 """
+
 import math
 
 import numpy as np
@@ -9,7 +10,7 @@ from sklearn.utils.validation import check_X_y
 
 from hfs.helpers import compute_aggregated_values, get_leaves, normalize_score
 from hfs.metrics import cosine_similarity
-from hfs.selectors import EagerHierarchicalFeatureSelector
+from hfs.hierarchical_selectors import EagerHierarchicalFeatureSelector
 
 
 class HillClimbingSelector(EagerHierarchicalFeatureSelector):

@@ -2,12 +2,12 @@ import numpy as np
 import pytest
 from sklearn.utils.estimator_checks import check_estimator
 
-from hfs.selectors.hip import HIP
-from hfs.selectors.hnb import HNB
-from hfs.selectors.hnbs import HNBs
-from hfs.selectors.mr import MR
-from hfs.selectors.rnb import RNB
-from hfs.selectors.tan import TAN
+from hfs.hierarchical_selectors.hip import HIP
+from hfs.hierarchical_selectors.hnb import HNB
+from hfs.hierarchical_selectors.hnbs import HNBs
+from hfs.hierarchical_selectors.mr import MR
+from hfs.hierarchical_selectors.rnb import RNB
+from hfs.hierarchical_selectors.tan import TAN
 
 from .fixtures.fixtures import *
 

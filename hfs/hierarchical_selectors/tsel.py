@@ -1,13 +1,14 @@
 """
 TSEL Feature Selector.
 """
+
 import numpy as np
 from networkx.algorithms.dag import descendants
 from sklearn.utils.validation import check_X_y
 
 from hfs.helpers import get_paths
 from hfs.metrics import lift
-from hfs.selectors.eagerHierarchicalFeatureSelector import (
+from hfs.hierarchical_selectors.eagerHierarchicalFeatureSelector import (
     EagerHierarchicalFeatureSelector,
 )
 

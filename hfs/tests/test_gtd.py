@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from hfs.selectors import GreedyTopDownSelector
+from hfs.hierarchical_selectors import GreedyTopDownSelector
 
 from .fixtures.fixtures import (
     data2,

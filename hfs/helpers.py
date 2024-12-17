@@ -1,6 +1,7 @@
 """
 Collection of helper methods for the feature selection algorithms.
 """
+
 import math
 from fractions import Fraction
 
@@ -9,7 +10,7 @@ import numpy as np
 from networkx.algorithms.simple_paths import all_simple_paths
 
 
-def getRelevance(xdata, ydata, node):
+def get_relevance(xdata, ydata, node):
     """
     Gather relevance for a given node.
 
@@ -45,7 +46,7 @@ def getRelevance(xdata, ydata, node):
     return rel
 
 
-def checkData(dag, x_data, y_data):
+def check_data(dag, x_data, y_data):
     """Checks whether the given dataset satisfies the 0-1-propagation on the DAG.
 
     The 0-1-propagation property states that if there is a directed edge (u, v)

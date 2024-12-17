@@ -1,6 +1,7 @@
 """
 SHSEL Feature Selector.
 """
+
 import statistics
 
 import numpy as np

@@ -1,6 +1,7 @@
 """
 Sklearn compatible estimators for preprocessing hierarchical data.
 """
+
 import networkx as nx
 import numpy as np
 from networkx.algorithms.dag import ancestors

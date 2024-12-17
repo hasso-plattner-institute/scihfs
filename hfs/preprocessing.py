@@ -4,6 +4,8 @@ Sklearn compatible estimators for preprocessing hierarchical data.
 
 from __future__ import annotations
 
+import warnings
+
 import networkx as nx
 import numpy as np
 from networkx.algorithms.dag import ancestors
@@ -138,9 +140,11 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         """
         # -1 to account for the "ROOT" node
         next_available_node_id = len(self._hierarchy_graph.nodes) - 1
+        columns_without_node = []
 
         for column_index, column_mapping in enumerate(self._columns):
             if column_mapping == -1:  # no corresponding node yet
+                columns_without_node.append(column_index)
                 if column_index in self._hierarchy_graph.nodes:
                     # column_index has name conflict with an existing node
                     # so we add a node with next available id
@@ -151,6 +155,12 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
                     # directly add the column as a node under "ROOT"
                     self._hierarchy_graph.add_edge("ROOT", column_index)
                     self._columns[column_index] = column_index
+
+        # Warn user for all columns that were not in hierarchy
+        if columns_without_node:
+            warning_missing_nodes = f"""The following columns in X
+             do not have a corresponding node in the hierarchy: {columns_without_node}."""
+            warnings.warn(warning_missing_nodes)
 
     def _shrink_dag(self):
         """Unnecessary nodes are removed from the hierarchy graph.

@@ -5,7 +5,6 @@ from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
 
 class HIP(LazyHierarchicalFeatureSelector):
-
     """
     Select non-redundant features with the highest relevance following the algorithm proposed by Wan and Freitas.
     """

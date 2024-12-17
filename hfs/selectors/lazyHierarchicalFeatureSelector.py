@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics import classification_report
 from sklearn.naive_bayes import BernoulliNB
 
-from hfs.helpers import checkData, getRelevance
+from hfs.helpers import check_data, get_relevance
 from hfs.metrics import conditional_mutual_information
 from hfs.selectors import HierarchicalEstimator
 
@@ -96,12 +96,12 @@ class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
         self._feature_length = np.zeros(self._xtest.shape[1], dtype=int)
 
         # Validate data
-        checkData(self._hierarchy, self._xtrain, self._ytrain)
+        check_data(self._hierarchy, self._xtrain, self._ytrain)
 
         # Get relevance of each node
         self._relevance = {}
         for node in self._hierarchy:
-            self._relevance[node] = getRelevance(self._xtrain, self._ytrain, node)
+            self._relevance[node] = get_relevance(self._xtrain, self._ytrain, node)
         self._sorted_relevance = sorted(self._relevance, key=self._relevance.get)
 
         self._instance_status = {}
@@ -267,7 +267,6 @@ class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
         """
         Build minium spanning tree for each possible edge in the feature tree.
         """
-        edges = self._hierarchy.edges
         self._edge_status = np.zeros((self.n_features_in_, self.n_features_in_))
         self._cmi = np.zeros((self.n_features_in_, self.n_features_in_))
         self._sorted_edges = []
@@ -414,9 +413,7 @@ class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
         for idx in range(0, self._xtest.shape[0] - 1):
             avg_feature_length += self._feature_length[idx] / self._xtrain.shape[1]
         avg_feature_length = avg_feature_length / (len(self._feature_length))
-        score = classification_report(
-            y_true=ytest, y_pred=predictions, output_dict=True
-        )
+        score = classification_report(y_true=ytest, y_pred=predictions, output_dict=True)
         score["sensitivityxspecificity"] = float(score["0"]["recall"]) * float(
             score["1"]["recall"]
         )

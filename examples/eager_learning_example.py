@@ -100,9 +100,7 @@ process_data(test_version=True)
 
 # Load the data and preprocess it.
 hierarchy, X_train, y_train, X_test, y_test, columns = get_tweet_data()
-X_train, X_test, hierarchy, columns = preprocess_data(
-    hierarchy, X_train, X_test, columns
-)
+X_train, X_test, hierarchy, columns = preprocess_data(hierarchy, X_train, X_test, columns)
 
 # Initialize the Selector, fit it on the training data and transform test and training data.
 selector = SHSELSelector(hierarchy)

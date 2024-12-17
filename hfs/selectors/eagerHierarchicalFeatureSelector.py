@@ -1,6 +1,7 @@
 """
 Base class for estimators for eager hierarchical feature selection.
 """
+
 import warnings
 
 import numpy as np

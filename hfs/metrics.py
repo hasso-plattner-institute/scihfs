@@ -2,8 +2,6 @@
 Different metric functions.
 """
 
-from collections import Counter
-
 import numpy as np
 from info_gain.info_gain import info_gain, info_gain_ratio
 from numpy.linalg import norm
@@ -30,12 +28,14 @@ def lift(data, labels):
     lift_values = []
     num_samples, num_features = data.shape
 
+    if sparse.issparse(data):
+        # Ensure CSC format for subscriptability and efficient column access
+        data = data.tocsc()
+
     for index in range(num_features):
-        # deal with sparse matrices
         if sparse.issparse(data):
-            data = data.tocsr()
-            column = data[:, index]
-            non_zero_values = column.size
+            column = data[:, [index]]
+            non_zero_values = column.nnz
         else:
             column = data[:, index]
             non_zero_values = np.count_nonzero(column)
@@ -78,7 +78,11 @@ def information_gain(data, labels):
     """
     ig_values = []
     for column_index in range(data.shape[1]):
-        ig = info_gain(data[:, column_index], labels)
+        if sparse.issparse(data):
+            column = data[:, [column_index]]
+        else:
+            column = data[:, column_index]
+        ig = info_gain(column, labels)
         ig_values.append(ig)
     return ig_values
 
@@ -137,7 +141,11 @@ def gain_ratio(data, labels):
     """
     gr_values = []
     for column_index in range(data.shape[1]):
-        gr = info_gain_ratio(data[:, column_index], labels)
+        if sparse.issparse(data):
+            column = data[:, [column_index]]
+        else:
+            column = data[:, column_index]
+        gr = info_gain_ratio(column, labels)
         gr_values.append(gr)
     return gr_values
 

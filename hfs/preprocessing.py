@@ -2,6 +2,8 @@
 Sklearn compatible estimators for preprocessing hierarchical data.
 """
 
+from __future__ import annotations
+
 import networkx as nx
 import numpy as np
 from networkx.algorithms.dag import ancestors

@@ -29,7 +29,8 @@ def lift(data, labels):
     num_samples, num_features = data.shape
 
     if sparse.issparse(data):
-        data = data.tocsr()  # Ensure CSR format for subscriptability
+        # Ensure CSC format for subscriptability and efficient column access
+        data = data.tocsc()
 
     for index in range(num_features):
         if sparse.issparse(data):

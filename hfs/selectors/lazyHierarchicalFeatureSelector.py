@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import networkx as nx
 import numpy as np
@@ -10,7 +10,7 @@ from hfs.metrics import conditional_mutual_information
 from hfs.selectors import HierarchicalEstimator
 
 
-class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
+class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
     """
     Abstract class used for all lazy hierarchical feature selection methods.
 
@@ -108,6 +108,7 @@ class LazyHierarchicalFeatureSelector(HierarchicalEstimator, ABC):
         for node in self._hierarchy:
             self._instance_status[node] = 1
 
+    @abstractmethod
     def select_and_predict(
         self, predict=True, saveFeatures=False, estimator=BernoulliNB()
     ):

@@ -102,9 +102,7 @@ class HierarchicalEstimator(BaseEstimator, TransformerMixin):
         if self.hierarchy is None:
             self._hierarchy = nx.DiGraph()
         else:
-            self._hierarchy = nx.from_numpy_array(
-                self.hierarchy, create_using=nx.DiGraph
-            )
+            self._hierarchy = nx.from_numpy_array(self.hierarchy, create_using=nx.DiGraph)
 
         # Build the hierarchy.
         self._hierarchy = create_hierarchy(self._hierarchy)

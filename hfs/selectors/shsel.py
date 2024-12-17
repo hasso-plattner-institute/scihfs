@@ -131,8 +131,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                     break
                 if self.relevance_metric == "IG":
                     similarity = 1 - abs(
-                        self._relevance_values[parent_node]
-                        - self._relevance_values[node]
+                        self._relevance_values[parent_node] - self._relevance_values[node]
                     )
                 else:
                     similarity = pearson_correlation(
@@ -149,9 +148,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
     def _select_leaves(self):
         """Select leaves of incomplete paths (part of HFE extension)"""
         leaves = [
-            leaf
-            for leaf in get_leaves(self._hierarchy)
-            if leaf in self.representatives_
+            leaf for leaf in get_leaves(self._hierarchy) if leaf in self.representatives_
         ]
 
         paths = get_paths(self._hierarchy)

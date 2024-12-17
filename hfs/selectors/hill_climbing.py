@@ -115,9 +115,7 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
         score_matrix : numpy.ndarray, shape (n_samples, n_features)
                     The scores calculated for each value in X.
         """
-        score_matrix = compute_aggregated_values(
-            X.copy(), self._hierarchy, self._columns
-        )
+        score_matrix = compute_aggregated_values(X.copy(), self._hierarchy, self._columns)
 
         if self.dataset_type == "numerical":
             normalized_matrix = np.zeros_like(score_matrix, dtype=float)
@@ -323,9 +321,7 @@ class TopDownSelector(HillClimbingSelector):
         row_indices = range(self._num_rows)
         for row_index in row_indices:
             same_class = [
-                sample
-                for sample in row_indices
-                if self.y_[sample] == self.y_[row_index]
+                sample for sample in row_indices if self.y_[sample] == self.y_[row_index]
             ]
             other_class = [x for x in row_indices if x not in same_class]
 
@@ -473,9 +469,7 @@ class BottomUpSelector(HillClimbingSelector):
     ):
         return self._calculate_similarity(sample_i, sample_j, feature_set)
 
-    def _calculate_similarity(
-        self, sample_i: int, sample_j: int, feature_set: list[int]
-    ):
+    def _calculate_similarity(self, sample_i: int, sample_j: int, feature_set: list[int]):
         if "ROOT" in feature_set:
             feature_set = feature_set.remove("ROOT")
         row_i = self._score_matrix[sample_i, feature_set]

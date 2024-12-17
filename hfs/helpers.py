@@ -220,6 +220,7 @@ def add_root_node(hierarchy: nx.DiGraph):
 
     roots = [x for x in hierarchy.nodes() if hierarchy.in_degree(x) == 0]
     # create parent node to join hierarchies
+    hierarchy.add_node("ROOT")
     for root_node in roots:
         hierarchy.add_edge("ROOT", root_node)
     return hierarchy

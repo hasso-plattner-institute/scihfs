@@ -103,9 +103,13 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         return self._columns
 
     def _set_hierarchy(self):
+        """
+        Assign hierarchy graph to self._hierarchy_graph
+        after adding ROOT node to connect components.
+        """
         hierarchy_graph = nx.from_numpy_array(self.hierarchy, create_using=nx.DiGraph)
         # Add "ROOT" node and connect components if there are multiple
-        self._hierarchy = add_root_node(hierarchy_graph)
+        self._hierarchy_graph = add_root_node(hierarchy_graph)
 
     def _column_index(self, node):
         # Get the corresponding column index for a node in the hierarchy.

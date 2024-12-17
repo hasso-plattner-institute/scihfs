@@ -79,14 +79,14 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
         self.n_classes_ = np.unique(y_train).shape[0]
 
         self._set_hierarchy()
-        self._hierarchy.remove_node("ROOT")
+        self._hierarchy_graph.remove_node("ROOT")
         if columns:
             self._columns = columns
         else:
             self._columns = list(range(self.n_features_in_))
 
         mapping = {value: index for index, value in enumerate(self._columns)}
-        self._hierarchy = nx.relabel_nodes(self._hierarchy, mapping)
+        self._hierarchy_graph = nx.relabel_nodes(self._hierarchy_graph, mapping)
 
         self._xtrain = X_train
         self._ytrain = y_train
@@ -96,16 +96,16 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
         self._feature_length = np.zeros(self._xtest.shape[1], dtype=int)
 
         # Validate data
-        check_data(self._hierarchy, self._xtrain, self._ytrain)
+        check_data(self._hierarchy_graph, self._xtrain, self._ytrain)
 
         # Get relevance of each node
         self._relevance = {}
-        for node in self._hierarchy:
+        for node in self._hierarchy_graph:
             self._relevance[node] = get_relevance(self._xtrain, self._ytrain, node)
         self._sorted_relevance = sorted(self._relevance, key=self._relevance.get)
 
         self._instance_status = {}
-        for node in self._hierarchy:
+        for node in self._hierarchy_graph:
             self._instance_status[node] = 1
 
     @abstractmethod
@@ -144,14 +144,14 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
         idx : int
             Index of test instance for which the features shall be selected.
         """
-        for node in self._hierarchy:
+        for node in self._hierarchy_graph:
             self._instance_status[node] = 1
-        for node in self._hierarchy:
+        for node in self._hierarchy_graph:
             if self._xtest[idx][node] == 1:
-                for anc in self._hierarchy.predecessors(node):
+                for anc in self._hierarchy_graph.predecessors(node):
                     self._instance_status[anc] = 0
             else:
-                for desc in self._hierarchy.successors(node):
+                for desc in self._hierarchy_graph.successors(node):
                     self._instance_status[desc] = 0
 
     def _get_nonredundant_features_relevance(self, idx):
@@ -165,17 +165,17 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
         idx :
             Index of test instance for which the features shall be selected.
         """
-        for node in self._hierarchy:
+        for node in self._hierarchy_graph:
             self._instance_status[node] = 1
-        for node in self._hierarchy:
+        for node in self._hierarchy_graph:
             if node == "ROOT":
                 continue
             if self._xtest[idx][node] == 1:
-                for anc in nx.ancestors(self._hierarchy, node):
+                for anc in nx.ancestors(self._hierarchy_graph, node):
                     if self._relevance[anc] <= self._relevance[node]:
                         self._instance_status[anc] = 0
             else:
-                for desc in nx.descendants(self._hierarchy, node):
+                for desc in nx.descendants(self._hierarchy_graph, node):
                     if self._relevance[desc] <= self._relevance[node]:
                         self._instance_status[desc] = 0
 
@@ -191,7 +191,7 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
             Index of test instance for which the features shall be selected.
         """
 
-        top_sort = list(nx.topological_sort(self._hierarchy))
+        top_sort = list(nx.topological_sort(self._hierarchy_graph))
         reverse_top_sort = reversed(top_sort)
         mr = {}
 
@@ -219,7 +219,7 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
             more_rel_nodes = [node]
             if self._xtest[idx][node]:
                 # preds are 1 because of 0-1-propagation
-                for pred in self._hierarchy.predecessors(node):
+                for pred in self._hierarchy_graph.predecessors(node):
                     # get most relevant nodes seen on the paths until current node
                     for _mr in mr[pred]:
                         # if their is a node on the path more important then current node
@@ -239,7 +239,7 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
             more_rel_nodes = [node]
             if not self._xtest[idx][node]:
                 mr[node] = node
-                for suc in self._hierarchy.successors(node):
+                for suc in self._hierarchy_graph.successors(node):
                     # get most relevant nodes seen on paths until current node
                     for _mr in mr[suc]:
                         if self._relevance[_mr] > self._relevance[node]:
@@ -271,8 +271,8 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
         self._edge_status = np.zeros((self.n_features_in_, self.n_features_in_))
         self._cmi = np.zeros((self.n_features_in_, self.n_features_in_))
         self._sorted_edges = []
-        for node1 in self._hierarchy.nodes:
-            for node2 in self._hierarchy.nodes:
+        for node1 in self._hierarchy_graph.nodes:
+            for node2 in self._hierarchy_graph.nodes:
                 if node1 == node2:
                     continue
                 self._cmi[node1][node2] = conditional_mutual_information(
@@ -299,9 +299,9 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
         """
         UDAG = nx.Graph()
 
-        for node1 in self._hierarchy:
+        for node1 in self._hierarchy_graph:
             self._instance_status[node1] = 0
-            for node2 in self._hierarchy:
+            for node2 in self._hierarchy_graph:
                 self._edge_status[node1][node2] = 1
 
         representants = [i for i in range(self.n_features_in_)]
@@ -311,9 +311,9 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
 
         # get paths
         reachable_nodes = {}
-        for node in self._hierarchy:
+        for node in self._hierarchy_graph:
             reachable_nodes[node] = []
-            for des in nx.descendants(self._hierarchy, node):
+            for des in nx.descendants(self._hierarchy_graph, node):
                 reachable_nodes[node].append(des)
         # select edges
         for edge in self._sorted_edges:
@@ -348,7 +348,9 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
 
                 # remove all edges with redundant ancestors or descendants of e0 and e1
                 for selected_node in [edge[0], edge[1]]:
-                    for neighbor_node in nx.ancestors(self._hierarchy, selected_node):
+                    for neighbor_node in nx.ancestors(
+                        self._hierarchy_graph, selected_node
+                    ):
                         if (
                             self._xtest[idx][selected_node]
                             == self._xtest[idx][neighbor_node]
@@ -356,7 +358,9 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
                             # alternative: collect all and then delete in sorted_edges
                             self._edge_status[:, neighbor_node] = 0
                             self._edge_status[neighbor_node][:] = 0
-                    for neighbor_node in nx.descendants(self._hierarchy, selected_node):
+                    for neighbor_node in nx.descendants(
+                        self._hierarchy_graph, selected_node
+                    ):
                         if (
                             self._xtest[idx][selected_node]
                             == self._xtest[idx][neighbor_node]

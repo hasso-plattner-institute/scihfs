@@ -76,7 +76,7 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
         super().fit(X, y, columns)
 
         # Feature Selection Algorithm
-        paths = get_paths(self._hierarchy)
+        paths = get_paths(self._hierarchy_graph)
         lift_values = lift(X, y)
         self._node_to_lift = {
             column_name: lift_values[index]
@@ -179,7 +179,7 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
         for node in representatives:
             selected_decendents = [
                 descendent
-                for descendent in descendants(self._hierarchy, node)
+                for descendent in descendants(self._hierarchy_graph, node)
                 if descendent in representatives
             ]
             if not selected_decendents:

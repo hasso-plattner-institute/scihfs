@@ -116,7 +116,7 @@ def test_MR(lazy_data1):
     selector = MR(nx.to_numpy_array(hierarchy))
     selector.fit_selector(X_train=X_train, y_train=y_train, X_test=X_test)
     selector._relevance = relevance
-    selector._hierarchy = hierarchy
+    selector._hierarchy_graph = hierarchy
     pred = selector.select_and_predict(predict=True, saveFeatures=True)
     features = selector.get_features()
     result_features = np.array(
@@ -135,7 +135,7 @@ def test_HIP(lazy_data1):
     selector = HIP(nx.to_numpy_array(hierarchy))
     selector.fit_selector(X_train=X_train, y_train=y_train, X_test=X_test)
     selector._relevance = relevance
-    selector._hierarchy = hierarchy
+    selector._hierarchy_graph = hierarchy
     pred = selector.select_and_predict(predict=True, saveFeatures=True)
     features = selector.get_features()
     result_features = np.array(
@@ -161,7 +161,7 @@ def test_TAN(lazy_data3):
     selector = TAN(nx.to_numpy_array(hierarchy))
     selector.fit_selector(X_train=X_train_ones, y_train=y_train, X_test=X_test)
     selector._xtrain = X_train
-    selector._hierarchy = hierarchy
+    selector._hierarchy_graph = hierarchy
     selector.select_and_predict(predict=True, saveFeatures=True)
     f = selector.get_features()
     assert resulted_features.all() == f.all()

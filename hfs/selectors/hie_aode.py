@@ -76,13 +76,13 @@ class HieAODE(LazyHierarchicalFeatureSelector):
                     sample=sample, feature_idx=feature_idx, value=sample[feature_idx]
                 )
 
-                ancestors = list(nx.ancestors(self._hierarchy, feature_idx))
+                ancestors = list(nx.ancestors(self._hierarchy_graph, feature_idx))
                 # question what value is calculated for the ancestors?
                 # P (x_k = 1|y)? P (x_k=0|y)
                 for ancestor_idx in ancestors:
                     self.calculate_prob_given_ascendant_class(ancestor=ancestor_idx)
 
-                descendants = list(nx.descendants(self._hierarchy, feature_idx))
+                descendants = list(nx.descendants(self._hierarchy_graph, feature_idx))
                 # question what value is calculated for the descendants?
                 # P (x_j=0|y, x_i=sample[feature_idx])
                 # P (x_j=1|y, x_i=sample[feature_idx])

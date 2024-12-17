@@ -121,9 +121,9 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
             In this case the hierarchy graph has not been updated yet.
         """
         if self.is_fitted_:
-            output_hierarchy = self._hierarchy
+            output_hierarchy = self._hierarchy_graph
             output_hierarchy.remove_node("ROOT")
-            return nx.to_numpy_array(self._hierarchy)
+            return nx.to_numpy_array(self._hierarchy_graph)
         else:
             raise RuntimeError("Instance has not been fitted.")
 
@@ -137,19 +137,19 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         dataset we add a node with the next available id.
         """
         # -1 to account for the "ROOT" node
-        next_available_node_id = len(self._hierarchy.nodes) - 1
+        next_available_node_id = len(self._hierarchy_graph.nodes) - 1
 
         for column_index, column_mapping in enumerate(self._columns):
             if column_mapping == -1:  # no corresponding node yet
-                if column_index in self._hierarchy.nodes:
+                if column_index in self._hierarchy_graph.nodes:
                     # column_index has name conflict with an existing node
                     # so we add a node with next available id
-                    self._hierarchy.add_edge("ROOT", next_available_node_id)
+                    self._hierarchy_graph.add_edge("ROOT", next_available_node_id)
                     self._columns[column_index] = next_available_node_id
                     next_available_node_id += 1
                 else:
                     # directly add the column as a node under "ROOT"
-                    self._hierarchy.add_edge("ROOT", column_index)
+                    self._hierarchy_graph.add_edge("ROOT", column_index)
                     self._columns[column_index] = column_index
 
     def _shrink_dag(self):
@@ -161,13 +161,13 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         contain any necessary information.
         """
         leaves = get_irrelevant_leaves(
-            x_identifier=self._columns, digraph=self._hierarchy
+            x_identifier=self._columns, digraph=self._hierarchy_graph
         )
         while leaves:
             for x in leaves:
-                self._hierarchy.remove_node(x)
+                self._hierarchy_graph.remove_node(x)
             leaves = get_irrelevant_leaves(
-                x_identifier=self._columns, digraph=self._hierarchy
+                x_identifier=self._columns, digraph=self._hierarchy_graph
             )
 
     def _find_missing_columns(self):
@@ -178,7 +178,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         """
         missing_nodes = [
             node
-            for node in self._hierarchy.nodes
+            for node in self._hierarchy_graph.nodes
             if node not in self._columns and node != "ROOT"
         ]
         self._columns.extend(missing_nodes)
@@ -221,12 +221,12 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         X : array of shape [n_samples, n_new_features]
             The dataset with updated feature values.
         """
-        nodes = list(self._hierarchy.nodes)
+        nodes = list(self._hierarchy_graph.nodes)
         nodes.remove("ROOT")
 
         for node in nodes:
             column_index = self._column_index(node)
-            ancestor_nodes = ancestors(self._hierarchy, node)
+            ancestor_nodes = ancestors(self._hierarchy_graph, node)
             ancestor_nodes.remove("ROOT")
             for row_index, entry in enumerate(X[:, column_index]):
                 if entry == 1.0:
@@ -244,8 +244,8 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         transformation needs to be performed to ouput the hierarchy.
         Therefore the node names need to be adjusted.
         """
-        nodes = list(self._hierarchy.nodes())
+        nodes = list(self._hierarchy_graph.nodes())
         nodes.remove("ROOT")
         self._columns = [nodes.index(node_name) for node_name in self._columns]
         mapping = {node_name: nodes.index(node_name) for node_name in nodes}
-        self._hierarchy = nx.relabel_nodes(self._hierarchy, mapping)
+        self._hierarchy_graph = nx.relabel_nodes(self._hierarchy_graph, mapping)

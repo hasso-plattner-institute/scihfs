@@ -7,7 +7,6 @@ from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
 
 class RNB(LazyHierarchicalFeatureSelector):
-
     """
     Select the k features with the highest relevance.
 

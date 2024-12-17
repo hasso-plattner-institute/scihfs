@@ -1,6 +1,7 @@
 """
 Collection of helper methods for the feature selection algorithms.
 """
+
 import math
 from fractions import Fraction
 
@@ -9,7 +10,7 @@ import numpy as np
 from networkx.algorithms.simple_paths import all_simple_paths
 
 
-def getRelevance(xdata, ydata, node):
+def get_relevance(xdata, ydata, node):
     """
     Gather relevance for a given node.
 
@@ -45,7 +46,7 @@ def getRelevance(xdata, ydata, node):
     return rel
 
 
-def checkData(dag, x_data, y_data):
+def check_data(dag, x_data, y_data):
     """Checks whether the given dataset satisfies the 0-1-propagation on the DAG.
 
     The 0-1-propagation property states that if there is a directed edge (u, v)
@@ -197,9 +198,7 @@ def connect_dag(x_identifiers, hierarchy: nx.DiGraph):
 
     # remove all nodes (and edges) that are not in x_identifier
     x_identifiers_set = set(x_identifiers)
-    nodes_to_remove = [
-        node for node in hierarchy.nodes if node not in x_identifiers_set
-    ]
+    nodes_to_remove = [node for node in hierarchy.nodes if node not in x_identifiers_set]
     hierarchy.remove_nodes_from(nodes_to_remove)
 
     return hierarchy
@@ -300,9 +299,7 @@ def normalize_score(score, max_value):
     return score
 
 
-def compute_aggregated_values(
-    X, hierarchy: nx.DiGraph, columns: list[int], node="ROOT"
-):
+def compute_aggregated_values(X, hierarchy: nx.DiGraph, columns: list[int], node="ROOT"):
     """Recursively aggregate features in X by summing up their children's values.
 
     The method traverses the given Directed Acyclic Graph (DAG) hierarchy

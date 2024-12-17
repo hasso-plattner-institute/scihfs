@@ -80,5 +80,8 @@ slurm-*.out
 # WandB
 wandb
 
-# Weird file kgextension generates
-rate_limits.db
+# Specific VS Code configuration files
+.vscode/*
+
+# Other Python-related files
+.pytest_cache

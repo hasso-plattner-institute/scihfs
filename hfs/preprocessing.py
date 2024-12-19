@@ -138,7 +138,8 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         If a node in the hierarchy has a name conflict with a column in the
         dataset we add a node with the next available id.
         """
-        # -1 to account for the "ROOT" node
+        # Subtract 1 because the "ROOT" node is included in the total count,
+        # but the other N-1 nodes are indexed starting from 0
         next_available_node_id = len(self._hierarchy_graph.nodes) - 1
         columns_without_node = []
 

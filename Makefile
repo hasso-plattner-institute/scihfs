@@ -15,4 +15,7 @@ mypy:
 pytest:
 	poetry run pytest hfs/
 
+pytest-until-fail:
+	poetry run pytest hfs/ -x
+
 run-all: autolint pytest

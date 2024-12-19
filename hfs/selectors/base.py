@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_array
 
-from hfs.helpers import create_hierarchy
+from hfs.helpers import add_virtual_root_node
 
 
 class HierarchicalEstimator(TransformerMixin, BaseEstimator):
@@ -45,12 +45,18 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
             the corresponding nodes in the hierarchy are expected to be in the
             same order.
 
+        Raises
+        ------
+        TypeError
+            If the passed hierarchy is None.
+
         Returns
         -------
         self : object
             Returns self.
         """
-
+        if self.hierarchy is None:
+            raise TypeError("Hierarchy is None but is required.")
         X = check_array(X, accept_sparse=True)
 
         self.n_features_in_ = X.shape[1]
@@ -97,15 +103,13 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         return self._columns
 
     def _set_hierarchy(self):
-        # If no hierarchy is given all nodes are at the top level of the
-        # created hierarchy.
-        if self.hierarchy is None:
-            self._hierarchy = nx.DiGraph()
-        else:
-            self._hierarchy = nx.from_numpy_array(self.hierarchy, create_using=nx.DiGraph)
-
-        # Build the hierarchy.
-        self._hierarchy = create_hierarchy(self._hierarchy)
+        """
+        Assign hierarchy graph to self._hierarchy_graph
+        after adding ROOT node to connect components.
+        """
+        hierarchy_graph = nx.from_numpy_array(self.hierarchy, create_using=nx.DiGraph)
+        # Add "ROOT" node and connect components if there are multiple
+        self._hierarchy_graph = add_virtual_root_node(hierarchy_graph)
 
     def _column_index(self, node):
         # Get the corresponding column index for a node in the hierarchy.

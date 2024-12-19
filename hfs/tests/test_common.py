@@ -1,3 +1,4 @@
+import networkx as nx
 import pytest
 from sklearn.utils.estimator_checks import check_estimator
 
@@ -23,20 +24,22 @@ from hfs.selectors import (
 @pytest.mark.parametrize(
     "estimator",
     [
-        TSELSelector(),
-        HierarchicalEstimator(),
-        EagerHierarchicalFeatureSelector(),
-        HierarchicalPreprocessor(),
-        TopDownSelector(),
-        SHSELSelector(),
-        HNB(),
-        HNBs(),
-        RNB(),
-        MR(),
-        HIP(),
-        BottomUpSelector(),
-        GreedyTopDownSelector(),
+        TSELSelector,
+        HierarchicalEstimator,
+        EagerHierarchicalFeatureSelector,
+        HierarchicalPreprocessor,
+        TopDownSelector,
+        SHSELSelector,
+        HNB,
+        HNBs,
+        RNB,
+        MR,
+        HIP,
+        BottomUpSelector,
+        GreedyTopDownSelector,
     ],
 )
 def test_all_estimators(estimator):
-    return check_estimator(estimator)
+    hierarchy_graph = nx.DiGraph()
+    adj_matrix = nx.to_numpy_array(hierarchy_graph)
+    return check_estimator(estimator(adj_matrix))

@@ -25,7 +25,7 @@ def test_calculate_dependency_ascendant_class(lazy_data2):
     expected[1][1][0] = 0.0
     expected[1][0][1] = 0.0
     expected[1][1][1] = 1.0
-    ancestors = nx.ancestors(selector._hierarchy, feature_idx)
+    ancestors = nx.ancestors(selector._hierarchy_graph, feature_idx)
 
     for a in range(len(ancestors)):
         selector.calculate_prob_given_ascendant_class(ancestor=a)

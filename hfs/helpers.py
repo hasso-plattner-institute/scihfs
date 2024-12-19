@@ -80,39 +80,6 @@ def check_data(dag, x_data, y_data):
                 )
 
 
-def get_irrelevant_leaves(x_identifier, digraph):
-    """Get leaves from the given graph that contain no relevant information.
-
-    A leaf is considered irrelevant if it meets the following criteria:
-    - It is not part of the specified x_identifier list.
-    - It is not the "ROOT" node, which typically represents the starting
-      node of the DAG.
-
-    Parameters
-    ----------
-    x_identifier :  list
-                    A list containing node identifiers that are considered
-                    relevant
-    digraph : networkx.DiGraph
-            The Directed Acyclic Graph (DAG) from which irrelevant leaves
-            will be identified.
-
-    Returns
-    ----------
-    selected_leaves : list
-                    A list of leaf nodes that contain no relevant information.
-    """
-    selected_leaves = [
-        x
-        for x in digraph.nodes()
-        if digraph.out_degree(x) == 0
-        and digraph.in_degree(x) == 1
-        and x not in x_identifier
-        and x != "ROOT"
-    ]
-    return selected_leaves
-
-
 def get_leaves(graph: nx.DiGraph):
     """Get the leaf nodes from the given directed acyclic graph (DAG).
 
@@ -140,7 +107,7 @@ def get_leaves(graph: nx.DiGraph):
     return leaves
 
 
-def shrink_dag(x_identifier, digraph):
+def shrink_dag(x_identifier: list, digraph: nx.DiGraph):
     """Remove irrelevant leaf nodes from the given DAG.
 
     Parameters
@@ -155,14 +122,48 @@ def shrink_dag(x_identifier, digraph):
     ----------
     digraph : networkx.DiGraph
             The resulting DAG after removing all irrelevant leaf nodes.
-
     """
-    leaves = get_irrelevant_leaves(x_identifier, digraph)
-    while leaves:
-        for x in leaves:
-            digraph.remove_node(x)
-        leaves = get_irrelevant_leaves(x_identifier, digraph)
+    to_remove = {
+        node
+        for node in digraph.nodes()
+        if _is_irrelevant_leaf(node, x_identifier, digraph)
+    }
+
+    while to_remove:
+        # Recompute the list of nodes to check (predecessors of removed nodes)
+        to_check = {pred for node in to_remove for pred in digraph.predecessors(node)}
+        digraph.remove_nodes_from(to_remove)
+        to_remove = {
+            node for node in to_check if _is_irrelevant_leaf(node, x_identifier, digraph)
+        }
+
     return digraph
+
+
+def _is_irrelevant_leaf(node, x_identifier, digraph):
+    """
+    Determine if a node is an irrelevant leaf in a directed acyclic graph (DAG).
+
+    A node is considered an irrelevant leaf if:
+    - It has no outgoing edges (i.e., it is a leaf node).
+    - It is not included in the specified list of relevant node identifiers (`x_identifier`).
+    - It is not the "ROOT" node
+
+    Parameters
+    ----------
+    node : Any
+        The node to evaluate.
+    x_identifier : list
+        A list of node identifiers that are considered relevant and should not be removed.
+    digraph : networkx.DiGraph
+        The directed acyclic graph (DAG) being analyzed.
+
+    Returns
+    ----------
+    bool
+        True if the node is an irrelevant leaf; otherwise, False.
+    """
+    return digraph.out_degree(node) == 0 and node != "ROOT" and node not in x_identifier
 
 
 def connect_dag(x_identifiers, hierarchy: nx.DiGraph):

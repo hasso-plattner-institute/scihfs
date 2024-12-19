@@ -11,7 +11,7 @@ import numpy as np
 from networkx.algorithms.dag import ancestors
 from sklearn.utils.validation import check_array, check_is_fitted
 
-from hfs.helpers import get_irrelevant_leaves
+from hfs.helpers import shrink_dag
 from hfs.selectors import HierarchicalEstimator
 
 
@@ -164,22 +164,16 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
             warnings.warn(warning_missing_nodes)
 
     def _shrink_dag(self):
-        """Unnecessary nodes are removed from the hierarchy graph.
+        """Irrelevant nodes are removed from the hierarchy graph.
 
-        Nodes are considered unnecessary if they do not have a corresponding
+        Nodes are considered irrelevant if they do not have a corresponding
         column in the input dataframe and don't have any children. These
         features would always be 0 in the dataset and, therefore, do not
         contain any necessary information.
         """
-        leaves = get_irrelevant_leaves(
-            x_identifier=self._columns, digraph=self._hierarchy_graph
-        )
-        while leaves:
-            for x in leaves:
-                self._hierarchy_graph.remove_node(x)
-            leaves = get_irrelevant_leaves(
-                x_identifier=self._columns, digraph=self._hierarchy_graph
-            )
+        x_identifier = self._columns
+        digraph = self._hierarchy_graph
+        self._hierarchy_graph = shrink_dag(x_identifier, digraph)
 
     def _find_missing_columns(self):
         """Finds nodes for which a column needs to be added to the dataset.

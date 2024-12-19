@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_array
 
-from hfs.helpers import add_root_node
+from hfs.helpers import add_virtual_root_node
 
 
 class HierarchicalEstimator(TransformerMixin, BaseEstimator):
@@ -109,7 +109,7 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         """
         hierarchy_graph = nx.from_numpy_array(self.hierarchy, create_using=nx.DiGraph)
         # Add "ROOT" node and connect components if there are multiple
-        self._hierarchy_graph = add_root_node(hierarchy_graph)
+        self._hierarchy_graph = add_virtual_root_node(hierarchy_graph)
 
     def _column_index(self, node):
         # Get the corresponding column index for a node in the hierarchy.

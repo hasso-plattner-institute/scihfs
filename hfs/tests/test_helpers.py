@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from ..helpers import (
-    add_root_node,
+    add_virtual_root_node,
     compute_aggregated_values,
     connect_dag,
     get_relevance,
@@ -105,6 +105,6 @@ def test_compute_aggregated_values(data, result, request):
     data = request.getfixturevalue(data)
     result = request.getfixturevalue(result)
     X, _, hierarchy, columns = data
-    hierarchy = add_root_node(nx.DiGraph(hierarchy))
+    hierarchy = add_virtual_root_node(nx.DiGraph(hierarchy))
     X_transformed = compute_aggregated_values(X, hierarchy, columns)
     assert np.array_equal(X_transformed, result)

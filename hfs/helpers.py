@@ -204,7 +204,7 @@ def connect_dag(x_identifiers, hierarchy: nx.DiGraph):
     return hierarchy
 
 
-def add_root_node(hierarchy: nx.DiGraph):
+def add_virtual_root_node(hierarchy: nx.DiGraph):
     """Create a virtual root node to connect disjoint hierarchies.
 
     Parameters

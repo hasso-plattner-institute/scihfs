@@ -3,7 +3,7 @@ FROM python:3.12.2-slim
 # Update package list and install necessary packages
 # hadolint ignore DL3008
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3-sphinx pandoc git zsh curl wget ssh-client build-essential manpages-dev libgmp-dev libcdd-dev graphviz graphviz-dev \
+    && apt-get install -y --no-install-recommends git zsh curl wget ssh-client manpages-dev libgmp-dev libcdd-dev python3-sphinx pandoc build-essential graphviz graphviz-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -28,9 +28,6 @@ RUN poetry config virtualenvs.create false \
     && poetry lock --no-update \
     && poetry install --no-interaction --no-root --no-cache --quiet --sync
 
-# # For the likely case of running a Jupyter notebook service inside the container, this is a requirement to make it available outside of it
-EXPOSE 8888
-
 # Install extensions for zsh for nicer visuals when using the container terminal
 # hadolint ignore DL2086
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
@@ -42,6 +39,9 @@ RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master
 COPY .devcontainer/.zshrc /root
 COPY .devcontainer/.p10k.zsh /root
 RUN /bin/zsh /root/.zshrc
+
+# For the case of running a Jupyter notebook service inside the container, this is a requirement to make it available outside of it
+EXPOSE 8888
 
 # Entrypoint for the container
 CMD ["/bin/zsh"]

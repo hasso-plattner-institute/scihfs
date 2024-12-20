@@ -1,0 +1,55 @@
+# on:
+  # push
+  #   branches: [ "master" ]
+
+on:
+  workflow_dispatch:
+  
+
+env:
+  TARGET_FILE: "poetry.lock"
+  TARGET_BRANCH: "master"
+  DOCKER_REPO: jpsachs/hfs-devcontainer
+  
+
+jobs:
+  # file-watch:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+  #     - uses: hyorimitsu/actions-check-diff@v0.0.1
+  #       id: diff
+  #       name: diff
+  #       with:
+  #         target-branch: ${{ env.TARGET_BRANCH }}
+  #         target-file: ${{ env.TARGET_FILE }}
+  #     - name: file result
+  #       if: steps.diff.outputs.file-diff > 0
+  #       run: |
+  #         echo '${{ env.TARGET_FILE }} is changed'
+
+
+  build-and-push-devcontainer-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get commit hash # For versioning of the uploaded images
+        run: echo "COMMIT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push devcontainer image
+        uses: docker/build-push-action@v6
+        with:
+          file: .devcontainer/Dockerfile
+          context: .
+          push: true
+          tags: |
+            ${{ env.DOCKER_REPO }}-${{ env.SHORT_COMMIT }}

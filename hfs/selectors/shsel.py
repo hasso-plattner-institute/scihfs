@@ -96,6 +96,10 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
             Returns self.
         """
         # Input validation
+        if self.use_hfe_extension and self.relevance_metric != "Correlation":
+            raise ValueError(
+                "When using the HFE extension the relevance_metric should be 'Correlation'."
+            )
         X, y = check_X_y(X, y, accept_sparse=True)
         if sparse.issparse(X):
             X = X.tocsr()

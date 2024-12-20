@@ -3,6 +3,6 @@ on:
 jobs:
   hello:
     runs-on: ubuntu-latest
-      steps:
-        - name: Hello Step
-          run: echo "Hello world"
+    steps:
+      - name: Hello Step
+        run: echo "Hello world"

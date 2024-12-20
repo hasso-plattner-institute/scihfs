@@ -171,9 +171,9 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         features would always be 0 in the dataset and, therefore, do not
         contain any necessary information.
         """
-        x_identifier = self._columns
+        node_identifier = self._columns
         digraph = self._hierarchy_graph
-        self._hierarchy_graph = shrink_dag(x_identifier, digraph)
+        self._hierarchy_graph = shrink_dag(node_identifier, digraph)
 
     def _find_missing_columns(self):
         """Finds nodes for which a column needs to be added to the dataset.

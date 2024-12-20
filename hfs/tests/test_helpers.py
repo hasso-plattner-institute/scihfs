@@ -17,11 +17,11 @@ from hfs.metrics import gain_ratio, information_gain
 def test_shrink_dag():
     edges = [(0, 1), (0, 2), (0, 4), (3, 4), (3, 5), (6, 1), (6, 4)]
     graph = nx.DiGraph(edges)
-    x_identifiers = [1]
+    node_identifiers = [1]
     nodes_to_remove = [2, 3, 4, 5]
 
     assert len(graph.nodes()) == 7
-    graph = shrink_dag(x_identifiers, graph)
+    graph = shrink_dag(node_identifiers, graph)
     assert len(graph.nodes()) == 3
     assert all(node not in graph.nodes() for node in nodes_to_remove)
 
@@ -29,8 +29,8 @@ def test_shrink_dag():
 def test_connect_dag(lazy_data4):
     small_DAG, big_DAG = lazy_data4
     graph = nx.DiGraph(big_DAG)
-    x_identifiers = [0, 1, 2, 5, 6, 7, 8]
-    graph = connect_dag(hierarchy=graph, x_identifiers=x_identifiers)
+    node_identifiers = [0, 1, 2, 5, 6, 7, 8]
+    graph = connect_dag(hierarchy=graph, node_identifiers=node_identifiers)
     new_graph = nx.DiGraph([(0, 1), (0, 2), (1, 6), (1, 5), (1, 7), (0, 7), (5, 8)])
     assert nx.is_isomorphic(graph, new_graph)
 

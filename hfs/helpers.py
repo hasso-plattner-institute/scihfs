@@ -3,6 +3,7 @@ Collection of helper methods for the feature selection algorithms.
 """
 
 import math
+import warnings
 from fractions import Fraction
 
 import networkx as nx
@@ -231,8 +232,12 @@ def add_virtual_root_node(hierarchy: nx.DiGraph):
     roots = [x for x in hierarchy.nodes() if hierarchy.in_degree(x) == 0]
     # create parent node to join hierarchies
     hierarchy.add_node("ROOT")
-    for root_node in roots:
-        hierarchy.add_edge("ROOT", root_node)
+    if len(roots) > 1:
+        warnings.warn(
+            f"Hierarchy consists of multiple ({len(roots)}) disjoint hierarchies. "
+        )
+        for root_node in roots:
+            hierarchy.add_edge("ROOT", root_node)
     return hierarchy
 
 

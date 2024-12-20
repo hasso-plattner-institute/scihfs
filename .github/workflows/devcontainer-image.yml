@@ -1,37 +1,55 @@
 name: Build and Push Image
 
-on: push  # Runs the action every time new commit is pushed to the branch
-
 # on:
-#    workflow_dispatch:  Creates a button to manually start the action. You can also make it to run on pull requests or any other condition.
+  # push
+  #   branches: [ "master" ]
+
+on:
+   workflow_dispatch:  Creates a button to manually start the action. You can also make it to run on pull requests or any other condition.
 
 env:
-  DOCKER_REPO: your_dockerhub_container
+  TARGET_FILE: "poetry.lock"
+  TARGET_BRANCH: "master"
+  DOCKER_REPO: jpsachs/hfs-devcontainer
+  
 
 jobs:
-  build-and-push:
+  # file-watch:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+  #     - uses: hyorimitsu/actions-check-diff@v0.0.1
+  #       id: diff
+  #       name: diff
+  #       with:
+  #         target-branch: ${{ env.TARGET_BRANCH }}
+  #         target-file: ${{ env.TARGET_FILE }}
+  #     - name: file result
+  #       if: steps.diff.outputs.file-diff > 0
+  #       run: |
+  #         echo '${{ env.TARGET_FILE }} is changed'
+
+
+  build-and-push-devcontainer-image:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Get short commit hash.  # Useful to separate different containers based on the commit number
-        run: echo "SHORT_COMMIT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+      - name: Get commit hash # For versioning of the uploaded images
+        run: echo "COMMIT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }} # Create secrets in github repo settings (Need an admin role or correct rights)
-          password: ${{ secrets.DOCKERHUB_TOKEN }} # Settings -> Secrets and variables -> Actions
-      
-      ### If you need to build multiple docker containers with different config files
-      # - name: COPY in Dockerfile. 
-      #   run: cp config_sandbox.ini config.ini
-      #   working-directory: ${{ github.workspace }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push sandbox image
-        uses: docker/build-push-action@v3
+      - name: Build and push devcontainer image
+        uses: docker/build-push-action@v6
         with:
-          file: Dockerfile
+          file: .devcontainer/Dockerfile
           context: .
           push: true
           tags: |

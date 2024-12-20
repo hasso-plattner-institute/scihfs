@@ -197,7 +197,8 @@ def connect_dag(node_identifiers: list, hierarchy: nx.DiGraph):
     #       will be continued, if i is removed later
 
     for node in list(top_sort):
-        for predecessor in hierarchy.predecessors(node):
+        predecessors = list(hierarchy.predecessors(node))
+        for predecessor in predecessors:
             new_connections = []
             if predecessor not in node_identifiers:
                 for pred_of_pred in hierarchy.predecessors(predecessor):

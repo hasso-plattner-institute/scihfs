@@ -3,7 +3,8 @@
   #   branches: [ "master" ]
 
 on:
-   workflow_dispatch:
+  workflow_dispatch:
+  
 
 env:
   TARGET_FILE: "poetry.lock"

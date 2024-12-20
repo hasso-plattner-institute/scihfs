@@ -5,7 +5,7 @@ name: Build and Push Image
   #   branches: [ "master" ]
 
 on:
-   workflow_dispatch:  Creates a button to manually start the action. You can also make it to run on pull requests or any other condition.
+   workflow_dispatch:
 
 env:
   TARGET_FILE: "poetry.lock"

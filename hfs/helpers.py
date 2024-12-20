@@ -236,8 +236,8 @@ def add_virtual_root_node(hierarchy: nx.DiGraph):
         warnings.warn(
             f"Hierarchy consists of multiple ({len(roots)}) disjoint hierarchies. "
         )
-        for root_node in roots:
-            hierarchy.add_edge("ROOT", root_node)
+    for root_node in roots:
+        hierarchy.add_edge("ROOT", root_node)
     return hierarchy
 
 

@@ -62,7 +62,9 @@ def test_leaf_filtering(data, result, request):
     result = request.getfixturevalue(result)
     X, y, hierarchy, columns = data
     expected, support = result
-    selector = SHSELSelector(hierarchy, use_hfe_extension=True)
+    selector = SHSELSelector(
+        hierarchy, use_hfe_extension=True, relevance_metric="Correlation"
+    )
     selector.fit(X, y, columns)
     X = selector.transform(X)
     assert np.array_equal(X, expected)

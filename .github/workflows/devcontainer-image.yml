@@ -9,7 +9,7 @@ on:
 env:
   TARGET_FILE: "poetry.lock"
   TARGET_BRANCH: "master"
-  DOCKER_REPO: jpsachs/hfs-devcontainer
+  DOCKER_REPO: "jpsachs/hfs-devcontainer"
   
 
 jobs:

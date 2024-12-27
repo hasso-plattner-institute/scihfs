@@ -1,10 +1,7 @@
 {
 	"name": "hfs-dev",
-	// Configure Dockerfile for devcontainer
-	"build": {
-		"context": "..",
-		"dockerfile": "Dockerfile"
-	},
+	// Use most recent devcontainer image.
+	"image": "jpsachs/hfs-devcontainer:latest",
 	// Configure tool-specific properties.
 	"customizations": {
 		// Configure properties specific to VS Code.

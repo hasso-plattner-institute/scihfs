@@ -1,11 +1,11 @@
 name: Build devcontainer image and push to Docker Hub
 
 on:
-  pull_request:
-    branches:
-      - master
-    types:
-      - closed
+  # pull_request:
+  #   branches:
+  #     - master
+  #   types:
+  #     - closed
   workflow_dispatch:
 
 env:

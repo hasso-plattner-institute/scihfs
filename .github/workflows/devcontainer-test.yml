@@ -1,14 +1,16 @@
 name: Build devcontainer image and push to Docker Hub
-# on:
-# push
-#   branches: [ "master" ]
 
 on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - closed
   workflow_dispatch:
 
 env:
-  TARGET_FILE: "poetry.lock"
-  TARGET_BRANCH: "master"
+  # TARGET_FILE: "poetry.lock"
+  # TARGET_BRANCH: "master"
   DOCKER_REPO: "jpsachs/hfs-devcontainer"
 
 jobs:
@@ -30,6 +32,7 @@ jobs:
   #         echo '${{ env.TARGET_FILE }} is changed'
 
   build-and-push-devcontainer-image:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -16,18 +16,6 @@ ENV POETRY_HOME=/etc/poetry
 RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=${POETRY_HOME} POETRY_VERSION=${POETRY_VERSION} python3 -
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
-# Create and switch to /hfs as working directory
-RUN mkdir /hfs
-WORKDIR /hfs
-
-# Make available the dependency files inside the container
-COPY poetry.lock pyproject.toml ./
-
-# Install all required packages with poetry, including the "dev" group packages
-RUN poetry config virtualenvs.create false \
-    && poetry lock --no-update \
-    && poetry install --no-interaction --no-root --no-cache --quiet --sync
-
 # Install extensions for zsh for nicer visuals when using the container terminal
 # hadolint ignore DL2086
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
@@ -40,8 +28,21 @@ COPY .devcontainer/.zshrc /root
 COPY .devcontainer/.p10k.zsh /root
 RUN /bin/zsh /root/.zshrc
 
-# For the case of running a Jupyter notebook service inside the container, this is a requirement to make it available outside of it
-EXPOSE 8888
+# Create and switch to /hfs as working directory
+RUN mkdir /hfs
+WORKDIR /hfs
+
+# Make available the dependency files inside the container
+COPY poetry.lock pyproject.toml ./
+
+# Install all required packages with poetry, including the "dev" group packages
+RUN poetry config virtualenvs.create false \
+    && poetry lock --no-update \
+    && poetry install --no-interaction --no-root --no-cache --quiet --sync
+
+# Initialize pre-commit hooks for this repository
+RUN poetry run pre-commit \
+    && poetry run pre-commit install
 
 # Entrypoint for the container
 CMD ["/bin/zsh"]

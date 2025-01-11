@@ -1,6 +1,7 @@
 """
 Greedy Top Down Feature Selector.
 """
+
 import numpy as np
 from networkx import ancestors, descendants
 from scipy.sparse import issparse
@@ -87,12 +88,12 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
 
         # either start from ROOT or the nodes on the first level.
         if self.iterate_first_level:
-            top_level_nodes = self._hierarchy.successors("ROOT")
+            top_level_nodes = self._hierarchy_graph.successors("ROOT")
         else:
             top_level_nodes = ["ROOT"]
 
         for node in top_level_nodes:
-            branch_nodes = list(descendants(self._hierarchy, node))
+            branch_nodes = list(descendants(self._hierarchy_graph, node))
             if node != "ROOT":
                 branch_nodes.append(node)
 
@@ -106,11 +107,9 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
             while branch_nodes:
                 selected = branch_nodes.pop(0)
                 self.representatives_.append(selected)
-                remove_nodes = list(descendants(self._hierarchy, selected))
-                ancestor_nodes = list(ancestors(self._hierarchy, selected))
+                remove_nodes = list(descendants(self._hierarchy_graph, selected))
+                ancestor_nodes = list(ancestors(self._hierarchy_graph, selected))
                 remove_nodes.extend(ancestor_nodes)
                 if "ROOT" in remove_nodes:
                     remove_nodes.remove("ROOT")
-                branch_nodes = [
-                    node for node in branch_nodes if node not in remove_nodes
-                ]
+                branch_nodes = [node for node in branch_nodes if node not in remove_nodes]

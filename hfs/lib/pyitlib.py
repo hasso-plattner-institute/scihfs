@@ -647,9 +647,7 @@ def information_interaction(
     """
     X, fill_value_X = _sanitise_array_input(X, fill_value)
     if Alphabet_X is not None:
-        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(
-            Alphabet_X, fill_value
-        )
+        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(Alphabet_X, fill_value)
         Alphabet_X, _ = _autocreate_alphabet(Alphabet_X, fill_value_Alphabet_X)
     else:
         Alphabet_X, fill_value_Alphabet_X = _autocreate_alphabet(X, fill_value_X)
@@ -821,9 +819,7 @@ def information_co(
     """
     X, fill_value_X = _sanitise_array_input(X, fill_value)
     if Alphabet_X is not None:
-        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(
-            Alphabet_X, fill_value
-        )
+        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(Alphabet_X, fill_value)
         Alphabet_X, _ = _autocreate_alphabet(Alphabet_X, fill_value_Alphabet_X)
     else:
         Alphabet_X, fill_value_Alphabet_X = _autocreate_alphabet(X, fill_value_X)
@@ -987,9 +983,7 @@ def information_binding(
     """
     X, fill_value_X = _sanitise_array_input(X, fill_value)
     if Alphabet_X is not None:
-        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(
-            Alphabet_X, fill_value
-        )
+        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(Alphabet_X, fill_value)
         Alphabet_X, _ = _autocreate_alphabet(Alphabet_X, fill_value_Alphabet_X)
     else:
         Alphabet_X, fill_value_Alphabet_X = _autocreate_alphabet(X, fill_value_X)
@@ -1028,9 +1022,7 @@ def information_binding(
     for i in range(X.shape[0]):
         B -= H_joint
         if X.shape[0] > 1:
-            B += entropy_joint(
-                X[M != i], base, fill_value, estimator, Alphabet_X[M != i]
-            )
+            B += entropy_joint(X[M != i], base, fill_value, estimator, Alphabet_X[M != i])
 
     if keep_dims:
         B = B[..., np.newaxis]
@@ -1318,23 +1310,17 @@ def information_mutual_conditional(
     Y, fill_value_Y = _sanitise_array_input(Y, fill_value)
     Z, fill_value_Z = _sanitise_array_input(Z, fill_value)
     if Alphabet_X is not None:
-        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(
-            Alphabet_X, fill_value
-        )
+        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(Alphabet_X, fill_value)
         Alphabet_X, _ = _autocreate_alphabet(Alphabet_X, fill_value_Alphabet_X)
     else:
         Alphabet_X, fill_value_Alphabet_X = _autocreate_alphabet(X, fill_value_X)
     if Alphabet_Y is not None:
-        Alphabet_Y, fill_value_Alphabet_Y = _sanitise_array_input(
-            Alphabet_Y, fill_value
-        )
+        Alphabet_Y, fill_value_Alphabet_Y = _sanitise_array_input(Alphabet_Y, fill_value)
         Alphabet_Y, _ = _autocreate_alphabet(Alphabet_Y, fill_value_Alphabet_Y)
     else:
         Alphabet_Y, fill_value_Alphabet_Y = _autocreate_alphabet(Y, fill_value_Y)
     if Alphabet_Z is not None:
-        Alphabet_Z, fill_value_Alphabet_Z = _sanitise_array_input(
-            Alphabet_Z, fill_value
-        )
+        Alphabet_Z, fill_value_Alphabet_Z = _sanitise_array_input(Alphabet_Z, fill_value)
         Alphabet_Z, _ = _autocreate_alphabet(Alphabet_Z, fill_value_Alphabet_Z)
     else:
         Alphabet_Z, fill_value_Alphabet_Z = _autocreate_alphabet(Z, fill_value_Z)
@@ -1642,16 +1628,12 @@ def information_lautum(
     X, fill_value_X = _sanitise_array_input(X, fill_value)
     Y, fill_value_Y = _sanitise_array_input(Y, fill_value)
     if Alphabet_X is not None:
-        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(
-            Alphabet_X, fill_value
-        )
+        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(Alphabet_X, fill_value)
         Alphabet_X, _ = _autocreate_alphabet(Alphabet_X, fill_value_Alphabet_X)
     else:
         Alphabet_X, fill_value_Alphabet_X = _autocreate_alphabet(X, fill_value_X)
     if Alphabet_Y is not None:
-        Alphabet_Y, fill_value_Alphabet_Y = _sanitise_array_input(
-            Alphabet_Y, fill_value
-        )
+        Alphabet_Y, fill_value_Alphabet_Y = _sanitise_array_input(Alphabet_Y, fill_value)
         Alphabet_Y, _ = _autocreate_alphabet(Alphabet_Y, fill_value_Alphabet_Y)
     else:
         Alphabet_Y, fill_value_Alphabet_Y = _autocreate_alphabet(Y, fill_value_Y)
@@ -1979,16 +1961,12 @@ def information_mutual_normalised(
     X, fill_value_X = _sanitise_array_input(X, fill_value)
     Y, fill_value_Y = _sanitise_array_input(Y, fill_value)
     if Alphabet_X is not None:
-        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(
-            Alphabet_X, fill_value
-        )
+        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(Alphabet_X, fill_value)
         Alphabet_X, _ = _autocreate_alphabet(Alphabet_X, fill_value_Alphabet_X)
     else:
         Alphabet_X, fill_value_Alphabet_X = _autocreate_alphabet(X, fill_value_X)
     if Alphabet_Y is not None:
-        Alphabet_Y, fill_value_Alphabet_Y = _sanitise_array_input(
-            Alphabet_Y, fill_value
-        )
+        Alphabet_Y, fill_value_Alphabet_Y = _sanitise_array_input(Alphabet_Y, fill_value)
         Alphabet_Y, _ = _autocreate_alphabet(Alphabet_Y, fill_value_Alphabet_Y)
     else:
         Alphabet_Y, fill_value_Alphabet_Y = _autocreate_alphabet(Y, fill_value_Y)
@@ -2043,66 +2021,34 @@ def information_mutual_normalised(
 
     norm_factor = norm_factor.upper().replace(" ", "")
     if norm_factor == "Y":
-        H2 = entropy(
-            Y, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_Y
-        )
-        H2 = np.reshape(
-            H2, np.append(np.ones(I.ndim - H2.ndim), H2.shape).astype("int")
-        )
+        H2 = entropy(Y, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_Y)
+        H2 = np.reshape(H2, np.append(np.ones(I.ndim - H2.ndim), H2.shape).astype("int"))
 
         C = H2
     elif norm_factor == "X":
-        H1 = entropy(
-            X, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_X
-        )
-        H1 = np.reshape(
-            H1, np.append(H1.shape, np.ones(I.ndim - H1.ndim)).astype("int")
-        )
+        H1 = entropy(X, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_X)
+        H1 = np.reshape(H1, np.append(H1.shape, np.ones(I.ndim - H1.ndim)).astype("int"))
 
         C = H1
     elif norm_factor == "Y+X" or norm_factor == "X+Y":
-        H1 = entropy(
-            X, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_X
-        )
-        H1 = np.reshape(
-            H1, np.append(H1.shape, np.ones(I.ndim - H1.ndim)).astype("int")
-        )
-        H2 = entropy(
-            Y, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_Y
-        )
-        H2 = np.reshape(
-            H2, np.append(np.ones(I.ndim - H2.ndim), H2.shape).astype("int")
-        )
+        H1 = entropy(X, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_X)
+        H1 = np.reshape(H1, np.append(H1.shape, np.ones(I.ndim - H1.ndim)).astype("int"))
+        H2 = entropy(Y, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_Y)
+        H2 = np.reshape(H2, np.append(np.ones(I.ndim - H2.ndim), H2.shape).astype("int"))
 
         C = H1 + H2
     elif norm_factor == "MIN":
-        H1 = entropy(
-            X, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_X
-        )
-        H1 = np.reshape(
-            H1, np.append(H1.shape, np.ones(I.ndim - H1.ndim)).astype("int")
-        )
-        H2 = entropy(
-            Y, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_Y
-        )
-        H2 = np.reshape(
-            H2, np.append(np.ones(I.ndim - H2.ndim), H2.shape).astype("int")
-        )
+        H1 = entropy(X, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_X)
+        H1 = np.reshape(H1, np.append(H1.shape, np.ones(I.ndim - H1.ndim)).astype("int"))
+        H2 = entropy(Y, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_Y)
+        H2 = np.reshape(H2, np.append(np.ones(I.ndim - H2.ndim), H2.shape).astype("int"))
 
         C = np.minimum(H1, H2)
     elif norm_factor == "MAX":
-        H1 = entropy(
-            X, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_X
-        )
-        H1 = np.reshape(
-            H1, np.append(H1.shape, np.ones(I.ndim - H1.ndim)).astype("int")
-        )
-        H2 = entropy(
-            Y, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_Y
-        )
-        H2 = np.reshape(
-            H2, np.append(np.ones(I.ndim - H2.ndim), H2.shape).astype("int")
-        )
+        H1 = entropy(X, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_X)
+        H1 = np.reshape(H1, np.append(H1.shape, np.ones(I.ndim - H1.ndim)).astype("int"))
+        H2 = entropy(Y, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_Y)
+        H2 = np.reshape(H2, np.append(np.ones(I.ndim - H2.ndim), H2.shape).astype("int"))
 
         C = np.maximum(H1, H2)
     elif norm_factor == "XY" or norm_factor == "YX":
@@ -2151,18 +2097,10 @@ def information_mutual_normalised(
 
             C = H
     elif norm_factor == "SQRT":
-        H1 = entropy(
-            X, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_X
-        )
-        H1 = np.reshape(
-            H1, np.append(H1.shape, np.ones(I.ndim - H1.ndim)).astype("int")
-        )
-        H2 = entropy(
-            Y, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_Y
-        )
-        H2 = np.reshape(
-            H2, np.append(np.ones(I.ndim - H2.ndim), H2.shape).astype("int")
-        )
+        H1 = entropy(X, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_X)
+        H1 = np.reshape(H1, np.append(H1.shape, np.ones(I.ndim - H1.ndim)).astype("int"))
+        H2 = entropy(Y, fill_value=fill_value, estimator=estimator, Alphabet_X=Alphabet_Y)
+        H2 = np.reshape(H2, np.append(np.ones(I.ndim - H2.ndim), H2.shape).astype("int"))
 
         C = np.sqrt(H1 * H2)
     else:
@@ -2655,16 +2593,12 @@ def entropy_cross(
     X, fill_value_X = _sanitise_array_input(X, fill_value)
     Y, fill_value_Y = _sanitise_array_input(Y, fill_value)
     if Alphabet_X is not None:
-        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(
-            Alphabet_X, fill_value
-        )
+        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(Alphabet_X, fill_value)
         Alphabet_X, _ = _autocreate_alphabet(Alphabet_X, fill_value_Alphabet_X)
     else:
         Alphabet_X, fill_value_Alphabet_X = _autocreate_alphabet(X, fill_value_X)
     if Alphabet_Y is not None:
-        Alphabet_Y, fill_value_Alphabet_Y = _sanitise_array_input(
-            Alphabet_Y, fill_value
-        )
+        Alphabet_Y, fill_value_Alphabet_Y = _sanitise_array_input(Alphabet_Y, fill_value)
         Alphabet_Y, _ = _autocreate_alphabet(Alphabet_Y, fill_value_Alphabet_Y)
     else:
         Alphabet_Y, fill_value_Alphabet_Y = _autocreate_alphabet(Y, fill_value_Y)
@@ -3100,16 +3034,12 @@ def divergence_jensenshannon(
     X, fill_value_X = _sanitise_array_input(X, fill_value)
     Y, fill_value_Y = _sanitise_array_input(Y, fill_value)
     if Alphabet_X is not None:
-        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(
-            Alphabet_X, fill_value
-        )
+        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(Alphabet_X, fill_value)
         Alphabet_X, _ = _autocreate_alphabet(Alphabet_X, fill_value_Alphabet_X)
     else:
         Alphabet_X, fill_value_Alphabet_X = _autocreate_alphabet(X, fill_value_X)
     if Alphabet_Y is not None:
-        Alphabet_Y, fill_value_Alphabet_Y = _sanitise_array_input(
-            Alphabet_Y, fill_value
-        )
+        Alphabet_Y, fill_value_Alphabet_Y = _sanitise_array_input(Alphabet_Y, fill_value)
         Alphabet_Y, _ = _autocreate_alphabet(Alphabet_Y, fill_value_Alphabet_Y)
     else:
         Alphabet_Y, fill_value_Alphabet_Y = _autocreate_alphabet(Y, fill_value_Y)
@@ -3571,16 +3501,12 @@ def entropy_conditional(
     X, fill_value_X = _sanitise_array_input(X, fill_value)
     Y, fill_value_Y = _sanitise_array_input(Y, fill_value)
     if Alphabet_X is not None:
-        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(
-            Alphabet_X, fill_value
-        )
+        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(Alphabet_X, fill_value)
         Alphabet_X, _ = _autocreate_alphabet(Alphabet_X, fill_value_Alphabet_X)
     else:
         Alphabet_X, fill_value_Alphabet_X = _autocreate_alphabet(X, fill_value_X)
     if Alphabet_Y is not None:
-        Alphabet_Y, fill_value_Alphabet_Y = _sanitise_array_input(
-            Alphabet_Y, fill_value
-        )
+        Alphabet_Y, fill_value_Alphabet_Y = _sanitise_array_input(Alphabet_Y, fill_value)
         Alphabet_Y, _ = _autocreate_alphabet(Alphabet_Y, fill_value_Alphabet_Y)
     else:
         Alphabet_Y, fill_value_Alphabet_Y = _autocreate_alphabet(Y, fill_value_Y)
@@ -3778,9 +3704,7 @@ def entropy_joint(
     # values.
     X, fill_value_X = _sanitise_array_input(X, fill_value)
     if Alphabet_X is not None:
-        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(
-            Alphabet_X, fill_value
-        )
+        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(Alphabet_X, fill_value)
         Alphabet_X, _ = _autocreate_alphabet(Alphabet_X, fill_value_Alphabet_X)
     else:
         Alphabet_X, fill_value_Alphabet_X = _autocreate_alphabet(X, fill_value_X)
@@ -3947,9 +3871,7 @@ def entropy(X, base=2, fill_value=-1, estimator="ML", Alphabet_X=None, keep_dims
     # entropy_cross(X,X). However, performance would likely be lower!
     X, fill_value_X = _sanitise_array_input(X, fill_value)
     if Alphabet_X is not None:
-        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(
-            Alphabet_X, fill_value
-        )
+        Alphabet_X, fill_value_Alphabet_X = _sanitise_array_input(Alphabet_X, fill_value)
         Alphabet_X, _ = _autocreate_alphabet(Alphabet_X, fill_value_Alphabet_X)
     else:
         Alphabet_X, fill_value_Alphabet_X = _autocreate_alphabet(X, fill_value_X)
@@ -4016,10 +3938,7 @@ def entropy(X, base=2, fill_value=-1, estimator="ML", Alphabet_X=None, keep_dims
         # P_0 is the probability mass assigned to each additional empty bin
         P, P_0 = _estimate_probabilities(L, estimator, n_additional_empty_bins)
         H_0 = (
-            n_additional_empty_bins
-            * P_0
-            * -np.log2(P_0 + np.spacing(0))
-            / np.log2(base)
+            n_additional_empty_bins * P_0 * -np.log2(P_0 + np.spacing(0)) / np.log2(base)
         )
         H[i] = entropy_pmf(P, base, require_valid_pmf=False) + H_0
 
@@ -4464,12 +4383,8 @@ def divergence_kullbackleibler_symmetrised_pmf(
         Q = P
         cartesian_product = True
 
-    H1 = divergence_kullbackleibler_pmf(
-        P, Q, cartesian_product, base, require_valid_pmf
-    )
-    H2 = divergence_kullbackleibler_pmf(
-        Q, P, cartesian_product, base, require_valid_pmf
-    )
+    H1 = divergence_kullbackleibler_pmf(P, Q, cartesian_product, base, require_valid_pmf)
+    H2 = divergence_kullbackleibler_pmf(Q, P, cartesian_product, base, require_valid_pmf)
 
     if cartesian_product:
         H2 = H2.T
@@ -4609,9 +4524,7 @@ def _cartesian_product_apply(X, Y, function, Alphabet_X=None, Alphabet_Y=None):
     return H
 
 
-def _determine_number_additional_empty_bins(
-    Counts, Alphabet, Full_Alphabet, fill_value
-):
+def _determine_number_additional_empty_bins(Counts, Alphabet, Full_Alphabet, fill_value):
     alphabet_sizes = np.sum(np.atleast_2d(Full_Alphabet) != fill_value, axis=-1)
     if np.any(alphabet_sizes != fill_value):
         joint_alphabet_size = np.prod(alphabet_sizes[alphabet_sizes > 0])
@@ -4729,10 +4642,7 @@ def _estimate_probabilities(Counts, estimator, n_additional_empty_bins=0):
         p_r = np.zeros(N_r.size)
         N = np.sum(Counts)
         p_r[1:] = (
-            (np.arange(1, N_r.size) + 1)
-            * 1.0
-            * SmoothedN_r[2:]
-            / (SmoothedN_r[1:-1] * N)
+            (np.arange(1, N_r.size) + 1) * 1.0 * SmoothedN_r[2:] / (SmoothedN_r[1:-1] * N)
         )
         # Estimate probability of observing any unseen symbol
         p_r[0] = 1.0 * N_r[1] / N

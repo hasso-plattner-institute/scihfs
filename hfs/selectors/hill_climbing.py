@@ -1,6 +1,7 @@
 """
 Hill Climbing Feature Selectors.
 """
+
 import math
 
 import numpy as np
@@ -115,7 +116,7 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
                     The scores calculated for each value in X.
         """
         score_matrix = compute_aggregated_values(
-            X.copy(), self._hierarchy, self._columns
+            X.copy(), self._hierarchy_graph, self._columns
         )
 
         if self.dataset_type == "numerical":
@@ -265,14 +266,14 @@ class TopDownSelector(HillClimbingSelector):
         self._score_matrix = self._calculate_scores(X)
 
         # Start with nodes on first level after virtual root node
-        optimal_feature_set = set(self._hierarchy.successors("ROOT"))
+        optimal_feature_set = set(self._hierarchy_graph.successors("ROOT"))
         fitness = 0
         best_fitness = 0
         best_feature_set = None
 
         while True:
             for node in optimal_feature_set:
-                children = list(self._hierarchy.successors(node))
+                children = list(self._hierarchy_graph.successors(node))
                 if children:
                     # Replace the current node with its children and
                     # evaluate the resulting feature set using the
@@ -322,9 +323,7 @@ class TopDownSelector(HillClimbingSelector):
         row_indices = range(self._num_rows)
         for row_index in row_indices:
             same_class = [
-                sample
-                for sample in row_indices
-                if self.y_[sample] == self.y_[row_index]
+                sample for sample in row_indices if self.y_[sample] == self.y_[row_index]
             ]
             other_class = [x for x in row_indices if x not in same_class]
 
@@ -431,7 +430,7 @@ class BottomUpSelector(HillClimbingSelector):
         self._score_matrix = self._calculate_scores(X)
 
         # Start with the leaves.
-        current_feature_set = get_leaves(self._hierarchy)
+        current_feature_set = get_leaves(self._hierarchy_graph)
         if current_feature_set == ["ROOT"] or current_feature_set == []:
             return []
         current_fitness = self._fitness_function(
@@ -443,14 +442,14 @@ class BottomUpSelector(HillClimbingSelector):
         while unvisited:
             temporary_feature_set = current_feature_set.copy()
             node = unvisited.pop()
-            parent = list(self._hierarchy.predecessors(node))[
+            parent = list(self._hierarchy_graph.predecessors(node))[
                 0
             ]  # This does not work with a DAG.
             if parent != "ROOT":
                 # Replace the current node and its siblings with their
                 # parent node.
                 temporary_feature_set.append(parent)
-                children = list(self._hierarchy.successors(parent))
+                children = list(self._hierarchy_graph.successors(parent))
                 updated_feature_set = [
                     node for node in temporary_feature_set if node not in children
                 ]
@@ -472,9 +471,7 @@ class BottomUpSelector(HillClimbingSelector):
     ):
         return self._calculate_similarity(sample_i, sample_j, feature_set)
 
-    def _calculate_similarity(
-        self, sample_i: int, sample_j: int, feature_set: list[int]
-    ):
+    def _calculate_similarity(self, sample_i: int, sample_j: int, feature_set: list[int]):
         if "ROOT" in feature_set:
             feature_set = feature_set.remove("ROOT")
         row_i = self._score_matrix[sample_i, feature_set]
@@ -483,7 +480,7 @@ class BottomUpSelector(HillClimbingSelector):
 
     def _fitness_function(self, comparison_matrix: np.ndarray) -> float:
         # number_of_leaf_nodes is the alpha value from paper.
-        number_of_leaf_nodes = len(get_leaves(self._hierarchy))
+        number_of_leaf_nodes = len(get_leaves(self._hierarchy_graph))
         if number_of_leaf_nodes == 0:
             number_of_leaf_nodes = 1
 

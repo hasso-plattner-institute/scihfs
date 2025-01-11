@@ -1,6 +1,7 @@
 """
 Base class for estimators for eager hierarchical feature selection.
 """
+
 import warnings
 
 import numpy as np
@@ -106,7 +107,7 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
              the columns' index."""
             warnings.warn(warning_missing_nodes)
 
-        nodes = list(self._hierarchy.nodes())
+        nodes = list(self._hierarchy_graph.nodes())
         nodes.remove("ROOT")
         not_in_dataset = [node for node in nodes if node not in self._columns]
         if not_in_dataset:

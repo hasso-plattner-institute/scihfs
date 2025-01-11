@@ -1,6 +1,7 @@
 """
 SHSEL Feature Selector.
 """
+
 import statistics
 
 import numpy as np
@@ -111,7 +112,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         """The feature selection algorithm."""
         if self.preprocess_numerical_data:
             X = self._preprocess(X)
-        paths = get_paths(self._hierarchy, reverse=True)
+        paths = get_paths(self._hierarchy_graph, reverse=True)
         self._inital_selection(paths, X)
         self._pruning(paths)
         if self.use_hfe_extension:
@@ -130,8 +131,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                     break
                 if self.relevance_metric == "IG":
                     similarity = 1 - abs(
-                        self._relevance_values[parent_node]
-                        - self._relevance_values[node]
+                        self._relevance_values[parent_node] - self._relevance_values[node]
                     )
                 else:
                     similarity = pearson_correlation(
@@ -149,11 +149,11 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         """Select leaves of incomplete paths (part of HFE extension)"""
         leaves = [
             leaf
-            for leaf in get_leaves(self._hierarchy)
+            for leaf in get_leaves(self._hierarchy_graph)
             if leaf in self.representatives_
         ]
 
-        paths = get_paths(self._hierarchy)
+        paths = get_paths(self._hierarchy_graph)
         max_path_len = max([len(path) for path in paths])
         selected_leaves = []
         for leaf in leaves:
@@ -164,7 +164,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
 
     def _pruning(self, paths):
         """Second part of the feature selection algorithm"""
-        paths = get_paths(self._hierarchy, reverse=True)
+        paths = get_paths(self._hierarchy_graph, reverse=True)
         updated_representatives = []
 
         for path in paths:
@@ -194,7 +194,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         This is part of the HFE extension and only makes sense for
         numerial data and not for binary data.
         """
-        return compute_aggregated_values("ROOT", X, self._hierarchy, self._columns)
+        return compute_aggregated_values("ROOT", X, self._hierarchy_graph, self._columns)
 
     def _leaf_filtering(self):
         """Filtering representatives by removing leaves with low relevance.

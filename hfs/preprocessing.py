@@ -1,12 +1,17 @@
 """
 Sklearn compatible estimators for preprocessing hierarchical data.
 """
+
+from __future__ import annotations
+
+import warnings
+
 import networkx as nx
 import numpy as np
 from networkx.algorithms.dag import ancestors
 from sklearn.utils.validation import check_array, check_is_fitted
 
-from hfs.helpers import get_irrelevant_leaves
+from hfs.helpers import shrink_dag
 from hfs.selectors import HierarchicalEstimator
 
 
@@ -54,8 +59,6 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         y : None
             There is no need of a target in a transformer, yet the pipeline API
             requires this parameter.
-            X : {array-like, sparse matrix}, shape (n_samples, n_features)
-            The training input samples.
         columns: list or None, length n_features
             The mapping from the hierarchy graph's nodes to the columns in X.
             A list of ints. If this parameter is None the columns in X and
@@ -72,6 +75,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         if columns is None:
             self._columns = [-1] * self.n_features_in_
 
+        self._check_dag()
         self._extend_dag()
         self._shrink_dag()
         self._find_missing_columns()
@@ -104,9 +108,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         # Check that the input is of the same shape as the one passed
         # during fit.
         if X.shape[1] != self.n_features_in_:
-            raise ValueError(
-                "Shape of input is different from what was seen" "in `fit`"
-            )
+            raise ValueError("Shape of input is different from what was seen" "in `fit`")
 
         X_ = self._add_columns(X)
         X_ = self._propagate_ones(X_)
@@ -122,46 +124,68 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
             In this case the hierarchy graph has not been updated yet.
         """
         if self.is_fitted_:
-            output_hierarchy = self._hierarchy
+            output_hierarchy = self._hierarchy_graph
             output_hierarchy.remove_node("ROOT")
-            return nx.to_numpy_array(self._hierarchy)
+            return nx.to_numpy_array(self._hierarchy_graph)
         else:
             raise RuntimeError("Instance has not been fitted.")
+
+    def _check_dag(self):
+        """Checks if the hierarchy graph is a directed acyclic graph.
+
+        Raises
+        ------
+        ValueError
+            If the hierarchy graph is not a directed acyclic graph.
+        """
+        if not nx.is_directed_acyclic_graph(self._hierarchy_graph):
+            raise ValueError("The hierarchy graph is not a directed acyclic graph.")
 
     def _extend_dag(self):
         """Adds missing nodes to the hierarchy graph.
 
-        For columns that no have a corresponding node in the hierarchy a
+        For columns that don't have a corresponding node in the hierarchy a
         node is added right under the "ROOT" node.
+        We then update the columns mapping to include the new nodes.
+        If a node in the hierarchy has a name conflict with a column in the
+        dataset we add a node with the next available id.
         """
-        max = len(self._hierarchy.nodes) - 1
-        for x in range(len(self._columns)):
-            if self._columns[x] == -1:
-                if x in self._hierarchy.nodes:
-                    self._hierarchy.add_edge("ROOT", max)
-                    self._columns[x] = max
-                    max += 1
+        # Subtract 1 because the "ROOT" node is included in the total count,
+        # but the other N-1 nodes are indexed starting from 0
+        next_available_node_id = len(self._hierarchy_graph.nodes) - 1
+        columns_without_node = []
+
+        for column_index, column_mapping in enumerate(self._columns):
+            if column_mapping == -1:  # no corresponding node yet
+                columns_without_node.append(column_index)
+                if column_index in self._hierarchy_graph.nodes:
+                    # column_index has name conflict with an existing node
+                    # so we add a node with next available id
+                    self._hierarchy_graph.add_edge("ROOT", next_available_node_id)
+                    self._columns[column_index] = next_available_node_id
+                    next_available_node_id += 1
                 else:
-                    self._hierarchy.add_edge("ROOT", x)
-                    self._columns[x] = x
+                    # directly add the column as a node under "ROOT"
+                    self._hierarchy_graph.add_edge("ROOT", column_index)
+                    self._columns[column_index] = column_index
+
+        # Warn user for all columns that were not in hierarchy
+        if columns_without_node:
+            warning_missing_nodes = f"""The following columns in X
+             do not have a corresponding node in the hierarchy: {columns_without_node}."""
+            warnings.warn(warning_missing_nodes)
 
     def _shrink_dag(self):
-        """Unnecessary nodes are removed from the hierarchy graph.
+        """Irrelevant nodes are removed from the hierarchy graph.
 
-        Nodes are considered unnecessary if they do not have a corresponding
+        Nodes are considered irrelevant if they do not have a corresponding
         column in the input dataframe and don't have any children. These
         features would always be 0 in the dataset and, therefore, do not
         contain any necessary information.
         """
-        leaves = get_irrelevant_leaves(
-            x_identifier=self._columns, digraph=self._hierarchy
-        )
-        while leaves:
-            for x in leaves:
-                self._hierarchy.remove_node(x)
-            leaves = get_irrelevant_leaves(
-                x_identifier=self._columns, digraph=self._hierarchy
-            )
+        node_identifier = self._columns
+        digraph = self._hierarchy_graph
+        self._hierarchy_graph = shrink_dag(node_identifier, digraph)
 
     def _find_missing_columns(self):
         """Finds nodes for which a column needs to be added to the dataset.
@@ -171,7 +195,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         """
         missing_nodes = [
             node
-            for node in self._hierarchy.nodes
+            for node in self._hierarchy_graph.nodes
             if node not in self._columns and node != "ROOT"
         ]
         self._columns.extend(missing_nodes)
@@ -214,12 +238,12 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         X : array of shape [n_samples, n_new_features]
             The dataset with updated feature values.
         """
-        nodes = list(self._hierarchy.nodes)
+        nodes = list(self._hierarchy_graph.nodes)
         nodes.remove("ROOT")
 
         for node in nodes:
             column_index = self._column_index(node)
-            ancestor_nodes = ancestors(self._hierarchy, node)
+            ancestor_nodes = ancestors(self._hierarchy_graph, node)
             ancestor_nodes.remove("ROOT")
             for row_index, entry in enumerate(X[:, column_index]):
                 if entry == 1.0:
@@ -237,8 +261,8 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         transformation needs to be performed to ouput the hierarchy.
         Therefore the node names need to be adjusted.
         """
-        nodes = list(self._hierarchy.nodes())
+        nodes = list(self._hierarchy_graph.nodes())
         nodes.remove("ROOT")
         self._columns = [nodes.index(node_name) for node_name in self._columns]
         mapping = {node_name: nodes.index(node_name) for node_name in nodes}
-        self._hierarchy = nx.relabel_nodes(self._hierarchy, mapping)
+        self._hierarchy_graph = nx.relabel_nodes(self._hierarchy_graph, mapping)

@@ -7,7 +7,6 @@ from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
 
 class MR(LazyHierarchicalFeatureSelector):
-
     """
     Select non-redundant features with the highest relevance on each path following the algorithm proposed by Wan and Freitas
     """
@@ -54,6 +53,6 @@ class MR(LazyHierarchicalFeatureSelector):
             self._feature_length[idx] = len(
                 [nodes for nodes, status in self._instance_status.items() if status]
             )
-            for node in self._hierarchy:
+            for node in self._hierarchy_graph:
                 self._instance_status[node] = 1
         return predictions

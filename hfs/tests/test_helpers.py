@@ -3,6 +3,7 @@ from fractions import Fraction
 import networkx as nx
 import numpy as np
 import pytest
+from info_gain.info_gain import info_gain, info_gain_ratio
 
 from hfs.helpers import (
     add_virtual_root_node,
@@ -43,16 +44,18 @@ def test_relevance(lazy_data2):
         assert value == results[node_idx]
 
 
-def test_information_gain(data2, result_ig_values2):
+def test_information_gain(data2):
     X, y, _, _ = data2
     ig = information_gain(X, y)
-    assert ig == result_ig_values2
+    ig_expected = [round(info_gain(X[:, i], y), 6) for i in range(len(X))]
+    assert ig == ig_expected
 
 
-def test_gain_ratio(data2, result_gr_values2):
+def test_gain_ratio(data2):
     X, y, _, _ = data2
     gr = gain_ratio(X, y)
-    assert gr == result_gr_values2
+    gr_expected = [info_gain_ratio(X[:, i], y) for i in range(len(X))]
+    assert gr == gr_expected
 
 
 @pytest.mark.parametrize(

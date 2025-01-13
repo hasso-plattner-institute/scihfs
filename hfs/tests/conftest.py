@@ -4,7 +4,6 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pytest
-from info_gain.info_gain import info_gain, info_gain_ratio
 
 from hfs.helpers import get_columns_for_numpy_hierarchy
 from hfs.metrics import cosine_similarity
@@ -541,30 +540,6 @@ def result_score_matrix3():
 @pytest.fixture()
 def result_comparison_matrix_bu3(result_score_matrix3):
     return result_comparison_matrix_bu(result_score_matrix3)
-
-
-@pytest.fixture()
-def result_gr_values2():
-    y = np.array([1, 0, 0, 1, 1])
-    return [
-        info_gain_ratio(np.array([1, 1, 1, 1, 1]), y),
-        info_gain_ratio(np.array([1, 1, 1, 0, 1]), y),
-        info_gain_ratio(np.array([0, 1, 1, 0, 0]), y),
-        info_gain_ratio(np.array([0, 1, 0, 0, 0]), y),
-        info_gain_ratio(np.array([1, 0, 0, 1, 0]), y),
-    ]
-
-
-@pytest.fixture()
-def result_ig_values2():
-    y = np.array([1, 0, 0, 1, 1])
-    return [
-        info_gain(np.array([1, 1, 1, 1, 1]), y),
-        info_gain(np.array([1, 1, 1, 0, 1]), y),
-        info_gain(np.array([0, 1, 1, 0, 0]), y),
-        info_gain(np.array([0, 1, 0, 0, 0]), y),
-        info_gain(np.array([1, 0, 0, 1, 0]), y),
-    ]
 
 
 @pytest.fixture()

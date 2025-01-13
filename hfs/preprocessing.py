@@ -72,8 +72,9 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         """
         X = check_array(X, accept_sparse=True)
         super().fit(X, y, columns)
-        if columns is None:
-            self._columns = [-1] * self.n_features_in_
+        self._columns = [
+            column if column < len(self.hierarchy) else -1 for column in self._columns
+        ]
 
         self._check_dag()
         self._extend_dag()

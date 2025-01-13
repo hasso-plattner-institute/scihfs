@@ -79,7 +79,7 @@ def test_adjust_node_names():
 
 
 def test_columns_not_in_hierarchy_raises_warning():
-    hierarchy_graph = nx.DiGraph([(1, 2), (2, 3)])
+    hierarchy_graph = nx.DiGraph([(0, 1), (2, 1)])
     hierarchy = nx.to_numpy_array(hierarchy_graph)
     estimator = HierarchicalPreprocessor(hierarchy)
     X = [[0.42, 4.2, 0.42], [4, 2, 0.42]]

@@ -66,6 +66,7 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
             self._columns = list(range(self.n_features_in_))
 
         self._set_hierarchy()
+        self._check_dag()
 
         return self
 
@@ -101,6 +102,17 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
                 hierarchy graph for columns i in the dataset.
         """
         return self._columns
+
+    def _check_dag(self):
+        """Checks if the hierarchy graph is a directed acyclic graph.
+
+        Raises
+        ------
+        ValueError
+            If the hierarchy graph is not a directed acyclic graph.
+        """
+        if not nx.is_directed_acyclic_graph(self._hierarchy_graph):
+            raise ValueError("The hierarchy graph is not a directed acyclic graph.")
 
     def _set_hierarchy(self):
         """

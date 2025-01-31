@@ -10,7 +10,7 @@ Learn how to use
 
 The package cannot be installed with pip or conda yet so to create your package, you need to clone the ``hfs`` repository::
 
-    $ git clone https://github.com/hasso-plattner-institute/hfs.git
+    $ git clone https://github.com/hasso-plattner-institute/scihfs.git
 
 We recommend that you create a new virtual environment for hfs using poetry in which you install the required packages with::
 

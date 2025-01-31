@@ -57,7 +57,7 @@ import sphinx
 if LooseVersion(sphinx.__version__) < LooseVersion("1.4"):
     extensions.append("sphinx.ext.pngmath")
 else:
-    extensions.append("sphinx.ext.imgmath")
+    extensions.append("sphinx.ext.mathjax")
 
 autodoc_default_flags = ["members", "inherited-members"]
 
@@ -322,8 +322,8 @@ bibtex_bibfiles = ["refs.bib"]
 # intersphinx configuration
 intersphinx_mapping = {
     "python": ("https://docs.python.org/{.major}".format(sys.version_info), None),
-    "numpy": ("https://docs.scipy.org/doc/numpy/", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "matplotlib": ("https://matplotlib.org/", None),
     "sklearn": ("http://scikit-learn.org/stable", None),
 }

@@ -67,7 +67,7 @@ from sklearn.naive_bayes import BernoulliNB
 
 from hfs.data_utils import create_mapping_columns_to_nodes, load_data, process_data
 from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.shsel import SHSELSelector
+from hfs.selectors.shsel import SHSELSelector
 
 
 # Preprocess hierarchy and dataset before feature selection to ensure all nodes

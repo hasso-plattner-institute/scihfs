@@ -34,42 +34,46 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         self.hierarchy = hierarchy
 
     def fit(self, X, y=None, columns=None):
-        """Sets the parameters for data transformation and prepares hierarchy.
+        """
+        Sets the parameters for data transformation and prepares hierarchy.
 
-        Following conditions need to be fulfilled for the feature
-        selection algorithms:
-            - every node in the hierarchy graph should be able to be mapped to
-              one column in the dataset and every column in the dataset should
-              have a corresponding node in the hierarchy.
-            - for binary data, if a feature has the value 1, all of its descendents
-              in the hierarchy should also have the value 1.
+        Following conditions need to be fulfilled for the feature selection algorithms:
 
-        To achieve these conditions missing columns are added to
-        the hierarchy and unnecessary nodes are removed. The self._columns
-        parameter is adjusted so that it can be used to add additional columns
-        to the dataset in the transform method. After fitting the dataset can
-        be transformed with the transform method and the updated hierarchy
-        and columns mapping can be retrieved with get_hierarchy and
-        get_columns.
+        - Every node in the hierarchy graph should be mapped to one column in the dataset,
+          and every column in the dataset should have a corresponding node in the hierarchy.
+
+        - For binary data, if a feature has the value 1, all of its descendants in the
+          hierarchy should also have the value 1.
+
+        To achieve these conditions, missing columns are added to the hierarchy,
+        and unnecessary nodes are removed. The `self._columns` parameter is adjusted so
+        that it can be used to add additional columns to the dataset in the `transform`
+        method.
+
+        After fitting, the dataset can be transformed with the `transform` method, and
+        the updated hierarchy and column mapping can be retrieved with `get_hierarchy`
+        and `get_columns`.
 
         Parameters
         ----------
         X : {array-like, sparse matrix}, shape (n_samples, n_features)
             The training input samples.
+
         y : None
-            There is no need of a target in a transformer, yet the pipeline API
+            This transformer does not require a target variable, but the pipeline API
             requires this parameter.
-        columns: list or None, length n_features
-            The mapping from the hierarchy graph's nodes to the columns in X.
-            A list of ints. If this parameter is None the columns in X and
-            the corresponding nodes in the hierarchy are expected to be in the
-            same order.
+
+        columns : list or None, length n_features
+            The mapping from the hierarchy graph's nodes to the columns in X. If this
+            parameter is None, the columns in X and the corresponding nodes in the
+            hierarchy are expected to be in the same order.
 
         Returns
         -------
         self : object
             Returns self.
         """
+
         X = check_array(X, accept_sparse=True)
         super().fit(X, y, columns)
         if columns is None:

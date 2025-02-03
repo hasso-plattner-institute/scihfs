@@ -13,7 +13,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: psf/black@stable
         with:
           # cannot use use_pyproject to use settings from pyproject.toml below python 3.11
@@ -34,7 +34,7 @@ jobs:
       # Cache the installation of Poetry itself, e.g. the next step. This prevents the workflow
       # from installing Poetry every time, which can be slow.
       - name: cache poetry install
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.local
           key: poetry-1.7.1
@@ -58,7 +58,7 @@ jobs:
       # them in the cache key. I'm not, so it can be simple and just depend on the poetry.lock.
       - name: cache deps
         id: cache-deps
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: .venv
           key: pydeps-${{ hashFiles('**/poetry.lock') }}

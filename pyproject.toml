@@ -43,6 +43,7 @@ exclude = '''
     | \.venv
     | build
     | dist
+    | piitlib.py
 )/
 '''
 

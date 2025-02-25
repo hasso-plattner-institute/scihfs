@@ -7,7 +7,7 @@ from info_gain.info_gain import info_gain, info_gain_ratio
 from numpy.linalg import norm
 from scipy import sparse
 
-from hfs.lib.pyitlib import information_mutual_conditional as imc
+from hfs.pyitlib import information_mutual_conditional as imc
 
 
 def lift(data, labels):

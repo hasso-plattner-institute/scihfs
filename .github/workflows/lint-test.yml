@@ -63,7 +63,6 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .venv
-          # path: ~/.cache
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
       # Install dependencies. `--no-root` means "install all dependencies but not the project
@@ -75,7 +74,6 @@ jobs:
       - if: runner.os == 'Ubuntu'
         name: Install library
         run: poetry install --no-interaction
-      # - if: runner.os == 'Windows' || runner.os == 'macOS'
       - run: |
           source $VENV
           poetry run pytest hfs

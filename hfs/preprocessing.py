@@ -183,7 +183,8 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         # Warn user for all columns that were not in hierarchy
         if columns_without_node:
             warning_missing_nodes = f"""The following columns in X
-             do not have a corresponding node in the hierarchy: {columns_without_node}."""
+             do not have a corresponding node in the hierarchy: {columns_without_node}.
+             A node was added for it under ROOT."""
             warnings.warn(warning_missing_nodes, ColumnNotInHierarchyWarning)
 
     def _shrink_dag(self):

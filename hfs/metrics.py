@@ -83,6 +83,7 @@ def information_gain(data, labels):
         else:
             column = data[:, column_index]
         ig = info_gain(column, labels)
+        ig = round(ig, 6)
         ig_values.append(ig)
     return ig_values
 

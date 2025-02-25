@@ -96,13 +96,17 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
             Returns self.
         """
         # Input validation
+        if self.use_hfe_extension and self.relevance_metric != "Correlation":
+            raise ValueError(
+                "When using the HFE extension the relevance_metric should be 'Correlation'."
+            )
         X, y = check_X_y(X, y, accept_sparse=True)
         if sparse.issparse(X):
             X = X.tocsr()
         super().fit(X, y, columns)
 
         # Feature Selection Algorithm
-        self._calculate_relevance(X, y)
+        self._calculate_ig_relevance(X, y)
         self._fit(X)
 
         self.is_fitted_ = True
@@ -120,11 +124,10 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
 
     def _inital_selection(self, paths, X):
         """First part of the feature selection algorithm."""
-        remove_nodes = set()
+        nodes_to_remove = set()
 
         for path in paths:
-            # If the relevance is to similar to the parents relevance
-            # the child is removed
+            # If the relevance is similar to the parents relevance, the child is removed
             for index, node in enumerate(path):
                 parent_node = path[index + 1]
                 if parent_node == "ROOT":
@@ -139,32 +142,14 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                         X[:, self._columns.index(node)],
                     )
                 if similarity >= self.similarity_threshold:
-                    remove_nodes.add(node)
+                    nodes_to_remove.add(node)
 
         self.representatives_ = [
-            feature for feature in self._columns if feature not in remove_nodes
+            feature for feature in self._columns if feature not in nodes_to_remove
         ]
-
-    def _select_leaves(self):
-        """Select leaves of incomplete paths (part of HFE extension)"""
-        leaves = [
-            leaf
-            for leaf in get_leaves(self._hierarchy_graph)
-            if leaf in self.representatives_
-        ]
-
-        paths = get_paths(self._hierarchy_graph)
-        max_path_len = max([len(path) for path in paths])
-        selected_leaves = []
-        for leaf in leaves:
-            for path in paths:
-                if leaf in path and len(path) != max_path_len:
-                    selected_leaves.append(leaf)
-        return selected_leaves
 
     def _pruning(self, paths):
         """Second part of the feature selection algorithm"""
-        paths = get_paths(self._hierarchy_graph, reverse=True)
         updated_representatives = []
 
         for path in paths:
@@ -176,15 +161,21 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                     if node in self.representatives_
                 ]
             )
+            average_relevance = round(average_relevance, 6)
             for node in path:
-                if node in self.representatives_ and round(
-                    self._relevance_values[node], 6
-                ) >= round(average_relevance, 6):
-                    updated_representatives.append(node)
+                if (
+                    node in self.representatives_
+                    and self._relevance_values[node] >= average_relevance
+                ):
+                    if (
+                        self.use_hfe_extension is False
+                        or self._relevance_values[node] > 0.0
+                    ):
+                        updated_representatives.append(node)
 
-        self.representatives_ = updated_representatives
+        self.representatives_ = list(set(updated_representatives))  # remove duplicates
 
-    def _calculate_relevance(self, X, y):
+    def _calculate_ig_relevance(self, X, y):
         values = information_gain(X, y)
         self._relevance_values = dict(zip(self._columns, values))
 
@@ -205,15 +196,32 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
             [self._relevance_values[node] for node in self.representatives_]
         )
 
-        leaves = self._select_leaves()
+        leaves = self._get_leaves_in_incomplete_paths()
 
-        remove_nodes = [
+        nodes_to_remove = [
             leaf
             for leaf in leaves
             if self._relevance_values[leaf] < average_ig
             or self._relevance_values[leaf] == 0
         ]
         updated_representatives = [
-            node for node in self.representatives_ if node not in remove_nodes
+            node for node in self.representatives_ if node not in nodes_to_remove
         ]
         self.representatives_ = updated_representatives
+
+    def _get_leaves_in_incomplete_paths(self):
+        """Select leaves of incomplete paths (part of HFE extension)"""
+        leaves = [
+            leaf
+            for leaf in get_leaves(self._hierarchy_graph)
+            if leaf in self.representatives_
+        ]
+
+        paths = get_paths(self._hierarchy_graph)
+        max_path_len = max([len(path) for path in paths])
+        selected_leaves = []
+        for leaf in leaves:
+            for path in paths:
+                if leaf in path and len(path) != max_path_len:
+                    selected_leaves.append(leaf)
+        return selected_leaves

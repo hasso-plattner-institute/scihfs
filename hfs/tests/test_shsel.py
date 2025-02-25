@@ -62,10 +62,19 @@ def test_leaf_filtering(data, result, request):
     result = request.getfixturevalue(result)
     X, y, hierarchy, columns = data
     expected, support = result
-    selector = SHSELSelector(hierarchy, use_hfe_extension=True)
+    selector = SHSELSelector(
+        hierarchy, use_hfe_extension=True, relevance_metric="Correlation"
+    )
     selector.fit(X, y, columns)
     X = selector.transform(X)
     assert np.array_equal(X, expected)
 
     support_mask = selector.get_support()
     assert np.array_equal(support_mask, support)
+
+
+def test_fail_on_invalid_relevance_metric(data1):
+    X, y, _, _ = data1
+    selector = SHSELSelector(use_hfe_extension=True, relevance_metric="IG")
+    with pytest.raises(ValueError):
+        selector.fit(X, y)

@@ -63,7 +63,16 @@ jobs:
       # Add Poetry to PATH for macOS
       - name: Add Poetry to PATH on macOS
         if: runner.os == 'macOS'
-        run: echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      # Verify Poetry installation
+      - name: Verify Poetry installation
+        run: |
+          echo "Checking Poetry location..."
+          which poetry || echo "Poetry not found"
+          echo "Current PATH: $PATH"
+          poetry --version
+        shell: bash
 
       # Cache your dependencies (i.e. all the stuff in your `pyproject.toml`). Note the cache
       # key: if you're using multiple Python versions, or multiple OSes, you'd need to include

@@ -38,11 +38,11 @@ jobs:
 
       # # Cache the installation of Poetry itself, e.g. the next step. This prevents the workflow
       # # from installing Poetry every time, which can be slow.
-      - name: cache poetry install
-        uses: actions/cache@v4
-        with:
-          path: ~/.local
-          key: poetry-1.7.1
+      # - name: cache poetry install
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ~/.local
+      #     key: poetry-1.7.1
 
       # Install Poetry.
       # `snok/install-poetry` just calls out toPoetry's default install script
@@ -54,12 +54,12 @@ jobs:
       # cache it.
       - uses: snok/install-poetry@v1
         with:
-          version: 1.7.1
+          version: 1.8.5
           virtualenvs-create: true
           virtualenvs-in-project: true
 
       - name: Load cached venv
-        id: cached-pip-wheels
+        id: cached-poetry-dependencies
         uses: actions/cache@v4
         with:
           # path: .venv
@@ -69,10 +69,9 @@ jobs:
       # Install dependencies. `--no-root` means "install all dependencies but not the project
       # itself", which is what you want to avoid caching _your_ code. The `if` statement
       # ensures this only runs on a cache miss.
-      - run: poetry install --no-interaction --no-root
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-
-      - run: poetry install --no-interaction
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
       - run: |
           source $VENV
           poetry run pytest hfs

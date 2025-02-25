@@ -36,13 +36,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # # Cache the installation of Poetry itself, e.g. the next step. This prevents the workflow
-      # # from installing Poetry every time, which can be slow.
-      # - name: cache poetry install
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: ~/.local
-      #     key: poetry-1.7.1
+      # Cache the installation of Poetry itself, e.g. the next step. This prevents the workflow
+      # from installing Poetry every time, which can be slow.
+      - name: cache poetry install
+        uses: actions/cache@v4
+        with:
+          path: ~/.local
+          key: poetry-1.8.5-${{ runner.os }}
 
       # Install Poetry.
       # `snok/install-poetry` just calls out toPoetry's default install script
@@ -62,8 +62,8 @@ jobs:
         id: cached-poetry-dependencies
         uses: actions/cache@v4
         with:
-          # path: .venv
-          path: ~/.cache
+          path: .venv
+          # path: ~/.cache
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
       # Install dependencies. `--no-root` means "install all dependencies but not the project
@@ -72,6 +72,10 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
+      - if: runner.os == 'Ubuntu'
+        name: Install library
+        run: poetry install --no-interaction
+      # - if: runner.os == 'Windows' || runner.os == 'macOS'
       - run: |
           source $VENV
           poetry run pytest hfs

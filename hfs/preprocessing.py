@@ -15,6 +15,16 @@ from hfs.helpers import shrink_dag
 from hfs.selectors import HierarchicalEstimator
 
 
+class ColumnNotInHierarchyWarning(UserWarning):
+    """Warning raised when columns in X do not have a corresponding node in the hierarchy.
+
+    This warning is just informational and the issue is automatically handled by adding a
+    new node directly under the root, ensuring the column is mapped appropriately.
+    """
+
+    pass
+
+
 class HierarchicalPreprocessor(HierarchicalEstimator):
     """Estimator for preprocessing hierarchical data for feature selection.
 
@@ -174,7 +184,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         if columns_without_node:
             warning_missing_nodes = f"""The following columns in X
              do not have a corresponding node in the hierarchy: {columns_without_node}."""
-            warnings.warn(warning_missing_nodes)
+            warnings.warn(warning_missing_nodes, ColumnNotInHierarchyWarning)
 
     def _shrink_dag(self):
         """Irrelevant nodes are removed from the hierarchy graph.

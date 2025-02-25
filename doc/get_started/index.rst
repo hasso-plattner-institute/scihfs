@@ -2,7 +2,7 @@
 Getting Started with hfs
 #####################################
 
-Learn how to use 
+Learn how to use
 ===================================================
 
 1. Installation
@@ -10,11 +10,11 @@ Learn how to use
 
 The package cannot be installed with pip or conda yet so to create your package, you need to clone the ``hfs`` repository::
 
-    $ git clone https://github.com/sm1lla/hfs.git
+    $ git clone https://github.com/hasso-plattner-institute/scihfs.git
 
-We recommend that you create a new virtual environment for hfs in which you install the required packages with::
+We recommend that you create a new virtual environment for hfs using poetry in which you install the required packages with::
 
-    $ pip install -r requirements.txt
+    $ poetry install
 
 2. Usage
 -------------------------------------------
@@ -24,7 +24,7 @@ Here is a simple example of how to use one of the hierarchical feature selection
 
     import networkx as nx
     import numpy as np
-    
+
     from hfs import SHSELSelector
     from hfs.helpers import get_columns_for_numpy_hierarchy
 
@@ -39,7 +39,7 @@ Here is a simple example of how to use one of the hierarchical feature selection
 
     # Example labels
     y = np.array([1, 0, 0])
-    
+
     # Example hierarchy graph : The node numbers refer to the dataset columns
     graph = nx.DiGraph([(0, 1), (1, 2), (2, 3), (0, 4)])
 

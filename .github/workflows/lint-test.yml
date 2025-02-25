@@ -19,8 +19,9 @@ jobs:
           # cannot use use_pyproject to use settings from pyproject.toml below python 3.11
           options: "--line-length 90 hfs"
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         os: [ubuntu-latest, macOS-latest, windows-latest]

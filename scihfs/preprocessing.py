@@ -75,7 +75,6 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         if columns is None:
             self._columns = [-1] * self.n_features_in_
 
-        self._check_dag()
         self._extend_dag()
         self._shrink_dag()
         self._find_missing_columns()
@@ -129,17 +128,6 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
             return nx.to_numpy_array(self._hierarchy_graph)
         else:
             raise RuntimeError("Instance has not been fitted.")
-
-    def _check_dag(self):
-        """Checks if the hierarchy graph is a directed acyclic graph.
-
-        Raises
-        ------
-        ValueError
-            If the hierarchy graph is not a directed acyclic graph.
-        """
-        if not nx.is_directed_acyclic_graph(self._hierarchy_graph):
-            raise ValueError("The hierarchy graph is not a directed acyclic graph.")
 
     def _extend_dag(self):
         """Adds missing nodes to the hierarchy graph.

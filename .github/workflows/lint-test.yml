@@ -17,7 +17,7 @@ jobs:
       - uses: psf/black@stable
         with:
           # cannot use use_pyproject to use settings from pyproject.toml below python 3.11
-          options: "--line-length 90 hfs"
+          options: "--line-length 90 scihfs"
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -70,4 +70,4 @@ jobs:
         if: steps.cache-deps.outputs.cache-hit != 'true'
 
       - run: poetry install --no-interaction
-      - run: poetry run pytest hfs
+      - run: poetry run pytest scihfs

@@ -33,8 +33,3 @@ repos:
         entry: poetry check
         language: system
         pass_filenames: false
-      - id: poetry-lock
-        name: poetry-lock
-        entry: poetry lock
-        language: system
-        pass_filenames: false

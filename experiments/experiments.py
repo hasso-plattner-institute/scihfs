@@ -6,9 +6,9 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.naive_bayes import BernoulliNB
 
-from hfs.data_utils import create_mapping_columns_to_nodes
-from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.selectors import HIP, HNB, MR, RNB, TAN, HNBs
+from scihfs.data_utils import create_mapping_columns_to_nodes
+from scihfs.preprocessing import HierarchicalPreprocessor
+from scihfs.selectors import HIP, HNB, MR, RNB, TAN, HNBs
 
 
 def data():

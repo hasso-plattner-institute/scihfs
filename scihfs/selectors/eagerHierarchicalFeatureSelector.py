@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.feature_selection import SelectorMixin
 from sklearn.utils.validation import check_array
 
-from hfs.selectors import HierarchicalEstimator
+from scihfs.selectors import HierarchicalEstimator
 
 
 class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):

@@ -2,9 +2,9 @@ import networkx as nx
 import numpy as np
 import pytest
 
-from hfs.data_utils import create_mapping_columns_to_nodes, load_data
-from hfs.helpers import get_columns_for_numpy_hierarchy
-from hfs.preprocessing import HierarchicalPreprocessor
+from scihfs.data_utils import create_mapping_columns_to_nodes, load_data
+from scihfs.helpers import get_columns_for_numpy_hierarchy
+from scihfs.preprocessing import HierarchicalPreprocessor
 
 
 @pytest.mark.parametrize(

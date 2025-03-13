@@ -11,8 +11,8 @@ import numpy as np
 from networkx.algorithms.dag import ancestors
 from sklearn.utils.validation import check_array, check_is_fitted
 
-from hfs.helpers import shrink_dag
-from hfs.selectors import HierarchicalEstimator
+from scihfs.helpers import shrink_dag
+from scihfs.selectors import HierarchicalEstimator
 
 
 class HierarchicalPreprocessor(HierarchicalEstimator):

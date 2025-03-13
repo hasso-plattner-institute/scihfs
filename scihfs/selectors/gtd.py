@@ -7,8 +7,8 @@ from networkx import ancestors, descendants
 from scipy.sparse import issparse
 from sklearn.utils.validation import check_X_y
 
-from hfs.metrics import gain_ratio
-from hfs.selectors import EagerHierarchicalFeatureSelector
+from scihfs.metrics import gain_ratio
+from scihfs.selectors import EagerHierarchicalFeatureSelector
 
 
 class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):

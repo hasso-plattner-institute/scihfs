@@ -8,9 +8,9 @@ import numpy as np
 from scipy import sparse
 from sklearn.utils.validation import check_X_y
 
-from hfs.helpers import compute_aggregated_values, get_leaves, normalize_score
-from hfs.metrics import cosine_similarity
-from hfs.selectors import EagerHierarchicalFeatureSelector
+from scihfs.helpers import compute_aggregated_values, get_leaves, normalize_score
+from scihfs.metrics import cosine_similarity
+from scihfs.selectors import EagerHierarchicalFeatureSelector
 
 
 class HillClimbingSelector(EagerHierarchicalFeatureSelector):

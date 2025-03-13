@@ -2,12 +2,12 @@ import networkx as nx
 import numpy as np
 import pytest
 
-from hfs.selectors.hip import HIP
-from hfs.selectors.hnb import HNB
-from hfs.selectors.hnbs import HNBs
-from hfs.selectors.mr import MR
-from hfs.selectors.rnb import RNB
-from hfs.selectors.tan import TAN
+from scihfs.selectors.hip import HIP
+from scihfs.selectors.hnb import HNB
+from scihfs.selectors.hnbs import HNBs
+from scihfs.selectors.mr import MR
+from scihfs.selectors.rnb import RNB
+from scihfs.selectors.tan import TAN
 
 
 @pytest.fixture

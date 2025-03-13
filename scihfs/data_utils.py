@@ -10,7 +10,7 @@ from kgextension.generator import direct_type_generator
 
 
 def process_data(
-    path: str = "hfs/data/sport_tweets_train.tsv", test_version: bool = False
+    path: str = "scihfs/data/sport_tweets_train.tsv", test_version: bool = False
 ):
     """Extends dbpedia data with types and creates the hierarchy.
 
@@ -66,7 +66,7 @@ def process_data(
 
 
 def load_data(
-    path: str = "hfs/data/sport_tweets_train.tsv", test_version: bool = False
+    path: str = "scihfs/data/sport_tweets_train.tsv", test_version: bool = False
 ) -> tuple[pd.DataFrame, nx.DiGraph, np.ndarray]:
     """Loads the preprocessed data and hierarchy.
 

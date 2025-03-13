@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "hfs"
+name = "scihfs"
 version = "0.1.0"
 description = ""
 authors = ["Jasperhino"]

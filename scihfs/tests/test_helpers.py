@@ -4,14 +4,14 @@ import networkx as nx
 import numpy as np
 import pytest
 
-from hfs.helpers import (
+from scihfs.helpers import (
     add_virtual_root_node,
     compute_aggregated_values,
     connect_dag,
     get_relevance,
     shrink_dag,
 )
-from hfs.metrics import gain_ratio, information_gain
+from scihfs.metrics import gain_ratio, information_gain
 
 
 def test_shrink_dag():

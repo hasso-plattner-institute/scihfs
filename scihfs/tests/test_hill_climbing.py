@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from hfs.selectors.hill_climbing import BottomUpSelector, TopDownSelector
+from scihfs.selectors.hill_climbing import BottomUpSelector, TopDownSelector
 
 
 @pytest.mark.parametrize(

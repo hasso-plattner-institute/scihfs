@@ -1,6 +1,6 @@
 import pytest
 
-from hfs.selectors.base import HierarchicalEstimator
+from scihfs.selectors.base import HierarchicalEstimator
 
 
 def test_empty_hierarchy_raises_error():

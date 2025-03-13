@@ -2,12 +2,12 @@ import networkx as nx
 import pytest
 from sklearn.utils.estimator_checks import check_estimator
 
-from hfs import (
+from scihfs import (
     EagerHierarchicalFeatureSelector,
     HierarchicalEstimator,
     HierarchicalPreprocessor,
 )
-from hfs.selectors import (
+from scihfs.selectors import (
     HIP,
     HNB,
     MR,

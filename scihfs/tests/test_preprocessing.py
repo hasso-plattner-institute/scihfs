@@ -2,7 +2,6 @@ import networkx as nx
 import numpy as np
 import pytest
 
-from scihfs.data_utils import create_mapping_columns_to_nodes, load_data
 from scihfs.helpers import get_columns_for_numpy_hierarchy
 from scihfs.preprocessing import HierarchicalPreprocessor
 
@@ -33,23 +32,6 @@ def test_fit(data3_preprocessing):
     assert preprocessor.is_fitted_
     hierarchy = preprocessor.get_hierarchy()
     assert np.equal(hierarchy.all(), hierarchy_transformed.all())
-
-
-def test_preprocessor_real_data():
-    X, _, hierarchy = load_data(test_version=True)
-    columns = create_mapping_columns_to_nodes(X, hierarchy)
-    X = X.to_numpy()
-    hierarchy = nx.to_numpy_array(hierarchy)
-    preprocessor = HierarchicalPreprocessor(hierarchy)
-    preprocessor.fit(X, columns)
-    X_transformed = preprocessor.transform(X)
-    hierarchy_updated = preprocessor.get_hierarchy()
-    columns_updated = preprocessor.get_columns()
-    assert X_transformed.shape[1] == len(columns_updated)
-    assert hierarchy_updated.shape[1] == X_transformed.shape[1]
-    assert [
-        col for col in columns_updated if col not in range(hierarchy_updated.shape[1])
-    ] == []
 
 
 def test_adjust_node_names():

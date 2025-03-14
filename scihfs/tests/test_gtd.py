@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from hfs.selectors import GreedyTopDownSelector
+from scihfs.selectors import GreedyTopDownSelector
 
 
 @pytest.mark.parametrize(

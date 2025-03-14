@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from hfs.data_utils import create_mapping_columns_to_nodes, load_data, process_data
+from scihfs.data_utils import create_mapping_columns_to_nodes, load_data, process_data
 
 
 def remove_created_files():

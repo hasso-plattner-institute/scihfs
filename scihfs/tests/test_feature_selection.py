@@ -1,6 +1,6 @@
 import pytest
 
-from hfs.selectors import EagerHierarchicalFeatureSelector
+from scihfs.selectors import EagerHierarchicalFeatureSelector
 
 
 @pytest.mark.parametrize(

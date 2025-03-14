@@ -8,9 +8,9 @@ import numpy as np
 from scipy import sparse
 from sklearn.utils.validation import check_X_y
 
-from hfs.helpers import compute_aggregated_values, get_leaves, get_paths
-from hfs.metrics import information_gain, pearson_correlation
-from hfs.selectors import EagerHierarchicalFeatureSelector
+from scihfs.helpers import compute_aggregated_values, get_leaves, get_paths
+from scihfs.metrics import information_gain, pearson_correlation
+from scihfs.selectors import EagerHierarchicalFeatureSelector
 
 
 class SHSELSelector(EagerHierarchicalFeatureSelector):

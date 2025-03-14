@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 
-from hfs.selectors import HieAODE
+from scihfs.selectors import HieAODE
 
 
 def test_hie_aode(lazy_data2):

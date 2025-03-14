@@ -30,6 +30,7 @@ sphinx-rtd-theme = "^2.0.0"
 numpydoc = "^1.6.0"
 wandb = "^0.16.1"
 matplotlib = "^3.8.2"
+pytest-cov = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core"]

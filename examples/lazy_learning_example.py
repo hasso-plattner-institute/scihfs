@@ -11,8 +11,8 @@ The dataset as well as the hierarchy are structures not following a specific pat
 import networkx as nx
 import numpy as np
 
-from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.selectors import HIP, HNB, MR, RNB, TAN, HieAODE, HNBs
+from scihfs.preprocessing import HierarchicalPreprocessor
+from scihfs.selectors import HIP, HNB, MR, RNB, TAN, HieAODE, HNBs
 
 
 # Define data

@@ -6,23 +6,23 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.naive_bayes import BernoulliNB
 
-from hfs.data_utils import create_mapping_columns_to_nodes
-from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.selectors import HIP, HNB, MR, RNB, TAN, HNBs
+from scihfs.data_utils import create_mapping_columns_to_nodes
+from scihfs.preprocessing import HierarchicalPreprocessor
+from scihfs.selectors import HIP, HNB, MR, RNB, TAN, HNBs
 
 
 def data():
     dir = pathlib.Path(__file__).parent.parent.absolute()
-    rel = pathlib.Path("hfs/data/go_digraph2.gml")
+    rel = pathlib.Path("scihfs/data/go_digraph2.gml")
     path = dir / rel
     graph = nx.read_gml(path)
-    rel = pathlib.Path("hfs/data/train_test.csv")
+    rel = pathlib.Path("scihfs/data/train_test.csv")
     path = dir / rel
     df = pd.read_csv(path)
     columns = create_mapping_columns_to_nodes(df, graph)
     train = df[df["split"] == "train"]
     test = df[df["split"] == "test"]
-    rel = pathlib.Path("hfs/data/gene2gomod3.txt")
+    rel = pathlib.Path("scihfs/data/gene2gomod3.txt")
     path = dir / rel
     g2g = pd.read_csv(path, sep=",")
     go_terms = g2g["GO_ID"].unique()
@@ -118,7 +118,7 @@ def evaluate(data, k):
     columns = create_mapping_columns_to_nodes(pd.DataFrame(train), graph)
 
     dir = pathlib.Path(__file__).parent.parent.absolute()
-    rel = pathlib.Path(f"hfs/results/new/all_{k}.txt")
+    rel = pathlib.Path(f"scihfs/results/new/all_{k}.txt")
     path = dir / rel
     for function in [tan, mr, rnb, hnbs, hnb]:
         function(

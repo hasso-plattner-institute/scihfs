@@ -17,7 +17,7 @@ jobs:
       - uses: psf/black@stable
         with:
           # cannot use use_pyproject to use settings from pyproject.toml below python 3.11
-          options: "--line-length 90 hfs"
+          options: "--line-length 90 scihfs"
   test:
     strategy:
       fail-fast: false
@@ -76,4 +76,4 @@ jobs:
         run: poetry install --no-interaction
       - run: |
           source $VENV
-          poetry run pytest hfs
+          poetry run pytest scihfs

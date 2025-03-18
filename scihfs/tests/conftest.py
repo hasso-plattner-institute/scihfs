@@ -6,8 +6,8 @@ import pandas as pd
 import pytest
 from info_gain.info_gain import info_gain, info_gain_ratio
 
-from hfs.helpers import get_columns_for_numpy_hierarchy
-from hfs.metrics import cosine_similarity
+from scihfs.helpers import get_columns_for_numpy_hierarchy
+from scihfs.metrics import cosine_similarity
 
 
 @pytest.fixture()

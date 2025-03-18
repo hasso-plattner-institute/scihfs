@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from hfs.selectors import TSELSelector
+from scihfs.selectors import TSELSelector
 
 
 @pytest.mark.parametrize(

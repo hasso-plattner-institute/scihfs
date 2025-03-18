@@ -88,7 +88,7 @@ copyright = "2023, Smilla Fox, Kathrin Thenhausen"
 # built documents.
 #
 # The short X.Y version.
-from hfs import __version__
+from scihfs import __version__
 
 version = __version__
 # The full version, including alpha/beta/rc tags.

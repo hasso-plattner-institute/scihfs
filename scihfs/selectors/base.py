@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_array
 
-from hfs.helpers import add_virtual_root_node
+from scihfs.helpers import add_virtual_root_node
 
 
 class HierarchicalEstimator(TransformerMixin, BaseEstimator):

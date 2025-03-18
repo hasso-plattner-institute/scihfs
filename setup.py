@@ -6,7 +6,7 @@ import os
 
 from setuptools import find_packages, setup
 
-from hfs import __version__
+from scihfs import __version__
 
 # get __version__ from _version.py
 ver_file = os.path.join("hfs", "_version.py")

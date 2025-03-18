@@ -67,9 +67,9 @@ doc/generated/
 target/
 
 # Data
-hfs/data/*
-!hfs/data/**.py
-!hfs/data/**_testing**
+scihfs/data/*
+!scihfs/data/**.py
+!scihfs/data/**_testing**
 
 # Results
 results/

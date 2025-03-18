@@ -5,9 +5,9 @@ import wandb
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import BernoulliNB
 
-from hfs.data_utils import create_mapping_columns_to_nodes, load_data
-from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.selectors import (
+from scihfs.data_utils import create_mapping_columns_to_nodes, load_data
+from scihfs.preprocessing import HierarchicalPreprocessor
+from scihfs.selectors import (
     BottomUpSelector,
     GreedyTopDownSelector,
     SHSELSelector,

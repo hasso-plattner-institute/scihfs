@@ -71,10 +71,10 @@ jobs:
       # ensures this only runs on a cache miss.
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root --only main
+        run: poetry install --no-interaction --no-root
       - if: runner.os == 'Ubuntu'
         name: Install library
-        run: poetry install --no-interaction --only main
+        run: poetry install --no-interaction
 
       # Save cache only if install succeeds
       - name: Save venv cache

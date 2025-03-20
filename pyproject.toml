@@ -6,13 +6,13 @@ authors = ["Jasperhino"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 info-gain = "^1.0.1"
 networkx = "^3.2.1"
 numpy = "^1.26.2"
 pandas = "1.5.3"
 scikit-learn = "1.5.2"
-scipy = "^1.11.4"
+scipy = "^1.15.2"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.27.1"

@@ -72,8 +72,8 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
-      - if: runner.os == 'Ubuntu'
-        name: Install library
+
+      - name: Install library
         run: poetry install --no-interaction
 
       # Save cache only if install succeeds
@@ -85,5 +85,6 @@ jobs:
           key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
       - run: |
+          echo $VENV
           source $VENV
           poetry run pytest scihfs

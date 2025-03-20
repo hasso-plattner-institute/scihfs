@@ -32,28 +32,24 @@ def lift(data, labels):
         # Ensure CSC format for subscriptability and efficient column access
         data = data.tocsc()
 
+    labels = np.asarray(labels)  # Ensure labels are a NumPy array
+
     for index in range(num_features):
         if sparse.issparse(data):
-            column = data[:, [index]]
-            non_zero_values = column.nnz
+            column = data[:, index]
+            non_zero_mask = column.nonzero()[0]  # Indices of non-zero elements
+            non_zero_values = len(non_zero_mask)
         else:
             column = data[:, index]
+            non_zero_mask = column != 0
             non_zero_values = np.count_nonzero(column)
 
         prob_feature = non_zero_values / num_samples
 
         if non_zero_values > 0:
             prob_event_conditional = (
-                len(
-                    [
-                        value
-                        for index, value in enumerate(column)
-                        if value != 0 and labels[index] != 0
-                    ]
-                )
-                / non_zero_values
+                np.count_nonzero(labels[non_zero_mask]) / non_zero_values
             )
-
             lift_values.append(prob_event_conditional / prob_feature)
         else:
             lift_values.append(0)
@@ -77,9 +73,17 @@ def information_gain(data, labels):
                 List of floats.
     """
     ig_values = []
+    if sparse.issparse(data):
+        data = data.tocsc()  # Ensure efficient column access
+    labels = np.asarray(labels)  # Ensure labels are a NumPy array
+
     for column_index in range(data.shape[1]):
         if sparse.issparse(data):
-            column = data[:, [column_index]]
+            column = data[:, column_index]
+            if column.nnz == 0:  # Skip empty columns
+                ig_values.append(0)
+                continue
+            column = column.toarray().ravel()
         else:
             column = data[:, column_index]
         ig = info_gain(column, labels)
@@ -140,9 +144,17 @@ def gain_ratio(data, labels):
                 values for each feature in the dataset.
     """
     gr_values = []
+    if sparse.issparse(data):
+        data = data.tocsc()  # Ensure efficient column access
+    labels = np.asarray(labels)  # Ensure labels are a NumPy array
+
     for column_index in range(data.shape[1]):
         if sparse.issparse(data):
-            column = data[:, [column_index]]
+            column = data[:, column_index]
+            if column.nnz == 0:  # Skip empty columns
+                gr_values.append(0)
+                continue
+            column = column.toarray().ravel()
         else:
             column = data[:, column_index]
         gr = info_gain_ratio(column, labels)

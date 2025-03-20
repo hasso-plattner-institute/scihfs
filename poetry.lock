@@ -12,6 +12,7 @@ files = [
     {file = "alabaster-0.7.16.tar.gz", hash = "sha256:75a8b99c28a5dad50dd7f8ccdd447a121ddb3892da9e53d1ca5cca3106d58d65"},
 ]
 
+
 [[package]]
 name = "appnope"
 version = "0.1.4"

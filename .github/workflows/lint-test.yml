@@ -90,4 +90,9 @@ jobs:
 
       - run: |
           source $VENV
-          poetry run pytest scihfs
+          poetry run pytest scihfs --cov --cov-report=xml
+
+      - name: Upload results to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

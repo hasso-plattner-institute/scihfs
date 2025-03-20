@@ -84,16 +84,10 @@ jobs:
           path: .venv
           key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
-      - name: Check if venv exists
+      - name: Fix permissions for venv activation script
         if: runner.os == 'Windows'
-        run: |
-          ls -l .venv
-          ls -l .venv/scripts
-          ls -l .venv/scripts/activate
-          python --version
-          which python
-          python -m venv --help
-          . .venv/scripts/activate
+        shell: bash
+        run: chmod +x .venv/scripts/activate
 
       - run: |
           source $VENV

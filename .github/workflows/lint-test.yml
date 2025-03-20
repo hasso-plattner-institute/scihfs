@@ -84,7 +84,12 @@ jobs:
           path: .venv
           key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
+      - name: Check windows venv file permissions
+        if: runner.os == 'windows-latest'
+        run: |
+          Get-Acl -Path .venv/scripts
+          Get-Acl -Path .venv/scripts/activate
+
       - run: |
-          echo $VENV
           source $VENV
           poetry run pytest scihfs

@@ -87,7 +87,11 @@ jobs:
       - name: Fix permissions for venv activation script
         if: runner.os == 'Windows'
         shell: bash
-        run: chmod +x .venv/scripts/activate
+        run: |
+          chmod +x .venv/scripts/activate
+          ls -l .venv/scripts/activate
+          head -n 10 .venv/scripts/activate
+
 
       - run: |
           source $VENV

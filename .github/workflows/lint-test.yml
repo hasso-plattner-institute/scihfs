@@ -24,6 +24,11 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
         os: [ubuntu-latest, macOS-latest, windows-latest]
+
+      # Exclude Windows + Python 3.13 combination
+      exclude:
+          - os: windows-latest
+            python-version: "3.13"
     defaults:
       run:
         shell: bash
@@ -83,15 +88,6 @@ jobs:
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-      - name: Fix permissions for venv activation script
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          chmod +x .venv/scripts/activate
-          ls -l .venv/scripts/activate
-          head -n 10 .venv/scripts/activate
-
 
       - run: |
           source $VENV

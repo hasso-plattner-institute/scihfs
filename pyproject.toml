@@ -2,7 +2,15 @@
 name = "scihfs"
 version = "0.1.0"
 description = ""
-authors = ["Jasperhino"]
+authors = [
+    "Jan Philipp Sachs (jp-sachs, JPhSachs)",
+    "Sonia Simons (sonnivs)",
+    "Jasper Blum (Jasperhino)",
+    "(saragrau)",
+    "(dniprocat)",
+    "Smilla Fox (sm1lla)",
+    "(kathrinthenhausen)"
+]
 readme = "README.md"
 
 [tool.poetry.dependencies]

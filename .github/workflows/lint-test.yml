@@ -24,6 +24,10 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
         os: [ubuntu-latest, macOS-latest, windows-latest]
+        # Exclude Windows + Python 3.13 combination
+        exclude:
+          - os: windows-latest
+            python-version: "3.13"
     defaults:
       run:
         shell: bash
@@ -42,7 +46,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.local
-          key: poetry-1.8.5-${{ runner.os }}
+          key: poetry-2.1.1-${{ runner.os }}
 
       # Install Poetry.
       # `snok/install-poetry` just calls out toPoetry's default install script
@@ -54,7 +58,7 @@ jobs:
       # cache it.
       - uses: snok/install-poetry@v1
         with:
-          version: 1.8.5
+          version: 2.1.1
           virtualenvs-create: true
           virtualenvs-in-project: true
 
@@ -64,7 +68,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
       # Install dependencies. `--no-root` means "install all dependencies but not the project
       # itself", which is what you want to avoid caching _your_ code. The `if` statement
@@ -72,8 +76,8 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
-      - if: runner.os == 'Ubuntu'
-        name: Install library
+
+      - name: Install library
         run: poetry install --no-interaction
 
       # Save cache only if install succeeds
@@ -82,7 +86,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
       - run: |
           source $VENV

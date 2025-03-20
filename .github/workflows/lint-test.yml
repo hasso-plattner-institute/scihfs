@@ -84,11 +84,16 @@ jobs:
           path: .venv
           key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
-      - name: Check windows venv file permissions
+      - name: Check if venv exists
         if: runner.os == 'Windows'
         run: |
-          Get-Acl -Path .venv/scripts
-          Get-Acl -Path .venv/scripts/activate
+          ls -l .venv
+          ls -l .venv/scripts
+          ls -l .venv/scripts/activate
+          python --version
+          which python
+          python -m venv --help
+          . .venv/scripts/activate
 
       - run: |
           source $VENV

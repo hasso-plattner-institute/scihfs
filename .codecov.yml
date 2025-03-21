@@ -8,7 +8,8 @@ coverage:
     project:
       default: false
       selectors:
-        paths: "scihfs/selectors/"
+        paths:
+          - scihfs/selectors/
       utils:
         paths:
           - scihfs

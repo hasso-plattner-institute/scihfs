@@ -1,0 +1,22 @@
+# Validate this file:
+# curl --data-binary @.codecov.yml https://codecov.io/validate
+
+coverage:
+  range: 80..95
+  precision: 1
+  status:
+    project:
+      default: false
+      selectors:
+        paths: "scihfs/selectors/"
+      utils:
+        paths:
+          - scihfs
+          - "!scihfs/tests/"
+          - "!scihfs/selectors/"
+      tests:
+        target: 100%
+        paths: "scihfs/tests/"
+
+ignore:
+  - "**/pyitlib.py"

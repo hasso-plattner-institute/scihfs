@@ -102,7 +102,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
             )
         X, y = check_X_y(X, y, accept_sparse=True)
         if sparse.issparse(X):
-            X = X.tocsr()
+            X = X.tocsc()
         super().fit(X, y, columns)
 
         # Feature Selection Algorithm

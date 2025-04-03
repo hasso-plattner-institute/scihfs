@@ -1,19 +1,26 @@
 [tool.poetry]
-name = "hfs"
+name = "scihfs"
 version = "0.1.0"
 description = ""
-authors = ["Jasperhino"]
+authors = [
+    "Jan Philipp Sachs (jp-sachs, JPhSachs)",
+    "Sonia Simons (sonnivs)",
+    "Jasper Blum (Jasperhino)",
+    "(saragrau)",
+    "(dniprocat)",
+    "Smilla Fox (sm1lla)",
+    "(kathrinthenhausen)"
+]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 info-gain = "^1.0.1"
-kgextension = "^0.1.1"
 networkx = "^3.2.1"
 numpy = "^1.26.2"
-pandas = "1.5.3"
+pandas = "^2.2.3"
 scikit-learn = "1.5.2"
-scipy = "^1.11.4"
+scipy = "^1.15.2"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.27.1"
@@ -28,8 +35,8 @@ sphinxcontrib-bibtex = "^2.6.1"
 sphinx-gallery = "^0.15.0"
 sphinx-rtd-theme = "^2.0.0"
 numpydoc = "^1.6.0"
-wandb = "^0.16.1"
 matplotlib = "^3.8.2"
+pytest-cov = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core"]

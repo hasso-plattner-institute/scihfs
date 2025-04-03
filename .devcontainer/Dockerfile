@@ -11,7 +11,7 @@ RUN apt-get update \
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Lock poetry version and install directory; install poetry and add it to $PATH (for any ad-hoc use inside container)
-ENV POETRY_VERSION=1.8.4
+ENV POETRY_VERSION=2.1.2
 ENV POETRY_HOME=/etc/poetry
 RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=${POETRY_HOME} POETRY_VERSION=${POETRY_VERSION} python3 -
 ENV PATH="$POETRY_HOME/bin:$PATH"

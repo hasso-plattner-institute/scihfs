@@ -103,6 +103,13 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         X, y = check_X_y(X, y, accept_sparse=True)
         if sparse.issparse(X):
             X = X.tocsc()
+        if not self.use_hfe_extension:
+            # make sure data is binary when SHSEL without extension is used
+            if not np.isin(X, [0, 1]).all():
+                raise ValueError(
+                    "The data is not binary. "
+                    "When using the original SHSEL algorithm the data should be binary."
+                )
         super().fit(X, y, columns)
 
         # Feature Selection Algorithm

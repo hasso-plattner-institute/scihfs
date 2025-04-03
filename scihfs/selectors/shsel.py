@@ -3,6 +3,7 @@ SHSEL Feature Selector.
 """
 
 import statistics
+import warnings
 
 import numpy as np
 from scipy import sparse
@@ -105,11 +106,14 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
             X = X.tocsc()
         if not self.use_hfe_extension:
             # make sure data is binary when SHSEL without extension is used
-            if not np.isin(X, [0, 1]).all():
-                raise ValueError(
-                    "The data is not binary. "
-                    "When using the original SHSEL algorithm the data should be binary."
+            if not np.all((X.data == 0) | (X.data == 1)):
+                warnings.warn(
+                    "The sparse data is not binary. "
+                    "When using the original SHSEL algorithm, "
+                    "the data should contain only 0s and 1s.",
+                    UserWarning,
                 )
+
         super().fit(X, y, columns)
 
         # Feature Selection Algorithm

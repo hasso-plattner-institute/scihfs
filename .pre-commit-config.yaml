@@ -20,10 +20,10 @@ repos:
         args: ["--profile", "black"]
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 4.0.1
+    rev: 7.1.2
     hooks:
     -   id: flake8
-        args: ["--max-line-length=90", "--exclude=hfs/pyitlib.py,*/__init__.py", "--extend-ignore=E741,W503,W605,E501"]
+        args: ["--max-line-length=90", "--exclude=scihfs/pyitlib.py,*/__init__.py", "--extend-ignore=E741,W503,W605,E501"]
         files: ^hfs/
 
   - repo: local
@@ -31,10 +31,5 @@ repos:
       - id: poetry-check
         name: poetry-check
         entry: poetry check
-        language: system
-        pass_filenames: false
-      - id: poetry-lock
-        name: poetry-lock
-        entry: poetry lock
         language: system
         pass_filenames: false

@@ -24,6 +24,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Get 7-digit commit hash for versioning of the uploaded container images
+        run: echo "COMMIT_HASH_SHORT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -34,7 +37,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-$COMMIT_HASH_SHORT
           restore-keys: |
             ${{ runner.os }}-buildx-
 
@@ -51,7 +54,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.CONTAINER_REPOSITORY }}:${{ github.sha }}
+            ${{ env.CONTAINER_REPOSITORY }}:$COMMIT_HASH_SHORT
             ${{ env.CONTAINER_REPOSITORY }}:latest
           platforms: linux/amd64,linux/arm64/v8,linux/arm/v7
           cache-from: type=local,src=/tmp/.buildx-cache

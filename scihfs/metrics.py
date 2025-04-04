@@ -86,7 +86,7 @@ def information_gain(data, labels):
             column = column.toarray().ravel()
         else:
             column = data[:, column_index]
-        ig = info_gain(column, labels)
+        ig = round(info_gain(column, labels), 6)
         ig_values.append(ig)
     return ig_values
 

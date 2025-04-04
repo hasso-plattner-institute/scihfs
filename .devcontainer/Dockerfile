@@ -29,7 +29,6 @@ COPY .devcontainer/.p10k.zsh /root
 RUN /bin/zsh /root/.zshrc
 
 # Create and switch to /hfs as working directory
-RUN mkdir /hfs
 WORKDIR /hfs
 
 # Make available the dependency files inside the container
@@ -37,7 +36,6 @@ COPY poetry.lock pyproject.toml ./
 
 # Install all required packages with poetry, including the "dev" group packages
 RUN poetry config virtualenvs.create false \
-    && poetry lock --no-update \
     && poetry install --no-interaction --no-root --no-cache --quiet --sync
 
 # Initialize pre-commit hooks for this repository

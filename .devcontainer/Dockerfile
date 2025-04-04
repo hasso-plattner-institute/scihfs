@@ -38,9 +38,5 @@ COPY poetry.lock pyproject.toml ./
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-root --no-cache --quiet --sync
 
-# Initialize pre-commit hooks for this repository
-RUN poetry run pre-commit \
-    && poetry run pre-commit install
-
 # Entrypoint for the container
 CMD ["/bin/zsh"]

@@ -2,6 +2,7 @@
 	"name": "scihfs-dev",
 	// Use most recent devcontainer image.
 	"image": "jpsachs/scihfs-devcontainer:latest",
+	"postCreateCommand": "poetry run pre-commit && poetry run pre-commit install",
 	// Configure tool-specific properties.
 	"customizations": {
 		// Configure properties specific to VS Code.

@@ -7,6 +7,7 @@ on:
     paths:
       - './poetry.lock'
       - 'pyproject.toml'
+      - '.devcontainer/Dockerfile'
   workflow_dispatch:
     inputs:
       trigger_reason:

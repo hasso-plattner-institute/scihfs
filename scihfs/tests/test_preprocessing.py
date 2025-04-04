@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from scihfs.helpers import get_columns_for_numpy_hierarchy
-from scihfs.preprocessing import HierarchicalPreprocessor
+from scihfs.preprocessing import ColumnNotInHierarchyWarning, HierarchicalPreprocessor
 
 
 @pytest.mark.parametrize(
@@ -24,7 +24,6 @@ def test_hierarchical_preprocessor(data, request):
     assert np.array_equal(hierarchy_transformed, hierarchy_expected)
 
 
-# TODO rename to test_fit and update to check all submethods included in fit?
 def test_fit(data3_preprocessing):
     X, hierarchy, hierarchy_transformed, X_identifiers = data3_preprocessing
     preprocessor = HierarchicalPreprocessor(hierarchy)
@@ -61,9 +60,9 @@ def test_adjust_node_names():
 
 
 def test_columns_not_in_hierarchy_raises_warning():
-    hierarchy_graph = nx.DiGraph([(1, 2), (2, 3)])
+    hierarchy_graph = nx.DiGraph([(0, 1)])
     hierarchy = nx.to_numpy_array(hierarchy_graph)
     estimator = HierarchicalPreprocessor(hierarchy)
     X = [[0.42, 4.2, 0.42], [4, 2, 0.42]]
-    with pytest.warns(UserWarning):
+    with pytest.warns(ColumnNotInHierarchyWarning):
         estimator.fit(X)

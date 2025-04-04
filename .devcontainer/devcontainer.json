@@ -1,7 +1,7 @@
 {
-	"name": "hfs-dev",
+	"name": "scihfs-dev",
 	// Use most recent devcontainer image.
-	"image": "jpsachs/hfs-devcontainer:latest",
+	"image": "jpsachs/scihfs-devcontainer:latest",
 	// Configure tool-specific properties.
 	"customizations": {
 		// Configure properties specific to VS Code.
@@ -28,8 +28,8 @@
 	},
 	// Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	// "remoteUser": "leastprivilegeduser",
-	"workspaceMount": "source=${localWorkspaceFolder},target=/hfs,type=bind",
-	"workspaceFolder": "/hfs",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/scihfs,type=bind",
+	"workspaceFolder": "/scihfs",
 	"runArgs": [
 		"--rm"
 	]

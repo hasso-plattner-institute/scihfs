@@ -16,7 +16,7 @@ on:
         required: true
 
 env:
-  CONTAINER_REPOSITORY: "jpsachs/hfs-devcontainer"
+  CONTAINER_REPOSITORY: "jpsachs/scihfs-devcontainer"
 
 jobs:
   build-and-push-devcontainer-image:

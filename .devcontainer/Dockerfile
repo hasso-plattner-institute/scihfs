@@ -28,8 +28,8 @@ COPY .devcontainer/.zshrc /root
 COPY .devcontainer/.p10k.zsh /root
 RUN /bin/zsh /root/.zshrc
 
-# Create and switch to /hfs as working directory
-WORKDIR /hfs
+# Create and switch to /scihfs as working directory
+WORKDIR /scihfs
 
 # Make available the dependency files inside the container
 COPY poetry.lock pyproject.toml ./

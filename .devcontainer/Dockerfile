@@ -1,9 +1,9 @@
-FROM python:3.12.2-slim
+FROM python:3.13.2
 
 # Update package list and install necessary packages
 # hadolint ignore DL3008
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git zsh curl wget ssh-client manpages-dev libgmp-dev libcdd-dev python3-sphinx pandoc build-essential graphviz graphviz-dev \
+    && apt-get install -y --no-install-recommends zsh ssh-client manpages-dev libcdd-dev python3-sphinx pandoc build-essential graphviz graphviz-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

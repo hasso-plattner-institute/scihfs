@@ -50,6 +50,7 @@ exclude = '''
     | \.venv
     | build
     | dist
+    | pyitlib.py
 )/
 '''
 

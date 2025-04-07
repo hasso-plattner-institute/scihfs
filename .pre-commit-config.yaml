@@ -24,7 +24,7 @@ repos:
     hooks:
     -   id: flake8
         args: ["--max-line-length=90", "--exclude=scihfs/pyitlib.py,*/__init__.py", "--extend-ignore=E741,W503,W605,E501"]
-        files: ^hfs/
+        files: ^scihfs/
 
   - repo: local
     hooks:

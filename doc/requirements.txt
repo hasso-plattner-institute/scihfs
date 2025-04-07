@@ -9,9 +9,7 @@ nxontology
 pyitlib
 scipy
 scikit-learn
-kgextension
 pytz
 pandas
-wandb
 numpydoc
 sphinxcontrib-bibtex

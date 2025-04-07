@@ -26,8 +26,3 @@ can find more information about how they work and how they can be used.
     :caption: Tutorial - Examples
 
     auto_examples/index
-
-.. toctree::
-    :caption: Experiments
-
-    experiments/index

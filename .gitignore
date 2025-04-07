@@ -12,6 +12,7 @@ doc/auto_examples/
 doc/modules/generated/
 doc/datasets/generated/
 doc/doctrees/
+doc/sg_execution_times.rst
 
 # Distribution / packaging
 

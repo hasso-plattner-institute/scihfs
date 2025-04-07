@@ -1,0 +1,37 @@
+{
+	"name": "scihfs-dev",
+	// Use most recent devcontainer image.
+	"image": "jpsachs/scihfs-devcontainer:latest",
+	"postCreateCommand": "poetry run pre-commit && poetry run pre-commit install",
+	// Configure tool-specific properties.
+	"customizations": {
+		// Configure properties specific to VS Code.
+		"vscode": {
+			// Set *default* container specific settings.json values on container create.
+			"settings": {
+				"terminal.integrated.profiles.linux": {
+					"zsh": {
+						"path": "/bin/zsh"
+					}
+				},
+				"terminal.integrated.defaultProfile.linux": "zsh",
+				"python.defaultInterpreterPath": "/usr/local/bin/python",
+				"python.languageServer": "Default",
+				"python.formatting.blackPath": "/usr/local/py-utils/bin/black"
+			},
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"ms-python.python",
+				"ms-python.pylint",
+				"ms-python.vscode-pylance"
+			]
+		}
+	},
+	// Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+	// "remoteUser": "leastprivilegeduser",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/scihfs,type=bind",
+	"workspaceFolder": "/scihfs",
+	"runArgs": [
+		"--rm"
+	]
+}

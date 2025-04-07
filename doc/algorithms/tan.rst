@@ -5,8 +5,7 @@ Tree-based redundancy removal
 
 The last method implemented is a Hierarchical Redundancy Eliminated Tree.
 Augmented Naive Bayes (HRE–TAN), which is slightly modified in the library.
-The algorithm builds a minimal spanning tree (MST), by adding all possible edges (that is all possible feature pairs :math:`f_i` and :math:`f_j`),
- that meets certain conditions to an undirected graph (UDAG).
+The algorithm builds a minimal spanning tree (MST), by adding all possible edges (that is all possible feature pairs :math:`f_i` and :math:`f_j`), that meets certain conditions to an undirected graph (UDAG).
 First, the edges are sorted in descending order of their conditional mutual information TODO: link and then added in this order, if:
 1. :math:`f_i` and :math:`f_j`are not hierarchically redundant in the current test instance
 2. adding the edge between :math:`f_i` and :math:`f_j` does not introduce a cyle in the UDAG

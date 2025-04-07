@@ -19,3 +19,8 @@ pytest-until-fail:
 	poetry run pytest scihfs/ -x
 
 run-all: autolint pytest
+
+
+build-and-publish:
+	poetry build
+	poetry run twine upload --repository testpypi dist/*

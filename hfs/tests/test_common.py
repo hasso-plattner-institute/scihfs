@@ -6,7 +6,7 @@ from hfs import (
     HierarchicalEstimator,
     HierarchicalPreprocessor,
 )
-from hfs.hierarchical_selectors import (
+from hfs.selectors import (
     HIP,
     HNB,
     MR,

@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 
-from hfs.hierarchical_selectors import HieAODE, HieAODEPlusPlus
+from hfs.selectors import HieAODE, HieAODEPlusPlus
 
 from .fixtures.fixtures import *
-from ..hierarchical_selectors.hie_aode import (
+from ..selectors.hie_aode import (
     HieAODEPlus,
     HieAODELitePlusPlus,
     HieAODELitePlus,

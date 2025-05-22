@@ -8,7 +8,7 @@ from networkx.algorithms.dag import ancestors
 from sklearn.utils.validation import check_array, check_is_fitted
 
 from hfs.helpers import get_irrelevant_leaves
-from hfs.hierarchical_selectors import HierarchicalEstimator
+from hfs.selectors import HierarchicalEstimator
 
 
 class HierarchicalPreprocessor(HierarchicalEstimator):

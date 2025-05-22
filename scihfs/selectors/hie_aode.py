@@ -104,7 +104,7 @@ class HieAODEBase(LazyHierarchicalFeatureSelector, abc.ABC):
         for sample_idx in range(n_samples):
             sample = self._xtest[sample_idx]
             for parent_idx in range(self.n_features_in_):
-                ancestors = list(nx.ancestors(self._hierarchy, parent_idx))
+                ancestors = list(nx.ancestors(self._hierarchy_graph, parent_idx))
                 feature_product = self.compute_product(sample, parent_idx, ancestors)
                 sample_sum[sample_idx] = np.add(sample_sum[sample_idx], feature_product)
 

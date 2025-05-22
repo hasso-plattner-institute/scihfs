@@ -11,8 +11,8 @@ The dataset as well as the hierarchy are structures not following a specific pat
 import networkx as nx
 import numpy as np
 
-from hfs.preprocessing import HierarchicalPreprocessor
-from hfs.selectors import HIP, HNB, MR, RNB, TAN, HieAODEBase, HNBs
+from scihfs.preprocessing import HierarchicalPreprocessor
+from scihfs.selectors import HIP, HNB, MR, RNB, TAN, HieAODE, HNBs
 
 
 # Define data
@@ -40,7 +40,7 @@ train, test, train_y_data, test_y_data, hierarchy = preprocess()
 # %%
 """
 =========================================================================
-HieAODE - 
+HieAODE -
 =========================================================================
 """
 
@@ -79,7 +79,7 @@ print(score)
 # %%
 """
 =========================================================================
-HNB-s 
+HNB-s
 =========================================================================
 """
 

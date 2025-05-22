@@ -12,7 +12,7 @@ from scihfs.selectors import HierarchicalEstimator
 
 
 class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
-    """Base class for eager feature hierarchical_selectors using hierarchical data."""
+    """Base class for eager feature selectors using hierarchical data."""
 
     def __init__(self, hierarchy: np.ndarray = None):
         """Initializes an EagerHierarchicalFeatureSelector.

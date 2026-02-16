@@ -1,8 +1,4 @@
-# based on https://jacobian.org/til/github-actions-poetry/
-
-# Run this job on pushes to `main`, and for pull requests. If you don't specify
-# `branches: [main], then this actions runs _twice_ on pull requests, which is
-# annoying.
+# Run this job on pushes to `main`, and for pull requests.
 
 on:
   push:
@@ -22,12 +18,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        # Exclude Windows + Python 3.13 combination
         exclude:
           - os: windows-latest
             python-version: "3.13"
+          - os: windows-latest
+            python-version: "3.14"
     defaults:
       run:
         shell: bash
@@ -35,62 +32,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
 
-      # Cache the installation of Poetry itself, e.g. the next step. This prevents the workflow
-      # from installing Poetry every time, which can be slow.
-      - name: cache poetry install
-        uses: actions/cache@v4
-        with:
-          path: ~/.local
-          key: poetry-2.1.1-${{ runner.os }}
-
-      # Install Poetry.
-      # `snok/install-poetry` just calls out toPoetry's default install script
-      # I pin the Poetry version here because Poetry does occasionally change APIs between
-      # versions and I don't want my actions to break if it does.
-      #
-      # The key configuration value here is `virtualenvs-in-project: true`: this creates the
-      # venv as a `.venv` in your testing directory, which allows the next step to easily
-      # cache it.
-      - uses: snok/install-poetry@v1
-        with:
-          version: 2.1.1
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
-      # Only restore cache (not save it here)
-      - name: Load cached venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-      # Install dependencies. `--no-root` means "install all dependencies but not the project
-      # itself", which is what you want to avoid caching _your_ code. The `if` statement
-      # ensures this only runs on a cache miss.
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
+        run: uv sync
 
-      - name: Install library
-        run: poetry install --no-interaction
-
-      # Save cache only if install succeeds
-      - name: Save venv cache
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true' && success()
-        uses: actions/cache/save@v4
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-      - run: |
-          source $VENV
-          poetry run pytest scihfs --cov --cov-report=xml
+      - name: Run tests
+        run: uv run pytest scihfs --cov --cov-report=xml
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5

@@ -22,7 +22,7 @@ The package cannot be installed with pip or conda yet so to create your package,
 
     Install the environment using::
 
-    ```poetry install```
+    ```uv sync```
 
 1. Usage
 -------------------------------------------
@@ -54,11 +54,11 @@ feel free to create a pull request.
 
 Linting and Testing
 ```
-poetry run black .
+uv run black .
 ```
 
 ```
-poetry run pytest scihfs
+uv run pytest scihfs
 ```
 
 Pre-Commit Hooks

@@ -2,6 +2,8 @@
 Eager Feature Selection
 #######################
 
+.. currentmodule:: scihfs
+
 
 All eager feature selection algorithms can be used in the same way. The feature selector object is initialized with
 the hierarchy in the form of a numpy array and all needed hyperparameters. Then the fit method can be called which triggers

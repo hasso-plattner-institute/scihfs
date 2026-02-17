@@ -25,21 +25,22 @@ class HNBs(LazyHierarchicalFeatureSelector):
         self, predict=True, saveFeatures=False, estimator=BernoulliNB()
     ):
         """
-        Select features lazy for each test instance amd optionally predict target value of test instances.
-        It selects the features, such that redundancy along each path is removed.
+        Select features lazily for each test instance and optionally predict the target value of test instances.
+        It selects the features such that redundancy along each path is removed.
+
         Parameters
         ----------
-        predict : bool
-            true if predictions shall be obtained.
-        saveFeatures : bool
-            true if features selected for each test instance shall be saved.
-        estimator : sklearn-compatible estimator
-            Estimator to use for predictions.
-
+        predict : bool, default=True
+            Whether predictions should be obtained.
+        saveFeatures : bool, default=False
+            Whether features selected for each test instance should be saved.
+        estimator : sklearn-compatible estimator, default=BernoulliNB()
+            The estimator to use for predictions.
 
         Returns
         -------
-        predictions for test input samples, if predict = false, returns empty array.
+        np.ndarray
+            Predictions for test input samples. If `predict` is False, returns an empty array.
         """
         predictions = np.array([])
         for idx in range(len(self._xtest)):

@@ -19,6 +19,7 @@ can find more information about how they work and how they can be used.
     :maxdepth: 2
 
     algorithms/index
+    preprocessing
     api
 
 .. toctree::

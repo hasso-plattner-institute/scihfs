@@ -1,5 +1,5 @@
 #####################################
-Getting Started with hfs
+Getting Started with scihfs
 #####################################
 
 Learn how to use
@@ -8,25 +8,25 @@ Learn how to use
 1. Installation
 -------------------------------------
 
-The package cannot be installed with pip or conda yet so to create your package, you need to clone the ``hfs`` repository::
+The package cannot be installed with pip or conda yet so to create your package, you need to clone the ``scihfs`` repository::
 
     $ git clone https://github.com/hasso-plattner-institute/scihfs.git
 
-We recommend that you create a new virtual environment for hfs using poetry in which you install the required packages with::
+We recommend that you create a new virtual environment for scihfs in which you install the required packages with::
 
     $ poetry install
 
 2. Usage
 -------------------------------------------
-Here is a simple example of how to use one of the hierarchical feature selection algorithms implemented in hfs:
+Here is a simple example of how to use one of the hierarchical feature selection algorithms implemented in scihfs:
 
 .. code-block:: python
 
     import networkx as nx
     import numpy as np
 
-    from hfs import SHSELSelector
-    from hfs.helpers import get_columns_for_numpy_hierarchy
+    from scihfs import SHSELSelector
+    from scihfs.helpers import get_columns_for_numpy_hierarchy
 
     # Example dataset X with 3 samples and 5 features.
     X = np.array(

@@ -2,7 +2,7 @@
 Preprocessing
 #####################
 
-.. currentmodule:: hfs
+.. currentmodule:: scihfs
 
 The **HierarchicalPreprocessor** is responsible for preparing hierarchical datasets for feature selection. This preprocessor ensures that:
 
@@ -33,8 +33,8 @@ To use the **HierarchicalPreprocessor**, initialize it with the hierarchy (as an
    import networkx as nx
    import numpy as np
 
-   from hfs.helpers import get_columns_for_numpy_hierarchy
-   from hfs import HierarchicalPreprocessor
+   from scihfs.helpers import get_columns_for_numpy_hierarchy
+   from scihfs import HierarchicalPreprocessor
 
    # Example hierarchy as adjacency matrix
    edges = [(4, 5), (0, 1), (0, 3), (0, 4)]

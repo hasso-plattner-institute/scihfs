@@ -2,7 +2,7 @@
 Eager Feature Selection
 #######################
 
-.. currentmodule:: hfs
+.. currentmodule:: scihfs
 
 
 All eager feature selection algorithms can be used in the same way. The feature selector object is initialized with

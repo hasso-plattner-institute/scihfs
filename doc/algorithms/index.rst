@@ -2,7 +2,7 @@
 Feature selection algorithms
 ############################
 
-.. currentmodule:: hfs
+.. currentmodule:: scihfs
 
 Feature selection preprocesses the data by removing irrelevant features, that is features not correlated with the class variable,
 and redundant features, which are strongly correlated to other features. Methods performing feature selection can be classified as

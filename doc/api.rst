@@ -3,7 +3,7 @@ API
 #####################
 
 
-.. currentmodule:: hfs
+.. currentmodule:: scihfs
 
 HierarchicalEstimator
 ======================
@@ -27,6 +27,15 @@ HierarchicalEstimator
    HNBs
    MR
    RNB
+
+TAN
+======================
+
+.. autosummary::
+   :toctree: generated/
+   :template: class.rst
+
+   TAN
 
 
 Helper methods

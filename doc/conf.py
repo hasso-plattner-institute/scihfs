@@ -2,7 +2,11 @@ import pathlib
 import sys
 
 import sphinx_rtd_theme
-import tomli  # backport of tomllib for Python < 3.11
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 
 # -- Path setup --------------------------------------------------------------
 
@@ -12,7 +16,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 # -- Project metadata --------------------------------------------------------
 
 with open("../pyproject.toml", "rb") as f:
-    pyproject = tomli.load(f)
+    pyproject = tomllib.load(f)
 
 project = pyproject["project"]["name"]
 author = author = ", ".join(a["name"] for a in pyproject["project"].get("authors", []))

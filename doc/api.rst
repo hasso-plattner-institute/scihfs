@@ -3,7 +3,7 @@ API
 #####################
 
 
-.. currentmodule:: hfs
+.. currentmodule:: scihfs
 
 HierarchicalEstimator
 ======================
@@ -143,14 +143,14 @@ RNB
 
    RNB
 
-Tan
+TAN
 ======================
 
 .. autosummary::
    :toctree: generated/
    :template: class.rst
 
-   Tan
+   TAN
 
 
 Helper methods
@@ -173,7 +173,3 @@ create_mapping_columns_to_nodes
    :template: function.rst
 
    create_mapping_columns_to_nodes
-
-
-
-

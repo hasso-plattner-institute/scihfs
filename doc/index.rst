@@ -1,4 +1,4 @@
-Welcome to the hfs documentation!
+Welcome to the scihfs documentation!
 ============================================
 
 This project includes the implementation of several hierarchical feature selection methods. In this documentation you

@@ -1,17 +1,21 @@
-[tool.poetry]
+[project]
 name = "scihfs"
-version = "0.1.0"
 description = ""
 authors = [
-    "Jan Philipp Sachs (jp-sachs, JPhSachs)",
-    "Sonia Simons (sonnivs)",
-    "Jasper Blum (Jasperhino)",
-    "(saragrau)",
-    "(dniprocat)",
-    "Smilla Fox (sm1lla)",
-    "(kathrinthenhausen)"
+    {name = "Jan Philipp Sachs (jp-sachs, JPhSachs)"},
+    {name = "Sonia Simons (sonnivs)"},
+    {name = "Jasper Blum (Jasperhino)"},
+    {name = "(saragrau)"},
+    {name = "(dniprocat)"},
+    {name = "Smilla Fox (sm1lla)"},
+    {name = "(kathrinthenhausen)"},
 ]
+dynamic = [ "version" ]
+license = { file = "LICENSE"}
 readme = "README.md"
+
+[tool.poetry]
+version = "0.1.0"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -23,20 +27,27 @@ scikit-learn = "1.5.2"
 scipy = "^1.15.2"
 
 [tool.poetry.group.dev.dependencies]
-ipykernel = "^6.27.1"
 pytest = "^7.4.4"
 black = "^24"
 mypy = "^1.13.0"
 isort = "^5.13.2"
 pre-commit = "^4.0.1"
 flake8 = "^7.1.1"
-setuptools = "58.5.3"
+pytest-cov = "^6.0.0"
+twine = "^6.1.0"
+
+[tool.poetry.group.docs]
+# will only be installed if group is explicitely named using
+# poetry install --with docs
+optional = true
+
+[tool.poetry.group.docs.dependencies]
 sphinxcontrib-bibtex = "^2.6.1"
 sphinx-gallery = "^0.15.0"
 sphinx-rtd-theme = "^2.0.0"
 numpydoc = "^1.6.0"
 matplotlib = "^3.8.2"
-pytest-cov = "^6.0.0"
+tomli = "^2.2.1"
 
 [build-system]
 requires = ["poetry-core"]

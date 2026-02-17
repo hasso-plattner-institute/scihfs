@@ -20,7 +20,7 @@ pytest-until-fail:
 
 run-all: autolint pytest
 
-
 build-and-publish:
+	rm -rf dist/
 	poetry build
-	poetry run twine upload --repository testpypi dist/*
+	poetry run twine upload --repository testpypi --skip-existing dist/*

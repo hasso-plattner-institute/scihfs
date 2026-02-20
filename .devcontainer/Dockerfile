@@ -10,6 +10,9 @@ RUN apt-get update \
 # Configure shell to accept piping
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+# Set locale so Sphinx (and other tools) don't fail on locale.setlocale()
+ENV LANG=C.UTF-8
+
 # Install uv and use Python from base image
 COPY --from=ghcr.io/astral-sh/uv:0.10.4 /uv /uvx /bin/
 ENV UV_SYSTEM_PYTHON=1

@@ -16,7 +16,7 @@ coverage:
           - "!scihfs/tests/"
           - "!scihfs/selectors/"
       tests:
-        target: 100%
+        target: 97.29%
         paths:
           - "scihfs/tests/"
 

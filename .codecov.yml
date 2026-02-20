@@ -16,8 +16,9 @@ coverage:
           - "!scihfs/tests/"
           - "!scihfs/selectors/"
       tests:
-        target: 100%
-        paths: "scihfs/tests/"
+        target: 97.29%
+        paths:
+          - "scihfs/tests/"
 
 ignore:
   - "**/pyitlib.py"

@@ -20,7 +20,7 @@ with open("../pyproject.toml", "rb") as f:
 
 project = pyproject["project"]["name"]
 author = author = ", ".join(a["name"] for a in pyproject["project"].get("authors", []))
-version = release = pyproject["tool"]["poetry"]["version"]
+version = release = pyproject["project"]["version"]
 
 # -- General configuration ---------------------------------------------------
 
@@ -31,6 +31,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinxcontrib.bibtex",
+    "sphinx_gallery.gen_gallery",
 ]
 
 autodoc_typehints = "description"
@@ -63,3 +64,10 @@ html_style = "css/project-template.css"
 # -- BibTeX  -----------------------------------------------------------------
 
 bibtex_bibfiles = ["refs.bib"]
+
+# -- Sphinx-Gallery -------------------------------------------------------------
+
+sphinx_gallery_conf = {
+    "examples_dirs": ["../examples"],
+    "gallery_dirs": ["auto_examples"],
+}

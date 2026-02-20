@@ -24,7 +24,7 @@ make html
 
 ```bash
 cd _build/html
-poetry run python3 -m http.server
+uv run python3 -m http.server
 ```
 
 This will serve the documentation on `http://localhost:8000/`.

@@ -6,18 +6,19 @@ __pycache__/
 # C extensions
 *.so
 
-# scikit-learn specific
+# Sphinx documentation
 doc/_build/
 doc/auto_examples/
 doc/modules/generated/
 doc/datasets/generated/
+doc/generated/
 doc/doctrees/
 doc/sg_execution_times.rst
 
 # Distribution / packaging
-
 .Python
 env/
+.venv/
 build/
 develop-eggs/
 dist/
@@ -59,10 +60,6 @@ coverage.xml
 
 # Django stuff:
 *.log
-
-# Sphinx documentation
-doc/_build/
-doc/generated/
 
 # PyBuilder
 target/

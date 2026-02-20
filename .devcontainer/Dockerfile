@@ -1,4 +1,4 @@
-FROM python:3.13.2
+FROM python:3.13.12
 
 # Update package list and install necessary packages
 # hadolint ignore DL3008
@@ -10,11 +10,9 @@ RUN apt-get update \
 # Configure shell to accept piping
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Lock poetry version and install directory; install poetry and add it to $PATH (for any ad-hoc use inside container)
-ENV POETRY_VERSION=2.1.2
-ENV POETRY_HOME=/etc/poetry
-RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=${POETRY_HOME} POETRY_VERSION=${POETRY_VERSION} python3 -
-ENV PATH="$POETRY_HOME/bin:$PATH"
+# Install uv and use Python from base image
+COPY --from=ghcr.io/astral-sh/uv:0.10.4 /uv /uvx /bin/
+ENV UV_SYSTEM_PYTHON=1
 
 # Install extensions for zsh for nicer visuals when using the container terminal
 # hadolint ignore DL2086
@@ -32,11 +30,10 @@ RUN /bin/zsh /root/.zshrc
 WORKDIR /scihfs
 
 # Make available the dependency files inside the container
-COPY poetry.lock pyproject.toml ./
+COPY uv.lock pyproject.toml ./
 
-# Install all required packages with poetry, including the "dev" group packages
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-root --no-cache --quiet --sync
+# Install all required packages with uv, including the "dev" group packages
+RUN uv sync --no-install-project --frozen
 
 # Entrypoint for the container
 CMD ["/bin/zsh"]

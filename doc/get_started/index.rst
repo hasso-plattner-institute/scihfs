@@ -14,7 +14,7 @@ The package cannot be installed with pip or conda yet so to create your package,
 
 We recommend that you create a new virtual environment for scihfs in which you install the required packages with::
 
-    $ poetry install
+    $ uv sync
 
 2. Usage
 -------------------------------------------

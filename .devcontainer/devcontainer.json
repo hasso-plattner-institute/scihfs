@@ -2,7 +2,7 @@
 	"name": "scihfs-dev",
 	// Use most recent devcontainer image.
 	"image": "jpsachs/scihfs-devcontainer:latest",
-	"postCreateCommand": "uv run pre-commit && uv run pre-commit install",
+	"postCreateCommand": "uv sync --frozen && uv run pre-commit install",
 	// Configure tool-specific properties.
 	"customizations": {
 		// Configure properties specific to VS Code.
@@ -15,9 +15,8 @@
 					}
 				},
 				"terminal.integrated.defaultProfile.linux": "zsh",
-				"python.defaultInterpreterPath": "/usr/local/bin/python",
-				"python.languageServer": "Default",
-				"python.formatting.blackPath": "/usr/local/py-utils/bin/black"
+				"python.defaultInterpreterPath": "/scihfs/.venv/bin/python",
+				"python.languageServer": "Default"
 			},
 			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [

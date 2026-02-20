@@ -10,7 +10,7 @@ authors = [
     {name = "Smilla Fox (sm1lla)"},
     {name = "(kathrinthenhausen)"},
 ]
-dynamic = [ "version" ]
+version = "0.1.0"
 license = { file = "LICENSE"}
 readme = "README.md"
 requires-python = ">=3.10"

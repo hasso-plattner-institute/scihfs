@@ -11,7 +11,7 @@ RUN apt-get update \
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install uv and use Python from base image
-COPY --from=ghcr.io/astral-sh/uv:0.10.3 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.10.4 /uv /uvx /bin/
 ENV UV_SYSTEM_PYTHON=1
 
 # Install extensions for zsh for nicer visuals when using the container terminal

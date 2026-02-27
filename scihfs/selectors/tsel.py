@@ -4,7 +4,7 @@ TSEL Feature Selector.
 
 import numpy as np
 from networkx.algorithms.dag import descendants
-from sklearn.utils.validation import check_X_y
+from sklearn.utils.validation import validate_data
 
 from scihfs.helpers import get_paths
 from scihfs.metrics import lift
@@ -71,7 +71,7 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
         self : object
             Returns self.
         """
-        X, y = check_X_y(X, y, accept_sparse=True)
+        X, y = validate_data(self, X, y, accept_sparse=True)
 
         super().fit(X, y, columns)
 

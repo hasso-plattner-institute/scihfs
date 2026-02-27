@@ -5,7 +5,7 @@ Greedy Top Down Feature Selector.
 import numpy as np
 from networkx import ancestors, descendants
 from scipy.sparse import issparse
-from sklearn.utils.validation import check_X_y
+from sklearn.utils.validation import validate_data
 
 from scihfs.metrics import gain_ratio
 from scihfs.selectors import EagerHierarchicalFeatureSelector
@@ -67,7 +67,7 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
             Returns self.
         """
         # Input validation
-        X, y = check_X_y(X, y, accept_sparse=True)
+        X, y = validate_data(self, X, y, accept_sparse=True)
         if issparse(X):
             X = X.tocsr()
         super().fit(X, y, columns)

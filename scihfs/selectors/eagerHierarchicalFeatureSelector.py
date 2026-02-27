@@ -6,7 +6,7 @@ import warnings
 
 import numpy as np
 from sklearn.feature_selection import SelectorMixin
-from sklearn.utils.validation import check_array
+from sklearn.utils.validation import validate_data
 
 from scihfs.selectors import HierarchicalEstimator
 
@@ -75,9 +75,7 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
         X : array of shape [n_samples, n_selected_features]
             The input samples with only the selected features.
         """
-        X = check_array(X, dtype=None, accept_sparse="csr")
-        if self.n_features_in_ != X.shape[1]:
-            raise ValueError("X has a different shape than during fitting.")
+        X = validate_data(self, X, dtype=None, accept_sparse="csr", reset=False)
         return super().transform(X)
 
     def _get_support_mask(self):

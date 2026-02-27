@@ -40,10 +40,16 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run tests
+      - name: Run tests (without coverage)
+        if: matrix.os == 'windows-latest' && (matrix.python-version == '3.13' || matrix.python-version == '3.14')
+        run: uv run pytest scihfs
+
+      - name: Run tests (with coverage)
+        if: "!(matrix.os == 'windows-latest' && (matrix.python-version == '3.13' || matrix.python-version == '3.14'))"
         run: uv run pytest scihfs --cov --cov-report=xml
 
       - name: Upload results to Codecov
+        if: "!(matrix.os == 'windows-latest' && (matrix.python-version == '3.13' || matrix.python-version == '3.14'))"
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

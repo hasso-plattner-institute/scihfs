@@ -7,7 +7,7 @@ import warnings
 
 import numpy as np
 from scipy import sparse
-from sklearn.utils.validation import check_X_y
+from sklearn.utils.validation import validate_data
 
 from scihfs.helpers import compute_aggregated_values, get_leaves, get_paths
 from scihfs.metrics import information_gain, pearson_correlation
@@ -101,7 +101,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
             raise ValueError(
                 "When using the HFE extension the relevance_metric should be 'Correlation'."
             )
-        X, y = check_X_y(X, y, accept_sparse=True)
+        X, y = validate_data(self, X, y, accept_sparse=True)
         if sparse.issparse(X):
             X = X.tocsc()
         if not self.use_hfe_extension:

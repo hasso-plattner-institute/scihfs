@@ -5,7 +5,7 @@ Base class for Sklearn compatible estimators using hierarchical data.
 import networkx as nx
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils.validation import check_array
+from sklearn.utils.validation import check_is_fitted, validate_data
 
 from scihfs.helpers import add_virtual_root_node
 
@@ -26,6 +26,11 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         hierarchy : np.ndarray
                     The hierarchy graph as an adjacency matrix."""
         self.hierarchy = hierarchy
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.input_tags.sparse = True
+        return tags
 
     def fit(self, X, y=None, columns=None):
         """Fitting function that prepares the hierarchy and _columns parameter.
@@ -57,9 +62,7 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         """
         if self.hierarchy is None:
             raise TypeError("Hierarchy is None but is required.")
-        X = check_array(X, accept_sparse=True)
-
-        self.n_features_in_ = X.shape[1]
+        X = validate_data(self, X, accept_sparse=True)
         if columns:
             self._columns = columns
         else:
@@ -85,10 +88,8 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         X : array of shape (n_samples, n_selected_features)
             The input samples with only the selected features.
         """
-        X = check_array(X, dtype=None, accept_sparse="csr")
-
-        if self.n_features_in_ != X.shape[1]:
-            raise ValueError("X has a different shape than during fitting.")
+        check_is_fitted(self)
+        X = validate_data(self, X, dtype=None, accept_sparse="csr", reset=False)
 
         return X
 

@@ -4,6 +4,7 @@ import networkx as nx
 import numpy as np
 from sklearn.metrics import classification_report
 from sklearn.naive_bayes import BernoulliNB
+from sklearn.utils.validation import validate_data
 
 from scihfs.helpers import check_data, get_relevance
 from scihfs.metrics import conditional_mutual_information
@@ -44,9 +45,7 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
         self : object
             Fitted estimator.
         """
-        X = self._validate_data(
-            X,
-        )
+        X = validate_data(self, X, accept_sparse=True)
         if y is not None:
             if not isinstance(y, np.ndarray):
                 try:

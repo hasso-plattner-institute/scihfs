@@ -9,7 +9,7 @@ import warnings
 import networkx as nx
 import numpy as np
 from networkx.algorithms.dag import ancestors
-from sklearn.utils.validation import check_array, check_is_fitted
+from sklearn.utils.validation import check_is_fitted, validate_data
 
 from scihfs.helpers import shrink_dag
 from scihfs.selectors import HierarchicalEstimator
@@ -84,7 +84,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
             Returns self.
         """
 
-        X = check_array(X, accept_sparse=True)
+        X = validate_data(self, X, accept_sparse=True)
         super().fit(X, y, columns)
         self._columns = [
             column if column < len(self.hierarchy) else -1 for column in self._columns
@@ -116,13 +116,8 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         # Check is fit had been called
         check_is_fitted(self, "is_fitted_")
 
-        # Input validation
-        X = check_array(X, accept_sparse=True)
-
-        # Check that the input is of the same shape as the one passed
-        # during fit.
-        if X.shape[1] != self.n_features_in_:
-            raise ValueError("Shape of input is different from what was seen" "in `fit`")
+        # Input validation (also checks feature count matches fit)
+        X = validate_data(self, X, accept_sparse=True, reset=False)
 
         X_ = self._add_columns(X)
         X_ = self._propagate_ones(X_)

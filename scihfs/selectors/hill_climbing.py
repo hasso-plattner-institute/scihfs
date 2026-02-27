@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 from scipy import sparse
-from sklearn.utils.validation import check_X_y
+from sklearn.utils.validation import validate_data
 
 from scihfs.helpers import compute_aggregated_values, get_leaves, normalize_score
 from scihfs.metrics import cosine_similarity
@@ -73,7 +73,7 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
             Returns self.
         """
         # Input validation
-        X, y = check_X_y(X, y, accept_sparse=True)
+        X, y = validate_data(self, X, y, accept_sparse=True)
 
         super().fit(X, y, columns)
         if sparse.issparse(X):

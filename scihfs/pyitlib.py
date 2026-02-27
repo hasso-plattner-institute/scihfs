@@ -1384,9 +1384,9 @@ def information_mutual_conditional(
     if not cartesian_product:
         I = np.empty(X.shape[:-1])
         if I.ndim > 0:
-            I[:] = np.NaN
+            I[:] = np.nan
         else:
-            I = np.float64(np.NaN)
+            I = np.float64(np.nan)
     else:
         shapeI_Z = Z.shape[:-1]
         Z = np.reshape(Z, (-1, Z.shape[-1]))
@@ -1678,9 +1678,9 @@ def information_lautum(
     if not cartesian_product:
         H = np.empty(X.shape[:-1])
         if H.ndim > 0:
-            H[:] = np.NaN
+            H[:] = np.nan
         else:
-            H = np.float64(np.NaN)
+            H = np.float64(np.nan)
     else:
 
         def f(X, Y, Alphabet_X, Alphabet_Y):
@@ -2055,9 +2055,9 @@ def information_mutual_normalised(
         if not cartesian_product:
             H = np.empty(X.shape[:-1])
             if H.ndim > 0:
-                H[:] = np.NaN
+                H[:] = np.nan
             else:
-                H = np.float64(np.NaN)
+                H = np.float64(np.nan)
 
             # Re-shape H and X, so that we may handle multi-dimensional arrays
             # equivalently and iterate across 0th axis
@@ -2641,9 +2641,9 @@ def entropy_cross(
     if not cartesian_product:
         H = np.empty(X.shape[:-1])
         if H.ndim > 0:
-            H[:] = np.NaN
+            H[:] = np.nan
         else:
-            H = np.float64(np.NaN)
+            H = np.float64(np.nan)
     else:
 
         def f(X, Y, Alphabet_X, Alphabet_Y):
@@ -2710,8 +2710,8 @@ def entropy_cross(
         Alphabet = np.union1d(alphabet_X, alphabet_Y)
         P = np.zeros_like(Alphabet, dtype=P1.dtype)
         Q = np.zeros_like(Alphabet, dtype=P2.dtype)
-        P[np.in1d(Alphabet, alphabet_X, assume_unique=True)] = P1
-        Q[np.in1d(Alphabet, alphabet_Y, assume_unique=True)] = P2
+        P[np.isin(Alphabet, alphabet_X, assume_unique=True)] = P1
+        Q[np.isin(Alphabet, alphabet_Y, assume_unique=True)] = P2
 
         H[i] = entropy_cross_pmf(P, Q, False, base)
 
@@ -3082,9 +3082,9 @@ def divergence_jensenshannon(
     if not cartesian_product:
         H = np.empty(X.shape[:-1])
         if H.ndim > 0:
-            H[:] = np.NaN
+            H[:] = np.nan
         else:
-            H = np.float64(np.NaN)
+            H = np.float64(np.nan)
     else:
 
         def f(X, Y, Alphabet_X, Alphabet_Y):
@@ -3151,8 +3151,8 @@ def divergence_jensenshannon(
         Alphabet = np.union1d(alphabet_X, alphabet_Y)
         P = np.zeros_like(Alphabet, dtype=P1.dtype)
         Q = np.zeros_like(Alphabet, dtype=P2.dtype)
-        P[np.in1d(Alphabet, alphabet_X, assume_unique=True)] = P1
-        Q[np.in1d(Alphabet, alphabet_Y, assume_unique=True)] = P2
+        P[np.isin(Alphabet, alphabet_X, assume_unique=True)] = P1
+        Q[np.isin(Alphabet, alphabet_Y, assume_unique=True)] = P2
 
         H[i] = (
             entropy_pmf(0.5 * P + 0.5 * Q, base)
@@ -3551,9 +3551,9 @@ def entropy_conditional(
     if not cartesian_product:
         H = np.empty(X.shape[:-1])
         if H.ndim > 0:
-            H[:] = np.NaN
+            H[:] = np.nan
         else:
-            H = np.float64(np.NaN)
+            H = np.float64(np.nan)
     else:
 
         def f(X, Y, Alphabet_X, Alphabet_Y):
@@ -3757,7 +3757,7 @@ def entropy_joint(
         n_additional_empty_bins = 0
     L, _ = _remove_counts_at_fill_value(L, alphabet_X, fill_value)
     if not np.any(L):
-        return np.float64(np.NaN)
+        return np.float64(np.nan)
 
     # P_0 is the probability mass assigned to each additional empty bin
     P, P_0 = _estimate_probabilities(L, estimator, n_additional_empty_bins)
@@ -3898,9 +3898,9 @@ def entropy(X, base=2, fill_value=-1, estimator="ML", Alphabet_X=None, keep_dims
 
     H = np.empty(X.shape[:-1])
     if H.ndim > 0:
-        H[:] = np.NaN
+        H[:] = np.nan
     else:
-        H = np.float64(np.NaN)
+        H = np.float64(np.nan)
 
     # Re-shape H and X, so that we may handle multi-dimensional arrays
     # equivalently and iterate across 0th axis
@@ -4497,9 +4497,9 @@ def _cartesian_product_apply(X, Y, function, Alphabet_X=None, Alphabet_Y=None):
 
     H = np.empty(np.append(X.shape[:-1], Y.shape[:-1]).astype("int"))
     if H.ndim > 0:
-        H[:] = np.NaN
+        H[:] = np.nan
     else:
-        H = np.float64(np.NaN)
+        H = np.float64(np.nan)
 
     X = np.reshape(X, (-1, X.shape[-1]))
     Y = np.reshape(Y, (-1, Y.shape[-1]))

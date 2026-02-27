@@ -40,26 +40,10 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Debug Python build info (Windows 3.13/3.14)
-        if: matrix.os == 'windows-latest' && (matrix.python-version == '3.13' || matrix.python-version == '3.14')
-        run: |
-          uv run python -c "import sys; print(sys.version); print(sys.flags)"
-          uv run python -c "import numpy; print('numpy', numpy.__version__); numpy.show_config()"
-          uv run python -c "import scipy; print('scipy', scipy.__version__)"
-          uv run python -c "import sklearn; print('sklearn', sklearn.__version__)"
-
-      - name: Run tests (Windows 3.13/3.14 with OpenBLAS workaround)
-        if: matrix.os == 'windows-latest' && (matrix.python-version == '3.13' || matrix.python-version == '3.14')
-        env:
-          OPENBLAS_NUM_THREADS: "1"
-        run: uv run python -X faulthandler -m pytest scihfs --tb=short -q
-
-      - name: Run tests (with coverage)
-        if: "!(matrix.os == 'windows-latest' && (matrix.python-version == '3.13' || matrix.python-version == '3.14'))"
+      - name: Run tests
         run: uv run pytest scihfs --cov --cov-report=xml
 
       - name: Upload results to Codecov
-        if: "!(matrix.os == 'windows-latest' && (matrix.python-version == '3.13' || matrix.python-version == '3.14'))"
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

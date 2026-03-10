@@ -1,13 +1,22 @@
 {
+	// Identity.
 	"name": "scihfs-dev",
-	// Use most recent devcontainer image.
+	// Image or build.
 	"image": "jpsachs/scihfs-devcontainer:latest",
-	"postCreateCommand": "uv sync --frozen && uv run pre-commit install",
-	// Configure tool-specific properties.
+	// Mount and workspace configuration.
+	"workspaceMount": "source=${localWorkspaceFolder},target=/scihfs,type=bind",
+	"workspaceFolder": "/scihfs",
+	// Runtime configuration.
+	"runArgs": [
+		"--rm"
+	],
+	"shutdownAction": "stopContainer",
+	"remoteUser": "nonroot",
+	// Lifecycle hooks.
+	"postCreateCommand": "uv sync --frozen && uv run pre-commit install && git config --global user.signingKey ''",
+	// Customizations.
 	"customizations": {
-		// Configure properties specific to VS Code.
 		"vscode": {
-			// Set *default* container specific settings.json values on container create.
 			"settings": {
 				"terminal.integrated.profiles.linux": {
 					"zsh": {
@@ -15,22 +24,15 @@
 					}
 				},
 				"terminal.integrated.defaultProfile.linux": "zsh",
-				"python.defaultInterpreterPath": "/scihfs/.venv/bin/python",
-				"python.languageServer": "Default"
+				"python.defaultInterpreterPath": "/scihfs/.venv/bin/python"
 			},
-			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
 				"ms-python.python",
-				"ms-python.pylint",
-				"ms-python.vscode-pylance"
+				"ms-python.vscode-pylance",
+				"ms-python.flake8",
+				"ms-python.black-formatter",
+				"ms-python.isort"
 			]
 		}
-	},
-	// Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
-	// "remoteUser": "leastprivilegeduser",
-	"workspaceMount": "source=${localWorkspaceFolder},target=/scihfs,type=bind",
-	"workspaceFolder": "/scihfs",
-	"runArgs": [
-		"--rm"
-	]
+	}
 }

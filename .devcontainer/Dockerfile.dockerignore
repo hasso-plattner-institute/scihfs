@@ -1,0 +1,8 @@
+# Ignore everything
+*
+
+# Allow only files and folders necessary for building devcontainer image
+!.devcontainer/.zshrc
+!.devcontainer/.p10k.zsh
+!uv.lock
+!pyproject.toml

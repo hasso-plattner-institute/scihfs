@@ -1,3 +1,6 @@
+
+**IMPORTANT: This repository is under active development. Prior to the first release version, all contents are still preliminary and might change without notice.**
+
 ====================================================
 scihfs - A library for hierarchical feature selection
 ====================================================

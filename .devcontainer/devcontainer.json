@@ -2,8 +2,7 @@
 	// Identity.
 	"name": "scihfs-dev",
 	// Image or build.
-	// "image": "jpsachs/scihfs-devcontainer:latest",
-	"image": "scihfs-dev-local:latest",
+	"image": "jpsachs/scihfs-devcontainer:latest",
 	// Mount and workspace configuration.
 	"workspaceMount": "source=${localWorkspaceFolder},target=/scihfs,type=bind",
 	"workspaceFolder": "/scihfs",

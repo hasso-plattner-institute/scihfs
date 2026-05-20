@@ -1,9 +1,16 @@
-# Run this job on pushes to `main`, and for pull requests.
+# Runs this job for pull requests and manual triggers.
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "doc/**"
+      - "LICENSE"
+      - ".gitignore"
+      - ".devcontainer/**"
+      - ".pre-commit-config.yaml"
+      - ".readthedocs.yaml"
+      - "Makefile"
   workflow_dispatch:
 
 jobs:

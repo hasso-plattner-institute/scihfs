@@ -8,6 +8,7 @@ import warnings
 
 import networkx as nx
 import numpy as np
+import scipy.sparse as sp
 from networkx.algorithms.dag import ancestors
 from sklearn.utils.validation import check_is_fitted, validate_data
 
@@ -94,6 +95,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         self._shrink_dag()
         self._find_missing_columns()
         self._adjust_node_names()
+        self._build_ancestor_closure()
         self.is_fitted_ = True
         return self
 
@@ -221,10 +223,37 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
                 X_ = np.concatenate([X_, np.zeros((num_rows, 1), dtype=int)], axis=1)
         return X_
 
-    def _propagate_ones(self, X):
-        """Update the dataset to fulfill the 0-1-propagation rule..
+    def _build_ancestor_closure(self):
+        """Precompute the ancestor closure matrix indexed by column position.
 
-        If a feature in the dataset in 1 all its descendents in the
+        For columns i and j, ``self._ancestor_closure_[i, j]`` is True iff the
+        node mapped to column j is an ancestor (in ``self._hierarchy_graph``)
+        of the node mapped to column i. The virtual "ROOT" node is excluded
+        since it has no corresponding column.
+
+        Under the assumption that ancestor closures of ontologies are very sparse, this matrix is stored as a ``scipy.sparse.csr_matrix`` of dtype ``bool`` – primarily to save memory (but also to speed up the matmul in ``_propagate_ones``).
+        """
+        n_cols = len(self._columns)
+        rows: list[int] = []
+        cols: list[int] = []
+        node_to_col = {node: i for i, node in enumerate(self._columns)}
+
+        for col_i, node in enumerate(self._columns):
+            for anc in ancestors(self._hierarchy_graph, node):
+                if anc == "ROOT":
+                    continue
+                rows.append(col_i)
+                cols.append(node_to_col[anc])
+
+        data = np.ones(len(rows), dtype=bool)
+        self._ancestor_closure_ = sp.csr_matrix(
+            (data, (rows, cols)), shape=(n_cols, n_cols), dtype=bool
+        )
+
+    def _propagate_ones(self, X):
+        """Update the dataset to fulfill the 0-1-propagation rule.
+
+        If a feature in the dataset is 1, all of its ancestors in the
         sample are set to 1.
 
         Parameters
@@ -237,19 +266,12 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         X : array of shape [n_samples, n_new_features]
             The dataset with updated feature values.
         """
-        nodes = list(self._hierarchy_graph.nodes)
-        nodes.remove("ROOT")
-
-        for node in nodes:
-            column_index = self._column_index(node)
-            ancestor_nodes = ancestors(self._hierarchy_graph, node)
-            ancestor_nodes.remove("ROOT")
-            for row_index, entry in enumerate(X[:, column_index]):
-                if entry == 1.0:
-                    for ancestor in ancestor_nodes:
-                        index = self._column_index(ancestor)
-                        X[row_index, index] = 1.0
-        return X
+        # Cast X to bool so scipy's sparse matmul keeps OR-style semantics
+        # (numeric X would otherwise return path counts, not a bool mask).
+        X_bool = X.astype(bool, copy=False)
+        propagation = np.asarray(X_bool @ self._ancestor_closure_)
+        X_propagated = X_bool | propagation
+        return X_propagated.astype(X.dtype)
 
     def _adjust_node_names(self):
         """Adjust node names in hierarchy and _columns.

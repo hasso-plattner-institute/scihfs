@@ -411,3 +411,83 @@ def test_propagate_ones_long_chain_explicit():
     out = pre._propagate_ones(X_added.copy())
     expected = np.array([[1, 1, 1, 1], [1, 1, 1, 0], [1, 0, 0, 0]])
     assert np.array_equal(out, expected)
+
+
+# ---------------------------------------------------------------------------
+# Dtype preservation-related tests. The preprocessor should not change the dtype of the input.
+# ---------------------------------------------------------------------------
+
+
+_DTYPE_PRESERVATION_DTYPES = [
+    np.bool_,
+    np.int8,
+    np.int32,
+    np.int64,
+    np.float32,
+    np.float64,
+]
+
+
+@pytest.mark.parametrize("dtype", _DTYPE_PRESERVATION_DTYPES)
+def test_preprocessor_preserves_input_dtype(dtype):
+    """fit + transform must round-trip the input dtype unchanged."""
+    X_int, hierarchy, columns = _canonical_setup()
+    X = X_int.astype(dtype)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X, columns=columns)
+    X_pp = pre.transform(X)
+
+    assert X_pp.dtype == X.dtype, f"dtype mismatch: {X_pp.dtype} != {X.dtype}"
+
+    # The ancestor closure is a semantic mask and stays bool regardless of X.
+    assert pre._ancestor_closure_.dtype == bool
+
+    # Logical content is dtype-independent: the same true-positions as int.
+    expected = np.array(
+        [
+            [1, 0, 0, 1, 1, 0],
+            [0, 1, 0, 1, 1, 0],
+            [0, 0, 1, 1, 0, 1],
+            [1, 0, 0, 1, 1, 0],
+            [0, 0, 1, 1, 0, 1],
+        ]
+    )
+    assert np.array_equal(X_pp.astype(int), expected)
+
+
+def test_preprocessor_accepts_list_of_lists():
+    """Array-likes without a .dtype still get converted to ndarray correctly.
+
+    sklearn's default validate_data treats list inputs as float64. The point
+    is that the input is accepted and produces a logically correct result.
+    """
+    X_int, hierarchy, columns = _canonical_setup()
+    X_list = X_int.tolist()
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X_list, columns=columns)
+    X_pp = pre.transform(X_list)
+
+    assert isinstance(X_pp, np.ndarray)
+    expected = np.array(
+        [
+            [1, 0, 0, 1, 1, 0],
+            [0, 1, 0, 1, 1, 0],
+            [0, 0, 1, 1, 0, 1],
+            [1, 0, 0, 1, 1, 0],
+            [0, 0, 1, 1, 0, 1],
+        ]
+    )
+    assert np.array_equal(X_pp.astype(int), expected)
+
+
+def test_preprocessor_rejects_nan():
+    """validate_data's ensure_all_finite check still rejects NaN."""
+    X_int, hierarchy, columns = _canonical_setup()
+    X = X_int.astype(np.float64)
+    X[0, 0] = np.nan
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError):
+        pre.fit(X, columns=columns)

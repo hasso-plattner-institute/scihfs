@@ -102,7 +102,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
     def transform(self, X):
         """Transforms dataset to fulfill conditions for feature selection.
 
-        After transformation, if a feature is 1, all of its descendents are 1.
+        After transformation, if a feature is 1, all of its ancestors in the hierarchy are 1 as well.
         Missing columns are added to the dataset.
 
         Parameters
@@ -220,7 +220,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         if num_columns < len(self._columns):
             missing_indices = list(range(num_columns, len(self._columns)))
             for _ in missing_indices:
-                X_ = np.concatenate([X_, np.zeros((num_rows, 1), dtype=int)], axis=1)
+                X_ = np.concatenate([X_, np.zeros((num_rows, 1), dtype=X.dtype)], axis=1)
         return X_
 
     def _build_ancestor_closure(self):

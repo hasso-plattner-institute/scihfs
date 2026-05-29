@@ -12,7 +12,7 @@ import scipy.sparse as sp
 from networkx.algorithms.dag import ancestors
 from sklearn.utils.validation import check_is_fitted, validate_data
 
-from scihfs.helpers import shrink_dag
+from scihfs.helpers import check_bool_dtype, shrink_dag
 from scihfs.selectors import HierarchicalEstimator
 
 
@@ -33,6 +33,10 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
     hierarchy graph to conform to certain pre-conditions.
     This preprocessor prepares the data and graph for the feature
     selection.
+
+    This preprocessor currently supports only bool-dtype input.
+    Non-binary (numeric) inputs raise ``ValueError``. Sum-propagation
+    for numeric features is planned as a future enhancement.
     """
 
     def __init__(self, hierarchy: np.ndarray = None):
@@ -68,7 +72,9 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         Parameters
         ----------
         X : {array-like, sparse matrix}, shape (n_samples, n_features)
-            The training input samples.
+            The training input samples. Must be bool-dtype. Non-binary
+            (numeric) inputs raise ``ValueError`` until the planned
+            sum-propagation mode will be implemented.
 
         y : None
             This transformer does not require a target variable, but the pipeline API
@@ -86,6 +92,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         """
 
         X = validate_data(self, X, accept_sparse=True)
+        check_bool_dtype(X)
         super().fit(X, y, columns)
         self._columns = [
             column if column < len(self.hierarchy) else -1 for column in self._columns
@@ -108,7 +115,9 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         Parameters
         ----------
         X : {array-like, sparse-matrix}, shape (n_samples, n_features)
-            The input samples.
+            The input samples. Must be bool-dtype. Non-binary (numeric)
+            inputs raise ``ValueError`` until the planned sum-propagation
+            mode will be implemented.
 
         Returns
         -------
@@ -120,6 +129,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
 
         # Input validation (also checks feature count matches fit)
         X = validate_data(self, X, accept_sparse=True, reset=False)
+        check_bool_dtype(X)
 
         X_ = self._add_columns(X)
         X_ = self._propagate_ones(X_)

@@ -89,7 +89,7 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
             The input samples with only the selected features.
         """
         check_is_fitted(self)
-        X = validate_data(self, X, dtype=None, accept_sparse="csr", reset=False)
+        X = validate_data(self, X, accept_sparse="csr", reset=False)
 
         return X
 

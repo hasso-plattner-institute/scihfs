@@ -75,7 +75,7 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
         X : array of shape [n_samples, n_selected_features]
             The input samples with only the selected features.
         """
-        X = validate_data(self, X, dtype=None, accept_sparse="csr", reset=False)
+        X = validate_data(self, X, accept_sparse="csr", reset=False)
         return super().transform(X)
 
     def _get_support_mask(self):

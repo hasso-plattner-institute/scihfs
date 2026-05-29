@@ -47,6 +47,26 @@ def get_relevance(xdata, ydata, node):
     return rel
 
 
+def check_bool_dtype(X):
+    """Raise ValueError if ``X`` is not bool-dtype.
+
+    Most scihfs estimators (preprocessor and selectors) operate on binary
+    features. Enforcing bool-dtype at the boundary lets us keep the
+    vectorized propagation and downstream selector code simple, and it
+    surfaces a clear error before silent miscomputation can happen on
+    numeric inputs. A future propagation_mode parameter will reopen this
+    contract for sum-propagation on numeric data.
+    """
+    if X.dtype != np.bool_:
+        raise ValueError(
+            f"scihfs estimators require bool-dtype input. "
+            f"Got dtype={X.dtype}. "
+            f"If your data is binary, convert with X.astype(bool). "
+            f"Non-binary (numeric) inputs are not yet supported - "
+            f"see the sum-propagation roadmap for HFE workflows."
+        )
+
+
 def check_data(dag, x_data, y_data):
     """Checks whether the given dataset satisfies the 0-1-propagation on the DAG.
 

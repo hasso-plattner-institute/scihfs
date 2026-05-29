@@ -27,7 +27,17 @@ from scihfs.selectors import (
         TSELSelector,
         HierarchicalEstimator,
         EagerHierarchicalFeatureSelector,
-        HierarchicalPreprocessor,
+        pytest.param(
+            HierarchicalPreprocessor,
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason=(
+                    "HierarchicalPreprocessor now requires bool-dtype input; "
+                    "sklearn's check_estimator suite feeds float arrays. "
+                    "Pending sum-propagation mode that will reopen numeric inputs."
+                ),
+            ),
+        ),
         TopDownSelector,
         SHSELSelector,
         HNB,

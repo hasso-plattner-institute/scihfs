@@ -4,6 +4,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pytest
+import scipy.sparse as sp
 
 from scihfs.data_utils import create_mapping_columns_to_nodes
 from scihfs.helpers import get_columns_for_numpy_hierarchy
@@ -17,6 +18,7 @@ from scihfs.preprocessing import ColumnNotInHierarchyWarning, HierarchicalPrepro
 def test_hierarchical_preprocessor(data, request):
     data = request.getfixturevalue(data)
     X, X_transformed, hierarchy, columns, hierarchy_expected = data
+    X = X.astype(bool)
 
     preprocessor = HierarchicalPreprocessor(hierarchy)
 
@@ -31,7 +33,7 @@ def test_hierarchical_preprocessor(data, request):
 def test_fit(data3_preprocessing):
     X, hierarchy, hierarchy_transformed, X_identifiers = data3_preprocessing
     preprocessor = HierarchicalPreprocessor(hierarchy)
-    preprocessor.fit(X, columns=X_identifiers)
+    preprocessor.fit(X.astype(bool), columns=X_identifiers)
     assert preprocessor.is_fitted_
     hierarchy = preprocessor.get_hierarchy()
     assert np.equal(hierarchy.all(), hierarchy_transformed.all())
@@ -51,7 +53,7 @@ def test_adjust_node_names():
     # [0, 1, 2, 3] # renamed nodes
     # [0, 1, 3, 2] # renamed nodes mapping
 
-    X = np.zeros((4, 4))
+    X = np.zeros((4, 4), dtype=bool)
     edges = [(4, 5), (0, 1), (0, 3), (0, 4)]
     hierarchy = nx.DiGraph(edges)
     columns = get_columns_for_numpy_hierarchy(hierarchy, X.shape[1])
@@ -67,7 +69,7 @@ def test_columns_not_in_hierarchy_raises_warning():
     hierarchy_graph = nx.DiGraph([(0, 1)])
     hierarchy = nx.to_numpy_array(hierarchy_graph)
     estimator = HierarchicalPreprocessor(hierarchy)
-    X = [[0.42, 4.2, 0.42], [4, 2, 0.42]]
+    X = np.array([[1, 0, 1], [0, 1, 0]], dtype=bool)
     with pytest.warns(ColumnNotInHierarchyWarning):
         estimator.fit(X)
 
@@ -132,7 +134,7 @@ def _canonical_setup():
         ]
     )
     columns = create_mapping_columns_to_nodes(df, graph)
-    X = df.to_numpy()
+    X = df.to_numpy().astype(bool)
     hierarchy = nx.to_numpy_array(graph)
     return X, hierarchy, columns
 
@@ -173,13 +175,14 @@ def test_ancestor_closure_canonical_shape_and_content():
     #   c5 bird  -> animal (c3)
     expected = np.array(
         [
-            [False, False, False, True, True, False],
-            [False, False, False, True, True, False],
-            [False, False, False, True, False, True],
-            [False, False, False, False, False, False],
-            [False, False, False, True, False, False],
-            [False, False, False, True, False, False],
-        ]
+            [0, 0, 0, 1, 1, 0],
+            [0, 0, 0, 1, 1, 0],
+            [0, 0, 0, 1, 0, 1],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 1, 0, 0],
+        ],
+        dtype=bool,
     )
     assert pre._ancestor_closure_.shape == (6, 6)
     assert pre._ancestor_closure_.dtype == bool
@@ -215,7 +218,7 @@ def test_propagate_ones_equivalence_random_trees(seed):
     n_rows = int(rng.integers(3, 25))
 
     hierarchy = _random_tree_hierarchy(n_nodes, rng)
-    X = rng.integers(0, 2, size=(n_rows, n_nodes), dtype=int)
+    X = rng.integers(0, 2, size=(n_rows, n_nodes)).astype(bool)
 
     pre = _fit_with_all_columns(hierarchy, X)
     X_added = pre._add_columns(X)
@@ -232,7 +235,7 @@ def test_propagate_ones_equivalence_random_dags(seed):
     n_rows = int(rng.integers(3, 20))
 
     hierarchy = _random_dag_hierarchy(n_nodes, rng)
-    X = rng.integers(0, 2, size=(n_rows, n_nodes), dtype=int)
+    X = rng.integers(0, 2, size=(n_rows, n_nodes)).astype(bool)
 
     pre = _fit_with_all_columns(hierarchy, X)
     X_added = pre._add_columns(X)
@@ -246,7 +249,7 @@ def test_propagate_ones_empty_input():
     rng = np.random.default_rng(0)
     n_nodes = 12
     hierarchy = _random_tree_hierarchy(n_nodes, rng)
-    X = np.zeros((6, n_nodes), dtype=int)
+    X = np.zeros((6, n_nodes), dtype=bool)
 
     pre = _fit_with_all_columns(hierarchy, X)
     X_added = pre._add_columns(X)
@@ -258,7 +261,7 @@ def test_propagate_ones_saturated_input():
     rng = np.random.default_rng(1)
     n_nodes = 12
     hierarchy = _random_tree_hierarchy(n_nodes, rng)
-    X = np.ones((6, n_nodes), dtype=int)
+    X = np.ones((6, n_nodes), dtype=bool)
 
     pre = _fit_with_all_columns(hierarchy, X)
     X_added = pre._add_columns(X)
@@ -268,7 +271,7 @@ def test_propagate_ones_saturated_input():
 
 def test_propagate_ones_single_node():
     hierarchy = np.zeros((1, 1), dtype=int)
-    X = np.array([[0], [1]], dtype=int)
+    X = np.array([[0], [1]], dtype=bool)
     pre = HierarchicalPreprocessor(hierarchy)
     pre.fit(X, columns=[0])
 
@@ -287,7 +290,7 @@ def test_propagate_ones_multi_parent_dag():
     hierarchy[0, 2] = 1
     hierarchy[1, 3] = 1
     hierarchy[2, 3] = 1
-    X = np.array([[0, 0, 0, 1]], dtype=int)
+    X = np.array([[0, 0, 0, 1]], dtype=bool)
 
     pre = HierarchicalPreprocessor(hierarchy)
     pre.fit(X, columns=[0, 1, 2, 3])
@@ -383,7 +386,7 @@ HAND_CRAFTED = [
 def test_propagate_ones_complex_shapes(hierarchy):
     rng = np.random.default_rng(0)
     n_nodes = hierarchy.shape[0]
-    X = rng.integers(0, 2, size=(20, n_nodes), dtype=int)
+    X = rng.integers(0, 2, size=(20, n_nodes)).astype(bool)
 
     with warnings.catch_warnings():
         # multi_root_forest legitimately warns "multiple disjoint hierarchies"
@@ -403,7 +406,7 @@ def test_propagate_ones_long_chain_explicit():
     not just an oracle comparison.
     """
     hierarchy = _long_chain(4)
-    X = np.array([[0, 0, 0, 1], [0, 0, 1, 0], [1, 0, 0, 0]], dtype=int)
+    X = np.array([[0, 0, 0, 1], [0, 0, 1, 0], [1, 0, 0, 0]], dtype=bool)
     pre = HierarchicalPreprocessor(hierarchy)
     pre.fit(X, columns=[0, 1, 2, 3])
 
@@ -414,76 +417,143 @@ def test_propagate_ones_long_chain_explicit():
 
 
 # ---------------------------------------------------------------------------
-# Dtype preservation-related tests. The preprocessor should not change the dtype of the input.
+# Bool-dtype contract tests.
+#
+# The preprocessor enforces bool-dtype input on both fit and transform. The
+# vectorized propagation is only semantically correct for binary data; until
+# a sum-propagation mode will be implemented, numeric inputs are rejected up front.
 # ---------------------------------------------------------------------------
 
 
-_DTYPE_PRESERVATION_DTYPES = [
-    np.bool_,
-    np.int8,
-    np.int32,
-    np.int64,
-    np.float32,
-    np.float64,
-]
+_EXPECTED_CANONICAL = np.array(
+    [
+        [1, 0, 0, 1, 1, 0],
+        [0, 1, 0, 1, 1, 0],
+        [0, 0, 1, 1, 0, 1],
+        [1, 0, 0, 1, 1, 0],
+        [0, 0, 1, 1, 0, 1],
+    ]
+)
 
 
-@pytest.mark.parametrize("dtype", _DTYPE_PRESERVATION_DTYPES)
-def test_preprocessor_preserves_input_dtype(dtype):
-    """fit + transform must round-trip the input dtype unchanged."""
-    X_int, hierarchy, columns = _canonical_setup()
-    X = X_int.astype(dtype)
+_REJECTED_DTYPES = [np.int8, np.int32, np.int64, np.float32, np.float64]
+
+
+def test_preprocessor_preserves_bool_dtype():
+    """fit + transform must round-trip bool input unchanged."""
+    X, hierarchy, columns = _canonical_setup()
+    assert X.dtype == np.bool_
 
     pre = HierarchicalPreprocessor(hierarchy)
     pre.fit(X, columns=columns)
     X_pp = pre.transform(X)
 
-    assert X_pp.dtype == X.dtype, f"dtype mismatch: {X_pp.dtype} != {X.dtype}"
-
-    # The ancestor closure is a semantic mask and stays bool regardless of X.
+    assert X_pp.dtype == np.bool_
     assert pre._ancestor_closure_.dtype == bool
-
-    # Logical content is dtype-independent: the same true-positions as int.
-    expected = np.array(
-        [
-            [1, 0, 0, 1, 1, 0],
-            [0, 1, 0, 1, 1, 0],
-            [0, 0, 1, 1, 0, 1],
-            [1, 0, 0, 1, 1, 0],
-            [0, 0, 1, 1, 0, 1],
-        ]
-    )
-    assert np.array_equal(X_pp.astype(int), expected)
+    assert np.array_equal(X_pp.astype(int), _EXPECTED_CANONICAL)
 
 
-def test_preprocessor_accepts_list_of_lists():
-    """Array-likes without a .dtype still get converted to ndarray correctly.
-
-    sklearn's default validate_data treats list inputs as float64. The point
-    is that the input is accepted and produces a logically correct result.
-    """
-    X_int, hierarchy, columns = _canonical_setup()
-    X_list = X_int.tolist()
+@pytest.mark.parametrize("dtype", _REJECTED_DTYPES)
+def test_preprocessor_rejects_non_bool_dtype(dtype):
+    """fit and transform both reject non-bool dtypes with a clear message."""
+    X_bool, hierarchy, columns = _canonical_setup()
+    X = X_bool.astype(dtype)
 
     pre = HierarchicalPreprocessor(hierarchy)
-    pre.fit(X_list, columns=columns)
-    X_pp = pre.transform(X_list)
+    with pytest.raises(ValueError, match="bool-dtype"):
+        pre.fit(X, columns=columns)
 
-    assert isinstance(X_pp, np.ndarray)
-    expected = np.array(
-        [
-            [1, 0, 0, 1, 1, 0],
-            [0, 1, 0, 1, 1, 0],
-            [0, 0, 1, 1, 0, 1],
-            [1, 0, 0, 1, 1, 0],
-            [0, 0, 1, 1, 0, 1],
-        ]
-    )
-    assert np.array_equal(X_pp.astype(int), expected)
+    # Fit on bool, then try to transform a non-bool array: still rejected.
+    pre.fit(X_bool, columns=columns)
+    with pytest.raises(ValueError, match="bool-dtype"):
+        pre.transform(X)
+
+
+def test_preprocessor_accepts_bool_dense():
+    """Canonical example with bool dense input pins the supported contract."""
+    X, hierarchy, columns = _canonical_setup()
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X, columns=columns)
+    X_pp = pre.transform(X)
+
+    assert X_pp.dtype == np.bool_
+    assert np.array_equal(X_pp.astype(int), _EXPECTED_CANONICAL)
+
+
+def test_preprocessor_accepts_bool_sparse():
+    """csr_matrix(dtype=bool) input passes the bool-dtype check.
+
+    Tests whether the validator treats ``X.dtype`` uniformly for dense and sparse matrices and yields the is_fitted_ attribute.
+    """
+    X_dense, hierarchy, columns = _canonical_setup()
+    X = sp.csr_matrix(X_dense)
+    assert X.dtype == np.bool_
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X, columns=columns)
+    assert pre.is_fitted_
+
+
+def test_preprocessor_rejects_non_bool_sparse():
+    """Sparse int input must be rejected with the same bool-dtype error."""
+    X_dense, hierarchy, columns = _canonical_setup()
+    X = sp.csr_matrix(X_dense.astype(np.int8))
+    assert X.dtype == np.int8
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="bool-dtype"):
+        pre.fit(X, columns=columns)
+
+
+def test_preprocessor_rejects_int_with_binary_values():
+    """Binary-valued int input is still rejected; we check the dtype, not values."""
+    X_bool, hierarchy, columns = _canonical_setup()
+    X = X_bool.astype(np.int8)  # values are {0, 1} but dtype is int8
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="bool-dtype"):
+        pre.fit(X, columns=columns)
+
+
+def test_preprocessor_rejects_float_with_binary_values():
+    """Binary-valued float input is still rejected; we check the dtype, not values."""
+    X_bool, hierarchy, columns = _canonical_setup()
+    X = X_bool.astype(np.float64)  # values are {0.0, 1.0} but dtype is float64
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="bool-dtype"):
+        pre.fit(X, columns=columns)
+
+
+def test_preprocessor_rejects_non_bool_in_transform():
+    """fit-on-bool then transform-on-int8 must still raise in transform."""
+    X_bool, hierarchy, columns = _canonical_setup()
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X_bool, columns=columns)
+
+    X_int = X_bool.astype(np.int8)
+    with pytest.raises(ValueError, match="bool-dtype"):
+        pre.transform(X_int)
+
+
+def test_error_message_mentions_astype_bool():
+    """The user-facing error must guide users to the fix for binary data."""
+    X_bool, hierarchy, columns = _canonical_setup()
+    X = X_bool.astype(np.int64)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match=r"astype\(bool\)"):
+        pre.fit(X, columns=columns)
 
 
 def test_preprocessor_rejects_nan():
-    """validate_data's ensure_all_finite check still rejects NaN."""
+    """validate_data's ensure_all_finite check still rejects NaN.
+
+    NaN can only appear in float arrays, which are themselves rejected, but
+    the NaN check inside validate_data fires before the bool-dtype check.
+    """
     X_int, hierarchy, columns = _canonical_setup()
     X = X_int.astype(np.float64)
     X[0, 0] = np.nan

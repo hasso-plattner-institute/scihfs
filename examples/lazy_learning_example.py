@@ -17,9 +17,11 @@ from scihfs.selectors import HIP, HNB, MR, RNB, TAN, HieAODE, HNBs
 
 # Define data
 def data():
-    train_x_data = np.array([[1, 1, 0, 1], [1, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]])
+    train_x_data = np.array(
+        [[1, 1, 0, 1], [1, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]], dtype=bool
+    )
     train_y_data = np.array([0, 0, 1, 1])
-    test_x_data = np.array([[1, 1, 0, 0], [1, 1, 1, 0]])
+    test_x_data = np.array([[1, 1, 0, 0], [1, 1, 1, 0]], dtype=bool)
     test_y_data = np.array([0, 1])
     hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1), (0, 2), (1, 2), (1, 3)]))
     return (train_x_data, train_y_data, test_x_data, test_y_data, hierarchy)
@@ -30,8 +32,10 @@ def preprocess():
     train_x_data, train_y_data, test_x_data, test_y_data, hierarchy = data()
     preprocessor = HierarchicalPreprocessor(hierarchy=hierarchy)
     preprocessor.fit(train_x_data)
-    train = preprocessor.transform(train_x_data)
-    test = preprocessor.transform(test_x_data)
+    # Downstream lazy selectors index into CPT arrays with X values, which
+    # requires integer-valued samples; cast back to int after preprocessing.
+    train = preprocessor.transform(train_x_data).astype(int)
+    test = preprocessor.transform(test_x_data).astype(int)
     hierarchy = preprocessor.get_hierarchy()
     return (train, test, train_y_data, test_y_data, hierarchy)
 

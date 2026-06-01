@@ -482,23 +482,136 @@ def test_preprocessor_accepts_bool_dense():
 
 
 def test_preprocessor_accepts_bool_sparse():
-    """csr_matrix(dtype=bool) input passes the bool-dtype check.
+    """csr_array(dtype=bool) input passes the bool-dtype check and round-trips
+    through fit + transform without densifying.
 
     Tests whether the validator treats ``X.dtype`` uniformly for dense and sparse matrices and yields the is_fitted_ attribute.
     """
     X_dense, hierarchy, columns = _canonical_setup()
-    X = sp.csr_matrix(X_dense)
+    X = sp.csr_array(X_dense)
     assert X.dtype == np.bool_
 
     pre = HierarchicalPreprocessor(hierarchy)
     pre.fit(X, columns=columns)
     assert pre.is_fitted_
 
+    X_pp = pre.transform(X)
+    assert isinstance(X_pp, sp.sparray)
+    assert X_pp.format == "csr"
+    assert X_pp.dtype == np.bool_
+    assert X_pp.shape == (X_dense.shape[0], len(pre._columns))
+
+
+# ---------------------------------------------------------------------------
+# Sparse input support.
+#
+# fit + transform must work end-to-end on scipy.sparse.csr_matrix(bool) and
+# return CSR(bool) output equivalent (cell-by-cell) to the dense path on the
+# same input. Sparse and dense paths must never silently cross over.
+# ---------------------------------------------------------------------------
+
+
+def test_preprocessor_sparse_canonical_equivalence():
+    """Canonical example: sparse path yields the same matrix as dense."""
+    X_dense, hierarchy, columns = _canonical_setup()
+    X_sparse = sp.csr_array(X_dense)
+
+    pre_d = HierarchicalPreprocessor(hierarchy)
+    pre_d.fit(X_dense, columns=columns)
+    out_d = pre_d.transform(X_dense)
+
+    pre_s = HierarchicalPreprocessor(hierarchy)
+    pre_s.fit(X_sparse, columns=columns)
+    out_s = pre_s.transform(X_sparse)
+
+    assert not sp.issparse(out_d)
+    assert isinstance(out_s, sp.sparray)
+    assert out_s.format == "csr"
+    assert out_d.dtype == np.bool_
+    assert out_s.dtype == np.bool_
+    assert np.array_equal(out_s.toarray(), out_d)
+    assert np.array_equal(out_s.toarray().astype(int), _EXPECTED_CANONICAL)
+
+
+def test_scipy_sparse_bool_matmul_preserves_bool():
+    """Test whether matmul (``@``) and ``maximum()`` preserve dtype in scipy sparse arrays. This behaviour is not immediately obvious from the scipy docs at first glance, so this is just a defensive test."""
+    a = sp.csr_array(np.array([[True, False], [False, True]]))
+    b = sp.csr_array(np.array([[True, True], [False, True]]))
+    assert (a @ b).dtype == np.bool_
+    assert a.maximum(b).dtype == np.bool_
+
+
+def test_preprocessor_accepts_csc_input():
+    """CSC input is accepted (and normalized to csr_array on output)."""
+    X_dense, hierarchy, columns = _canonical_setup()
+    X_csc = sp.csc_array(X_dense)
+    assert X_csc.format == "csc"
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X_csc, columns=columns)
+    out = pre.transform(X_csc)
+
+    assert isinstance(out, sp.sparray)
+    assert out.format == "csr"
+    assert out.dtype == np.bool_
+    assert np.array_equal(out.toarray().astype(int), _EXPECTED_CANONICAL)
+
+
+def test_preprocessor_accepts_coo_input():
+    """COO input is accepted (and normalized to csr_array on output)."""
+    X_dense, hierarchy, columns = _canonical_setup()
+    X_coo = sp.coo_array(X_dense)
+    assert X_coo.format == "coo"
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X_coo, columns=columns)
+    out = pre.transform(X_coo)
+
+    assert isinstance(out, sp.sparray)
+    assert out.format == "csr"
+    assert out.dtype == np.bool_
+    assert np.array_equal(out.toarray().astype(int), _EXPECTED_CANONICAL)
+
+
+def test_preprocessor_normalizes_legacy_csr_matrix_to_csr_array():
+    """Legacy ``csr_matrix`` input is accepted and normalized to ``csr_array``.
+
+    scipy encourages the use of csr_array over csr_matrix.
+    Since csr_matrix is just a different representation of the same underlying sparse data, but has a different API, the preprocessor accepts csr_matrix for backward compatibility but internally converts it to csr_array. This ensures consistent behaviour for all downstream operations.
+    """
+    X_dense, hierarchy, columns = _canonical_setup()
+    X_legacy = sp.csr_matrix(X_dense)
+    assert isinstance(X_legacy, sp.spmatrix)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X_legacy, columns=columns)
+    out = pre.transform(X_legacy)
+
+    assert isinstance(out, sp.sparray)
+    assert not isinstance(out, sp.spmatrix)
+    assert out.format == "csr"
+    assert out.dtype == np.bool_
+    assert np.array_equal(out.toarray().astype(int), _EXPECTED_CANONICAL)
+
+
+def test_preprocessor_sparse_dense_paths_do_not_cross_format():
+    """Dense in -> dense out. Sparse in -> sparse out. No silent crossover."""
+    X_dense, hierarchy, columns = _canonical_setup()
+    X_sparse = sp.csr_array(X_dense)
+
+    pre_d = HierarchicalPreprocessor(hierarchy)
+    pre_d.fit(X_dense, columns=columns)
+    assert isinstance(pre_d.transform(X_dense), np.ndarray)
+
+    pre_s = HierarchicalPreprocessor(hierarchy)
+    pre_s.fit(X_sparse, columns=columns)
+    assert sp.issparse(pre_s.transform(X_sparse))
+
 
 def test_preprocessor_rejects_non_bool_sparse():
     """Sparse int input must be rejected with the same bool-dtype error."""
     X_dense, hierarchy, columns = _canonical_setup()
-    X = sp.csr_matrix(X_dense.astype(np.int8))
+    X = sp.csr_array(X_dense.astype(np.int8))
     assert X.dtype == np.int8
 
     pre = HierarchicalPreprocessor(hierarchy)

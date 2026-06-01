@@ -91,7 +91,9 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
             Returns self.
         """
 
-        X = validate_data(self, X, accept_sparse=True)
+        X = validate_data(self, X, accept_sparse="csr")
+        if sp.issparse(X):
+            X = sp.csr_array(X)
         check_bool_dtype(X)
         super().fit(X, y, columns)
         self._columns = [
@@ -127,8 +129,13 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         # Check is fit had been called
         check_is_fitted(self, "is_fitted_")
 
-        # Input validation (also checks feature count matches fit)
-        X = validate_data(self, X, accept_sparse=True, reset=False)
+        # Input validation.
+        # Any sparse input (csr/csc/coo, matrix or array) is accepted, and then normalized
+        # to CSR by validate_data. To provide consistent behaviour downstream, any output is then coerced to the recommended csr_array
+        # type so the rest of the transform pipeline sees only one single sparse type with a predictable behaviour.
+        X = validate_data(self, X, accept_sparse="csr", reset=False)
+        if sp.issparse(X):
+            X = sp.csr_array(X)
         check_bool_dtype(X)
 
         X_ = self._add_columns(X)
@@ -214,7 +221,9 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
     def _add_columns(self, X):
         """Adds missing columns to the dataset.
 
-        Missing columns are added and all values are set to 0.
+        Missing columns are added and all values are set to 0. Sparse inputs
+        are padded with a sparse zero block via ``scipy.sparse.hstack``
+        dense inputs use a single ``np.concatenate``.
 
         Parameters
         ----------
@@ -223,15 +232,18 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         Returns
         -------
         X_ : array of shape [n_samples, n_new_features]
-            The dataset with the added columns.
+            The dataset with the added columns. Output format matches input
+            format (CSR in -> CSR out; dense in -> dense out).
         """
-        X_ = X
         num_rows, num_columns = X.shape
-        if num_columns < len(self._columns):
-            missing_indices = list(range(num_columns, len(self._columns)))
-            for _ in missing_indices:
-                X_ = np.concatenate([X_, np.zeros((num_rows, 1), dtype=X.dtype)], axis=1)
-        return X_
+        n_extra = len(self._columns) - num_columns
+        if n_extra <= 0:
+            return X
+        if sp.issparse(X):
+            padding = sp.csr_array((num_rows, n_extra), dtype=X.dtype)
+            return sp.hstack([X, padding], format="csr")
+        padding = np.zeros((num_rows, n_extra), dtype=X.dtype)
+        return np.concatenate([X, padding], axis=1)
 
     def _build_ancestor_closure(self):
         """Precompute the ancestor closure matrix indexed by column position.
@@ -241,7 +253,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         of the node mapped to column i. The virtual "ROOT" node is excluded
         since it has no corresponding column.
 
-        Under the assumption that ancestor closures of ontologies are very sparse, this matrix is stored as a ``scipy.sparse.csr_matrix`` of dtype ``bool`` – primarily to save memory (but also to speed up the matmul in ``_propagate_ones``).
+        Under the assumption that ancestor closures of ontologies are very sparse, this matrix is stored as a ``scipy.sparse.csr_array`` of dtype ``bool`` – primarily to save memory (but also to speed up the matmul in ``_propagate_ones``).
         """
         n_cols = len(self._columns)
         rows: list[int] = []
@@ -256,7 +268,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
                 cols.append(node_to_col[anc])
 
         data = np.ones(len(rows), dtype=bool)
-        self._ancestor_closure_ = sp.csr_matrix(
+        self._ancestor_closure_ = sp.csr_array(
             (data, (rows, cols)), shape=(n_cols, n_cols), dtype=bool
         )
 
@@ -264,7 +276,9 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         """Update the dataset to fulfill the 0-1-propagation rule.
 
         If a feature in the dataset is 1, all of its ancestors in the
-        sample are set to 1.
+        sample are set to 1. Sparse inputs stay sparse end-to-end (the
+        intermediate ``X @ closure`` product is sparse, and elementwise OR
+        is realised via ``sparse.maximum``); dense inputs use ``|``.
 
         Parameters
         ----------
@@ -274,14 +288,16 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         Returns
         -------
         X : array of shape [n_samples, n_new_features]
-            The dataset with updated feature values.
+            The dataset with updated feature values. Output format matches
+            input format (CSR in -> CSR out; dense in -> dense out).
         """
         # Cast X to bool so scipy's sparse matmul keeps OR-style semantics
         # (numeric X would otherwise return path counts, not a bool mask).
         X_bool = X.astype(bool, copy=False)
-        propagation = np.asarray(X_bool @ self._ancestor_closure_)
-        X_propagated = X_bool | propagation
-        return X_propagated.astype(X.dtype)
+        propagation = X_bool @ self._ancestor_closure_
+        if sp.issparse(X):
+            return X_bool.maximum(propagation).tocsr()
+        return X_bool | propagation
 
     def _adjust_node_names(self):
         """Adjust node names in hierarchy and _columns.

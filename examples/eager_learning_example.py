@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+CAUTION: Work in progress! The API (and this example) is not yet stable and may change without deprecation. Please reach out if you want to use or contribute to this library.
+
 Eager learning
 =====================
 
@@ -50,3 +52,45 @@ selector.fit(X, y, columns=columns)
 X_transformed = selector.transform(X)
 
 print(X_transformed)
+
+# %%
+# DataFrame + DiGraph: the one-call preprocessing path
+# ----------------------------------------------------
+# ``HierarchicalPreprocessor`` accepts a pandas ``DataFrame`` together with a
+# named ``networkx.DiGraph`` hierarchy. The column-to-node mapping is then
+# derived automatically from the DataFrame's column names, so neither
+# ``nx.to_numpy_array`` nor an explicit ``columns`` argument is needed.
+
+import pandas as pd
+
+from scihfs.preprocessing import HierarchicalPreprocessor
+
+# Bool DataFrame: each column is a (leaf) feature named after a hierarchy node.
+df = pd.DataFrame(
+    {
+        "dog": [True, False, False],
+        "cat": [False, True, False],
+        "eagle": [False, False, True],
+    }
+)
+
+# Named hierarchy. Nodes carry meaningful labels instead of column indices.
+graph = nx.DiGraph(
+    [
+        ("animal", "mammal"),
+        ("animal", "bird"),
+        ("mammal", "dog"),
+        ("mammal", "cat"),
+        ("bird", "eagle"),
+    ]
+)
+
+# One call: no nx.to_numpy_array, no create_mapping_columns_to_nodes, no columns=.
+preprocessor = HierarchicalPreprocessor(graph)
+
+# Opt into DataFrame output to keep the hierarchy node names on the columns.
+preprocessor.set_output(transform="pandas")
+preprocessor.fit(df)
+df_transformed = preprocessor.transform(df)
+
+print(df_transformed)

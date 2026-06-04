@@ -12,6 +12,9 @@ def create_mapping_columns_to_nodes(data: pd.DataFrame, hierarchy: nx.DiGraph):
     to the corresponding indices is created so that after the transformation
     the correct nodes in the hierarchy can still be found for each column.
 
+    .. note::
+        This helper is no longer required for the expected preprocessing workflow (DataFrame for data and nx.DiGraph for hierarchy inputs to HierarchicalPreprocessor), but remains fully supported for all other use cases.
+
     Parameters
     ----------
     data : pd.Dataframe

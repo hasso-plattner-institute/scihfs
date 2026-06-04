@@ -661,6 +661,368 @@ def test_error_message_mentions_astype_bool():
         pre.fit(X, columns=columns)
 
 
+# ---------------------------------------------------------------------------
+# DiGraph hierarchy + DataFrame X acceptance and column auto-derivation.
+#
+# The canonical example is reused so the new (DataFrame + DiGraph) happy path
+# can be pinned cell-by-cell against the established ndarray + explicit-columns
+# result in _EXPECTED_CANONICAL.
+# ---------------------------------------------------------------------------
+
+
+def _canonical_digraph():
+    """Named DiGraph equivalent of the canonical ndarray hierarchy.
+
+    Node insertion order is animal, mammal, bird, fish, dog, cat, eagle, trout,
+    i.e. positions 4/5/6 are dog/cat/eagle -- matching nx.to_numpy_array(graph)
+    used by _canonical_setup, so both paths yield identical output.
+    """
+    return nx.DiGraph(
+        [
+            ("animal", "mammal"),
+            ("animal", "bird"),
+            ("animal", "fish"),
+            ("mammal", "dog"),
+            ("mammal", "cat"),
+            ("bird", "eagle"),
+            ("fish", "trout"),
+        ]
+    )
+
+
+def _canonical_dataframe():
+    """Bool DataFrame matching _canonical_setup's X, with named columns."""
+    return pd.DataFrame(
+        {
+            "dog": [1, 0, 0, 1, 0],
+            "cat": [0, 1, 0, 0, 0],
+            "eagle": [0, 0, 1, 0, 1],
+        }
+    ).astype(bool)
+
+
+def test_preprocessor_accepts_digraph_hierarchy_with_ndarray_X():
+    """DiGraph hierarchy + ndarray X + explicit columns == ndarray-hierarchy path."""
+    X, _, columns = _canonical_setup()  # X is bool ndarray, columns == [4, 5, 6]
+    graph = _canonical_digraph()
+
+    pre = HierarchicalPreprocessor(graph)
+    pre.fit(X, columns=columns)
+    out = pre.transform(X)
+
+    assert isinstance(out, np.ndarray)
+    assert out.dtype == np.bool_
+    assert np.array_equal(out.astype(int), _EXPECTED_CANONICAL)
+
+
+def test_preprocessor_accepts_dataframe_with_ndarray_hierarchy():
+    """DataFrame X + ndarray hierarchy + explicit columns; output stays ndarray."""
+    _, hierarchy, columns = _canonical_setup()
+    df = _canonical_dataframe()
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(df, columns=columns)
+    out = pre.transform(df)
+
+    assert isinstance(out, np.ndarray)  # ndarray by default, not a DataFrame
+    assert out.dtype == np.bool_
+    assert np.array_equal(out.astype(int), _EXPECTED_CANONICAL)
+
+
+def test_preprocessor_accepts_dataframe_with_digraph_hierarchy_explicit_columns():
+    """DataFrame X + DiGraph hierarchy + explicit columns."""
+    _, _, columns = _canonical_setup()
+    df = _canonical_dataframe()
+    graph = _canonical_digraph()
+
+    pre = HierarchicalPreprocessor(graph)
+    pre.fit(df, columns=columns)
+    out = pre.transform(df)
+
+    assert np.array_equal(out.astype(int), _EXPECTED_CANONICAL)
+
+
+def test_preprocessor_autoderives_columns_when_dataframe_and_digraph():
+    """DataFrame X + DiGraph + columns=None: auto-derive equals explicit-columns."""
+    _, _, columns = _canonical_setup()
+    df = _canonical_dataframe()
+    graph = _canonical_digraph()
+
+    pre_auto = HierarchicalPreprocessor(graph)
+    pre_auto.fit(df)  # no columns=
+    assert pre_auto.is_fitted_
+
+    pre_explicit = HierarchicalPreprocessor(graph)
+    pre_explicit.fit(df, columns=columns)
+
+    out_auto = pre_auto.transform(df)
+    out_explicit = pre_explicit.transform(df)
+    assert np.array_equal(out_auto, out_explicit)
+    assert np.array_equal(out_auto.astype(int), _EXPECTED_CANONICAL)
+
+
+def test_preprocessor_rejects_dataframe_with_ndarray_hierarchy_no_columns():
+    """DataFrame X + ndarray hierarchy + columns=None raises a clear ValueError."""
+    _, hierarchy, _ = _canonical_setup()
+    df = _canonical_dataframe()
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="Cannot auto-derive columns"):
+        pre.fit(df)
+
+
+# --- Input-validation edge cases -------------------------------------------
+
+
+def test_dataframe_with_unknown_column():
+    """A DataFrame column absent from the graph maps to -1 and warns (ROOT add)."""
+    graph = _canonical_digraph()
+    df = _canonical_dataframe()
+    df["unicorn"] = [False, True, False, False, True]  # not a node in graph
+
+    pre = HierarchicalPreprocessor(graph)
+    with pytest.warns(ColumnNotInHierarchyWarning):
+        pre.fit(df)  # auto-derive path
+
+
+def test_orphan_dataframe_column_keeps_its_name_in_feature_names_out():
+    """An orphan DataFrame column (absent from the graph) is labelled with its
+    own feature name in get_feature_names_out, not the "x<node>" fallback."""
+    graph = _canonical_digraph()
+    df = _canonical_dataframe()
+    df["unicorn"] = [False, True, False, False, True]
+
+    pre = HierarchicalPreprocessor(graph)
+    with pytest.warns(ColumnNotInHierarchyWarning):
+        pre.fit(df)
+
+    names = list(pre.get_feature_names_out())
+    assert "unicorn" in names
+    assert not any(n.startswith("x") for n in names)
+    # round-trips through set_output too
+    pre2 = HierarchicalPreprocessor(graph)
+    pre2.set_output(transform="pandas")
+    with pytest.warns(ColumnNotInHierarchyWarning):
+        pre2.fit(df)
+    out = pre2.transform(df)
+    assert "unicorn" in out.columns
+
+
+def test_orphan_ndarray_column_falls_back_to_x_node():
+    """With a nameless (ndarray) X, an orphan column has no feature name to
+    recover, so it falls back to the "x<node>" label."""
+    # Two columns; hierarchy only knows node 0, so column 1 is an orphan.
+    X = np.array([[True, False], [False, True]])
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))  # nodes 0, 1
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.warns(ColumnNotInHierarchyWarning):
+        pre.fit(X, columns=[0, -1])
+
+    names = list(pre.get_feature_names_out())
+    assert any(n.startswith("x") for n in names)
+
+
+def test_dataframe_non_bool_dtype():
+    """An int-dtype DataFrame is rejected by the bool-dtype contract."""
+    graph = _canonical_digraph()
+    df = _canonical_dataframe().astype(int)
+
+    pre = HierarchicalPreprocessor(graph)
+    with pytest.raises(ValueError, match="bool-dtype"):
+        pre.fit(df)
+
+
+def test_digraph_with_integer_node_names():
+    """Integer-named DiGraph + DataFrame with matching string columns.
+
+    sklearn coerces DataFrame column labels to str in feature_names_in_, and
+    auto-derivation compares node names as strings, so str column "0" matches
+    integer node 0. This is the documented way to use an int-named DiGraph with
+    auto-derive.
+    """
+    graph = nx.DiGraph([(0, 1), (0, 2)])  # int node names
+    df = pd.DataFrame({"1": [True, False], "2": [False, True]}).astype(bool)
+
+    pre = HierarchicalPreprocessor(graph)
+    pre.fit(df)  # auto-derive via str(node) match
+    assert pre.is_fitted_
+    out = pre.transform(df)
+    # node 0 is the parent of both 1 and 2; a 1 in either child propagates to it
+    assert out.shape[0] == 2
+
+
+def test_digraph_with_string_node_names_dataframe_with_int_columns():
+    """String-named DiGraph but int-labelled DataFrame columns.
+
+    sklearn only records feature_names_in_ for all-string columns; integer
+    column labels are NOT captured, so auto-derive does not trigger and the
+    preprocessor falls back to positional 1:1 mapping (the same behaviour as
+    a plain ndarray X). The mismatch therefore surfaces as positional mapping
+    rather than name matching -- documented limitation: use string columns.
+    """
+    graph = nx.DiGraph([("dog", "cat")])
+    df = pd.DataFrame({0: [True, False], 1: [False, True]}).astype(bool)
+
+    pre = HierarchicalPreprocessor(graph)
+    assert not hasattr(pre, "feature_names_in_")
+    pre.fit(df)  # no feature names captured -> positional fallback, no raise
+    pre.fit(df)
+    assert pre.is_fitted_
+    assert not hasattr(pre, "feature_names_in_")
+
+
+# --- Round-trip / fit-transform consistency --------------------------------
+
+
+def test_dataframe_fit_dataframe_transform():
+    """fit on a DataFrame then transform on a DataFrame with the same columns."""
+    df = _canonical_dataframe()
+    graph = _canonical_digraph()
+
+    pre = HierarchicalPreprocessor(graph)
+    pre.fit(df)
+    # feature names are preserved through fit (single validate_data)
+    assert list(pre.feature_names_in_) == ["dog", "cat", "eagle"]
+
+    out = pre.transform(df)
+    assert np.array_equal(out.astype(int), _EXPECTED_CANONICAL)
+
+
+def test_dataframe_transform_mismatched_columns_raises():
+    """Transforming a DataFrame whose columns differ from fit raises ValueError."""
+    df = _canonical_dataframe()
+    graph = _canonical_digraph()
+
+    pre = HierarchicalPreprocessor(graph)
+    pre.fit(df)
+
+    df_wrong = df.rename(columns={"dog": "wolf"})
+    with pytest.raises(ValueError, match="feature names"):
+        pre.transform(df_wrong)
+
+
+def test_preprocessor_accepts_polars_dataframe_with_digraph():
+    """polars DataFrame works via sklearn's interchange-protocol plumbing.
+
+    scihfs imports no DataFrame library directly; polars support is inherited
+    from scikit-learn (feature names via __dataframe__, conversion via
+    np.asarray). Skipped when polars is not installed (no hard dependency).
+    """
+    pl = pytest.importorskip("polars")
+    _, _, _ = _canonical_setup()
+    graph = _canonical_digraph()
+    df = pl.DataFrame(
+        {
+            "dog": [True, False, False, True, False],
+            "cat": [False, True, False, False, False],
+            "eagle": [False, False, True, False, True],
+        }
+    )
+
+    pre = HierarchicalPreprocessor(graph)
+    pre.fit(df)
+    out = pre.transform(df)
+    out = out.toarray() if sp.issparse(out) else np.asarray(out)
+    assert np.array_equal(out.astype(int), _EXPECTED_CANONICAL)
+
+
+# --- get_feature_names_out / set_output ---------------------
+
+
+def test_get_feature_names_out_named_hierarchy():
+    """DiGraph hierarchy: names_out are the node names in _columns order."""
+    df = _canonical_dataframe()
+    graph = _canonical_digraph()
+
+    pre = HierarchicalPreprocessor(graph)
+    pre.fit(df)
+
+    names = pre.get_feature_names_out()
+    assert len(names) == len(pre._columns)
+    # data columns first, then the ancestor columns added during fit
+    assert list(names[:3]) == ["dog", "cat", "eagle"]
+    assert set(names) == {"dog", "cat", "eagle", "animal", "mammal", "bird"}
+
+
+def test_get_feature_names_out_unnamed_hierarchy():
+    """ndarray hierarchy: names_out are the ORIGINAL node indices (traceable).
+
+    dog/cat/eagle are original adjacency indices 4/5/6; the ancestor columns
+    added during fit are animal/mammal/bird = original indices 0/1/2. The names
+    must reflect those original indices, not the post-shrink renumbering.
+    """
+    X, hierarchy, columns = _canonical_setup()  # columns == [4, 5, 6]
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X, columns=columns)
+
+    names = pre.get_feature_names_out()
+    assert len(names) == len(pre._columns)
+    assert list(names[:3]) == ["4", "5", "6"]
+    assert set(names) == {"4", "5", "6", "0", "1", "2"}
+
+
+def test_get_feature_names_out_ndarray_matches_digraph_positions():
+    """ndarray index names line up position-for-position with DiGraph names."""
+    X, hierarchy, columns = _canonical_setup()
+    graph = _canonical_digraph()
+
+    pre_arr = HierarchicalPreprocessor(hierarchy)
+    pre_arr.fit(X, columns=columns)
+    pre_graph = HierarchicalPreprocessor(graph)
+    pre_graph.fit(_canonical_dataframe())
+
+    # Same column order; ndarray gives original indices, DiGraph gives names.
+    # index 4 <-> "dog", 5 <-> "cat", 6 <-> "eagle", 0 <-> "animal", ...
+    assert list(pre_arr.get_feature_names_out()) == ["4", "5", "6", "0", "1", "2"]
+    assert list(pre_graph.get_feature_names_out()) == [
+        "dog",
+        "cat",
+        "eagle",
+        "animal",
+        "mammal",
+        "bird",
+    ]
+
+
+def test_set_output_pandas():
+    """set_output('pandas') makes transform return a labelled DataFrame."""
+    df = _canonical_dataframe()
+    graph = _canonical_digraph()
+
+    pre = HierarchicalPreprocessor(graph)
+    pre.set_output(transform="pandas")
+    pre.fit(df)
+    out = pre.transform(df)
+
+    assert isinstance(out, pd.DataFrame)
+    assert list(out.columns) == list(pre.get_feature_names_out())
+    assert list(out.columns[:3]) == ["dog", "cat", "eagle"]
+    assert np.array_equal(out.to_numpy().astype(int), _EXPECTED_CANONICAL)
+
+
+def test_set_output_polars():
+    """set_output('polars') returns a labelled polars DataFrame (no extra code).
+
+    polars output is inherited from scikit-learn's registered PolarsAdapter;
+    scihfs imports no polars. Skipped when polars is not installed.
+    """
+    pl = pytest.importorskip("polars")
+    df = _canonical_dataframe()
+    graph = _canonical_digraph()
+
+    pre = HierarchicalPreprocessor(graph)
+    pre.set_output(transform="polars")
+    pre.fit(df)
+    out = pre.transform(df)
+
+    assert isinstance(out, pl.DataFrame)
+    assert out.columns == list(pre.get_feature_names_out())
+    assert out.columns[:3] == ["dog", "cat", "eagle"]
+    assert np.array_equal(out.to_numpy().astype(int), _EXPECTED_CANONICAL)
+
+
 def test_preprocessor_rejects_nan():
     """validate_data's ensure_all_finite check still rejects NaN.
 

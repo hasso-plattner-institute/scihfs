@@ -14,6 +14,7 @@ from sklearn.utils.validation import check_is_fitted, validate_data
 
 from scihfs.helpers import check_bool_dtype, shrink_dag
 from scihfs.selectors import HierarchicalEstimator
+from scihfs.selectors.base import ORIGINAL_NODE_IDENTIFIER
 
 
 class ColumnNotInHierarchyWarning(UserWarning):
@@ -39,13 +40,25 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
     for numeric features is planned as a future enhancement.
     """
 
-    def __init__(self, hierarchy: np.ndarray = None):
+    def __init__(self, hierarchy=None):
         """Initializes a HierarchicalPreprocessor.
 
         Parameters
         ----------
-        hierarchy : np.ndarray
-                    The hierarchy graph as an adjacency matrix."""
+        hierarchy : np.ndarray or nx.DiGraph
+                    The hierarchy graph. Either an adjacency matrix
+                    (``np.ndarray``), whose nodes are the integer column
+                    positions, or a ``networkx.DiGraph`` whose nodes carry
+                    names (typically strings matching the DataFrame columns).
+                    Note: ``None`` is accepted for scikit-learn ``clone()`` compatibility but raises ``TypeError`` in ``fit``.
+
+        .. note::
+            When the hierarchy is a named ``DiGraph`` and X is passed
+            to ``fit`` as a pandas ``DataFrame``, the column-to-node
+            mapping is derived automatically from the feature names,
+            so the ``columns`` argument of ``fit`` can be omitted.
+
+        """
         self.hierarchy = hierarchy
 
     def fit(self, X, y=None, columns=None):
@@ -71,19 +84,29 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
 
         Parameters
         ----------
-        X : {array-like, sparse matrix}, shape (n_samples, n_features)
+        X : {array-like, sparse matrix, DataFrame}, shape (n_samples, n_features)
             The training input samples. Must be bool-dtype. Non-binary
             (numeric) inputs raise ``ValueError`` until the planned
-            sum-propagation mode will be implemented.
+            sum-propagation mode will be implemented. A DataFrame (pandas, or
+            any library scikit-learn recognises through the dataframe
+            interchange protocol (up to v1.8.x) or the narwhals library (as of 1.9.0) such as polars) is accepted: its column names
+            are captured as ``feature_names_in_`` and used to auto-derive
+            ``columns`` (see below). No DataFrame library is imported directly;
+            support comes entirely through scikit-learn's input plumbing.
 
         y : None
             This transformer does not require a target variable, but the pipeline API
             requires this parameter.
 
         columns : list or None, length n_features
-            The mapping from the hierarchy graph's nodes to the columns in X. If this
+            The mapping from the columns in X to the hierarchy graph's nodes. If this
             parameter is None, the columns in X and the corresponding nodes in the
-            hierarchy are expected to be in the same order.
+            hierarchy are expected to be in the same order -- EXCEPT when X is a
+            DataFrame and ``hierarchy`` is an ``nx.DiGraph``: then the mapping is
+            derived automatically by matching feature names to node names, and passing
+            ``columns`` separately is unnecessary. Passing a DataFrame with ``columns=None``
+            while ``hierarchy`` is an adjacency ndarray raises ``ValueError`` (there
+            are no node names to match against).
 
         Returns
         -------
@@ -95,7 +118,18 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         if sp.issparse(X):
             X = sp.csr_array(X)
         check_bool_dtype(X)
-        super().fit(X, y, columns)
+
+        if columns is None and getattr(self, "feature_names_in_", None) is not None:
+            # For the case that X was a DataFrame (and feature_names_in_ has been set automatically in validate_data): derive the column->node mapping from the captured feature names.
+            # Done here (and not in the base class) because
+            # auto-derivation is preprocessor-specific FOR NOW – this behaviour might change in the future.
+            columns = self._auto_derive_columns()
+
+        # Reuse the base hierarchy setup WITHOUT a second validate_data call:
+        # re-validating would drop feature_names_in_ (needed by
+        # get_feature_names_out / set_output) and is redundant work here.
+        self._fit_hierarchy(columns)
+
         self._columns = [
             column if column < len(self.hierarchy) else -1 for column in self._columns
         ]
@@ -107,6 +141,42 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         self._build_ancestor_closure()
         self.is_fitted_ = True
         return self
+
+    def _auto_derive_columns(self):
+        """Derive the column->node mapping from DataFrame feature names.
+
+        Called from ``fit`` when X is a pandas ``DataFrame`` (so
+        ``feature_names_in_`` is set) and ``columns`` was not supplied. Each
+        captured feature name is looked up against the hierarchy's node names;
+        names with no matching node map to ``-1`` (handled downstream by
+        ``_extend_dag``, which adds them under ROOT with a warning).
+
+        Node names are compared as strings because scikit-learn coerces
+        DataFrame column labels to ``str`` in ``feature_names_in_``. This lets
+        a ``DiGraph`` with integer node names still match a DataFrame whose
+        (string) column labels equal those integers.
+
+        Returns
+        -------
+        columns : list of int
+            The derived column->node-position mapping, in feature order.
+
+        Raises
+        ------
+        ValueError
+            If the hierarchy is not a ``DiGraph`` (an adjacency ndarray has no
+            node names to match against).
+        """
+        if not isinstance(self.hierarchy, nx.DiGraph):
+            raise ValueError(
+                "Cannot auto-derive columns from DataFrame feature names "
+                "because hierarchy is an ndarray (no node names). Either pass "
+                "hierarchy as nx.DiGraph with named nodes, or supply columns "
+                "explicitly."
+            )
+        nodes = list(self.hierarchy.nodes)
+        name_to_position = {str(node): i for i, node in enumerate(nodes)}
+        return [name_to_position.get(str(name), -1) for name in self.feature_names_in_]
 
     def transform(self, X):
         """Transforms dataset to fulfill conditions for feature selection.
@@ -158,6 +228,43 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         else:
             raise RuntimeError("Instance has not been fitted.")
 
+    def get_feature_names_out(self, input_features=None):
+        """Map each output column to its hierarchy node name.
+
+        Enables ``set_output(transform="pandas")`` (or ``"polars"``) so that
+        ``transform`` returns a labelled DataFrame. The output has one name per
+        entry of ``self._columns`` (in order), i.e. including the ancestor and
+        any auto-added columns appended during ``fit``.
+
+        Names are recovered from the ``ORIGINAL_NODE_IDENTIFIER`` node attribute
+        stamped in ``_set_hierarchy`` / ``_extend_dag`` (which survives the
+        relabel/shrink/adjust passes). This traces each output column back to its
+        original identity: the node name for a ``DiGraph`` hierarchy, the original
+        integer index for an adjacency-matrix hierarchy (NOT the post-shrink
+        renumbering), or the input feature name for an orphan column added under
+        ROOT (when X was a DataFrame). Only orphan columns from a nameless X
+        (e.g. a plain ndarray) lack the attribute and fall back to ``"x<node>"``.
+
+        Parameters
+        ----------
+        input_features : array-like of str or None
+            Unused; present for scikit-learn API compatibility.
+
+        Returns
+        -------
+        feature_names_out : ndarray of str, shape (n_output_features,)
+        """
+        check_is_fitted(self, "is_fitted_")
+        names = []
+        for node in self._columns:
+            data = self._hierarchy_graph.nodes[node]
+            if ORIGINAL_NODE_IDENTIFIER in data:
+                name = data[ORIGINAL_NODE_IDENTIFIER]
+            else:
+                name = f"x{node}"
+            names.append(str(name))
+        return np.asarray(names, dtype=object)
+
     def _extend_dag(self):
         """Adds missing nodes to the hierarchy graph.
 
@@ -178,13 +285,20 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
                 if column_index in self._hierarchy_graph.nodes:
                     # column_index has name conflict with an existing node
                     # so we add a node with next available id
-                    self._hierarchy_graph.add_edge("ROOT", next_available_node_id)
-                    self._columns[column_index] = next_available_node_id
+                    new_node = next_available_node_id
                     next_available_node_id += 1
                 else:
                     # directly add the column as a node under "ROOT"
-                    self._hierarchy_graph.add_edge("ROOT", column_index)
-                    self._columns[column_index] = column_index
+                    new_node = column_index
+                self._hierarchy_graph.add_edge("ROOT", new_node)
+                self._columns[column_index] = new_node
+                # If X was a DataFrame, stamp the input feature name on this
+                # orphan node so get_feature_names_out can label it properly
+                # instead of falling back to "x<node>".
+                if getattr(self, "feature_names_in_", None) is not None:
+                    self._hierarchy_graph.nodes[new_node][ORIGINAL_NODE_IDENTIFIER] = str(
+                        self.feature_names_in_[column_index]
+                    )
 
         # Warn user for all columns that were not in hierarchy
         if columns_without_node:

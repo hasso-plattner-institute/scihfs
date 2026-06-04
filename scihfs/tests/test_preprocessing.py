@@ -823,6 +823,41 @@ def test_orphan_ndarray_column_falls_back_to_x_node():
     assert any(n.startswith("x") for n in names)
 
 
+# --- Hierarchy validation error paths -------------------------------------
+
+
+def test_cyclic_hierarchy_raises_value_error():
+    """A hierarchy containing a cycle fails the DAG check in fit."""
+    # 0 -> 1 -> 2 -> 0 is a cycle, so no node has in-degree 0; the virtual
+    # ROOT connects nothing and the cycle survives -> not a DAG.
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1), (1, 2), (2, 0)]))
+    X = np.zeros((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="not a directed acyclic graph"):
+        pre.fit(X, columns=[0, 1, 2])
+
+
+def test_none_hierarchy_raises_type_error_in_fit():
+    """hierarchy=None reaches _set_hierarchy via the preprocessor and raises.
+
+    The preprocessor calls _fit_hierarchy directly (bypassing the base fit's
+    own None guard), so the None check inside _set_hierarchy is what fires.
+    """
+    X = np.zeros((2, 2), dtype=bool)
+    pre = HierarchicalPreprocessor(None)
+    with pytest.raises(TypeError, match="Hierarchy is None but is required"):
+        pre.fit(X)
+
+
+def test_invalid_hierarchy_type_raises_type_error():
+    """A hierarchy that is neither ndarray nor DiGraph raises TypeError."""
+    X = np.zeros((2, 2), dtype=bool)
+    pre = HierarchicalPreprocessor("not a graph")
+    with pytest.raises(TypeError, match="must be np.ndarray or nx.DiGraph"):
+        pre.fit(X)
+
+
 def test_dataframe_non_bool_dtype():
     """An int-dtype DataFrame is rejected by the bool-dtype contract."""
     graph = _canonical_digraph()

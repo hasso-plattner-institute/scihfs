@@ -315,20 +315,21 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         features would always be 0 in the dataset and, therefore, do not
         contain any necessary information.
         """
-        node_identifier = self._columns
+        relevant_nodes = self._columns
         digraph = self._hierarchy_graph
-        self._hierarchy_graph = shrink_dag(node_identifier, digraph)
+        self._hierarchy_graph = shrink_dag(relevant_nodes, digraph)
 
     def _find_missing_columns(self):
         """Finds nodes for which a column needs to be added to the dataset.
 
         These node names are added to self._columns and the corresponding
-        columns will be added in the transform method.
+        columns will be added in the transform method. Typical use cases are disconnected hierarchies or (flat) features from outside the hierarchy.
         """
+        columns_set = set(self._columns)
         missing_nodes = [
             node
             for node in self._hierarchy_graph.nodes
-            if node not in self._columns and node != "ROOT"
+            if node not in columns_set and node != "ROOT"
         ]
         self._columns.extend(missing_nodes)
 
@@ -424,6 +425,6 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         """
         nodes = list(self._hierarchy_graph.nodes())
         nodes.remove("ROOT")
-        self._columns = [nodes.index(node_name) for node_name in self._columns]
-        mapping = {node_name: nodes.index(node_name) for node_name in nodes}
-        self._hierarchy_graph = nx.relabel_nodes(self._hierarchy_graph, mapping)
+        position_lookup = {node_name: i for i, node_name in enumerate(nodes)}
+        self._columns = [position_lookup[node_name] for node_name in self._columns]
+        self._hierarchy_graph = nx.relabel_nodes(self._hierarchy_graph, position_lookup)

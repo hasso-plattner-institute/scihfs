@@ -1071,3 +1071,64 @@ def test_preprocessor_rejects_nan():
     pre = HierarchicalPreprocessor(hierarchy)
     with pytest.raises(ValueError):
         pre.fit(X, columns=columns)
+
+
+# ---------------------------------------------------------------------------
+# _find_missing_columns / _adjust_node_names edge cases (permanent) and
+# node-attribute survival across shrink + relabel.
+# ---------------------------------------------------------------------------
+
+
+def _bare_preprocessor(columns, hierarchy_graph):
+    """Construct an unfitted preprocessor with the two attributes the
+    fit-path helpers read/write, so they can be exercised in isolation."""
+    pre = HierarchicalPreprocessor(None)
+    pre._columns = columns
+    pre._hierarchy_graph = hierarchy_graph
+    return pre
+
+
+def test_find_missing_columns_empty_columns_adds_all_non_root():
+    graph = nx.DiGraph([("ROOT", "a"), ("a", "b"), ("a", "c")])
+    pre = _bare_preprocessor([], graph)
+    pre._find_missing_columns()
+    assert pre._columns == ["a", "b", "c"]  # graph node order, ROOT excluded
+
+
+def test_find_missing_columns_superset_columns_unchanged():
+    graph = nx.DiGraph([("ROOT", "a"), ("a", "b")])
+    columns = ["a", "b", "extra"]  # already a superset of the graph's real nodes
+    pre = _bare_preprocessor(list(columns), graph)
+    pre._find_missing_columns()
+    assert pre._columns == columns  # nothing to add
+
+
+def test_adjust_node_names_root_and_single_node():
+    graph = nx.DiGraph([("ROOT", "a")])
+    pre = _bare_preprocessor(["a"], graph)
+    pre._adjust_node_names()
+    assert pre._columns == [0]
+    assert set(pre._hierarchy_graph.nodes()) == {"ROOT", 0}
+
+
+def test_node_attributes_survive_shrink_and_relabel():
+    """Every surviving node keeps ORIGINAL_NODE_IDENTIFIER through the full fit.
+
+    Uses the canonical DiGraph + DataFrame: fish/trout are a dead branch
+    (pruned by _shrink_dag) and animal/mammal/bird are missing ancestors
+    (added by _extend_dag/_find_missing_columns), so all three rewrites run.
+    get_feature_names_out / set_output rely on this attribute surviving the
+    prune + relabel.
+    """
+    from scihfs.selectors.base import ORIGINAL_NODE_IDENTIFIER
+
+    df = _canonical_dataframe()
+    graph = _canonical_digraph()
+
+    pre = HierarchicalPreprocessor(graph)
+    pre.fit(df)
+
+    for node, data in pre._hierarchy_graph.nodes(data=True):
+        if node == "ROOT":
+            continue
+        assert ORIGINAL_NODE_IDENTIFIER in data, f"node {node} lost its attribute"

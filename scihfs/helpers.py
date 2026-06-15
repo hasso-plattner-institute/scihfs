@@ -128,79 +128,45 @@ def get_leaves(graph: nx.DiGraph):
     return leaves
 
 
-def shrink_dag(node_identifiers: list, digraph: nx.DiGraph):
-    """Remove irrelevant leaf nodes from the given DAG.
+def shrink_dag(relevant_nodes: list, digraph: nx.DiGraph):
+    """Remove nodes that cannot reach any relevant node identifier.
+
+    A node is kept iff it is itself a node from the ``relevant_nodes`` list, an
+    ancestor of one, or the virtual ``"ROOT"``. Every other node is a dead
+    branch of the ontology (no corresponding data column and no descendant
+    that has one) and is removed.
 
     Parameters
     ----------
-    node_identifiers : list
+    relevant_nodes : list
             A list containing node identifiers that are considered relevant
     digraph : networkx.DiGraph
-            The Directed Acyclic Graph (DAG) from which irrelevant leaf nodes
+            The Directed Acyclic Graph (DAG) from which dead-branch nodes
             will be removed.
 
     Returns
     ----------
     digraph : networkx.DiGraph
-            The resulting DAG after removing all irrelevant leaf nodes.
-    """
-    to_remove = {
-        node
-        for node in digraph.nodes()
-        if _is_irrelevant_leaf(node, node_identifiers, digraph)
-    }
+            The resulting DAG after removing all dead-branch nodes.
 
-    while to_remove:
-        # Recompute the list of nodes to check (predecessors of removed nodes)
-        to_check = {
-            predecessor
-            for node in to_remove
-            for predecessor in digraph.predecessors(node)
-        }
-        digraph.remove_nodes_from(to_remove)
-        to_remove = {
-            node
-            for node in to_check
-            if _is_irrelevant_leaf(node, node_identifiers, digraph)
-        }
+    Notes
+    -----
+    Currently still mutating ``digraph`` in place AND returning it. Temporarily kept here for backward compatibility; will be addressed in the near future.
+    """
+    useful = set(relevant_nodes) | {"ROOT"}
+    for node in relevant_nodes:
+        useful |= nx.ancestors(digraph, node)
+    digraph.remove_nodes_from(set(digraph.nodes()) - useful)
     return digraph
 
 
-def _is_irrelevant_leaf(node, node_identifiers, digraph):
+def connect_dag(relevant_nodes: list, hierarchy: nx.DiGraph):
     """
-    Determine if a node is an irrelevant leaf in a directed acyclic graph (DAG).
-
-    A node is considered an irrelevant leaf if:
-    - It has no outgoing edges (i.e., it is a leaf node).
-    - It is not included in the specified list of relevant node identifiers.
-    - It is not the "ROOT" node
+    Connects digraph (DAG), so that every node not in relevant_nodes is removed from the DAG, and an new edge with its predecessor is built.
 
     Parameters
     ----------
-    node : Any
-        The node to evaluate.
-    node_identifiers : list
-        A list of node identifiers that are considered relevant and should not be removed.
-    digraph : networkx.DiGraph
-        The directed acyclic graph (DAG) being analyzed.
-
-    Returns
-    ----------
-    bool
-        True if the node is an irrelevant leaf; otherwise, False.
-    """
-    return (
-        digraph.out_degree(node) == 0 and node != "ROOT" and node not in node_identifiers
-    )
-
-
-def connect_dag(node_identifiers: list, hierarchy: nx.DiGraph):
-    """
-    Connects digraph (DAG), so that every node not in node_identifiers is removed from the DAG, and an new edge with its predecessor is built.
-
-    Parameters
-    ----------
-    node_identifiers: list
+    relevant_nodes: list
                 A list of node identifiers that are considered relevant and should not be removed.
     hierarchy : networkx.DiGraph
                 The Directed Acyclic Graph (DAG) representing the hierarchy.
@@ -221,15 +187,15 @@ def connect_dag(node_identifiers: list, hierarchy: nx.DiGraph):
         predecessors = list(hierarchy.predecessors(node))
         for predecessor in predecessors:
             new_connections = []
-            if predecessor not in node_identifiers:
+            if predecessor not in relevant_nodes:
                 for pred_of_pred in hierarchy.predecessors(predecessor):
                     new_connections.append(pred_of_pred)
                 for new_connection in new_connections:
                     hierarchy.add_edge(new_connection, node)
 
-    # remove all nodes (and edges) that are not in node_identifier
+    # remove all nodes (and edges) that are not in relevant_nodes
     nodes_to_remove = [
-        node for node in hierarchy.nodes if node not in set(node_identifiers)
+        node for node in hierarchy.nodes if node not in set(relevant_nodes)
     ]
     hierarchy.remove_nodes_from(nodes_to_remove)
     return hierarchy

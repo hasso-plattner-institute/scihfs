@@ -36,7 +36,7 @@ def preprocess():
     # requires integer-valued samples; cast back to int after preprocessing.
     train = preprocessor.transform(train_x_data).astype(int)
     test = preprocessor.transform(test_x_data).astype(int)
-    hierarchy = preprocessor.get_hierarchy()
+    hierarchy = preprocessor.to_adjacency_matrix()
     return (train, test, train_y_data, test_y_data, hierarchy)
 
 

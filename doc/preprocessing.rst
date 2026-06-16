@@ -71,7 +71,7 @@ The following function demonstrates how to use `HierarchicalPreprocessor` to pre
        preprocessor.fit(X_train, columns=columns)
        X_train_transformed = preprocessor.transform(X_train)
        X_test_transformed = preprocessor.transform(X_test)
-       hierarchy_updated = preprocessor.get_hierarchy()
+       hierarchy_updated = preprocessor.to_adjacency_matrix()
        columns_updated = preprocessor.get_columns()
        return X_train_transformed, X_test_transformed, hierarchy_updated, columns_updated
 

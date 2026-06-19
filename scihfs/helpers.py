@@ -160,47 +160,6 @@ def shrink_dag(relevant_nodes: list, digraph: nx.DiGraph):
     return digraph
 
 
-def connect_dag(relevant_nodes: list, hierarchy: nx.DiGraph):
-    """
-    Connects digraph (DAG), so that every node not in relevant_nodes is removed from the DAG, and an new edge with its predecessor is built.
-
-    Parameters
-    ----------
-    relevant_nodes: list
-                A list of node identifiers that are considered relevant and should not be removed.
-    hierarchy : networkx.DiGraph
-                The Directed Acyclic Graph (DAG) representing the hierarchy.
-
-    """
-    top_sort = nx.topological_sort(hierarchy)
-
-    # node i = 0: source is either in or not in, as there are no predecessors,
-    # there should not be any artificial edge
-    # i: for each pred there is a direct edge to the pred and iff pred not in x_ide
-    #       also to their pred2. (it does not matter if pred2 is really in x, if it is not,
-    #       the edge will be removed later anyway)
-    # i+1: if i is in -> no artificial edge on this path needed
-    #       if i is not -> artifical edge to every pred of i, so each path going through i
-    #       will be continued, if i is removed later
-
-    for node in list(top_sort):
-        predecessors = list(hierarchy.predecessors(node))
-        for predecessor in predecessors:
-            new_connections = []
-            if predecessor not in relevant_nodes:
-                for pred_of_pred in hierarchy.predecessors(predecessor):
-                    new_connections.append(pred_of_pred)
-                for new_connection in new_connections:
-                    hierarchy.add_edge(new_connection, node)
-
-    # remove all nodes (and edges) that are not in relevant_nodes
-    nodes_to_remove = [
-        node for node in hierarchy.nodes if node not in set(relevant_nodes)
-    ]
-    hierarchy.remove_nodes_from(nodes_to_remove)
-    return hierarchy
-
-
 def add_virtual_root_node(hierarchy: nx.DiGraph):
     """Create a virtual root node to connect disjoint hierarchies.
 

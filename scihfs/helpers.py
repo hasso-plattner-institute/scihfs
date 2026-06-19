@@ -67,6 +67,30 @@ def check_bool_dtype(X):
         )
 
 
+def _check_unique_column_mappings(columns):
+    """Raise ValueError if any non-(-1) value appears more than once in columns.
+
+    The ``columns`` variable is a list of integers doing the column->node mapping and can be supplied
+    directly by the user or be auto-derived from the DataFrame feature names.
+    Two equal non-(-1) entries mean two data columns map to the same hierarchy node, which is ill-defined (the orphan column marker -1 is exempt and may repeat).
+    The values reported on failure are node positions (not DataFrame column names).
+    """
+    seen, duplicates = set(), set()
+    for c in columns:
+        if c == -1:
+            continue
+        (duplicates if c in seen else seen).add(c)
+    if duplicates:
+        raise ValueError(
+            f"Duplicate column->node mappings detected: {sorted(duplicates)}. "
+            f"Each entry in `columns` (except for the orphan column marker -1) "
+            f"must map a data column to a unique hierarchy node."
+            f"Suggested solution: If X was a DataFrame, check it for duplicate column names with "
+            f"df.columns[df.columns.duplicated()]. "
+            f"prior to feeding the dataset to the Estimator."
+        )
+
+
 def check_data(dag, x_data, y_data):
     """Checks whether the given dataset satisfies the 0-1-propagation on the DAG.
 
@@ -158,47 +182,6 @@ def shrink_dag(relevant_nodes: list, digraph: nx.DiGraph):
         useful |= nx.ancestors(digraph, node)
     digraph.remove_nodes_from(set(digraph.nodes()) - useful)
     return digraph
-
-
-def connect_dag(relevant_nodes: list, hierarchy: nx.DiGraph):
-    """
-    Connects digraph (DAG), so that every node not in relevant_nodes is removed from the DAG, and an new edge with its predecessor is built.
-
-    Parameters
-    ----------
-    relevant_nodes: list
-                A list of node identifiers that are considered relevant and should not be removed.
-    hierarchy : networkx.DiGraph
-                The Directed Acyclic Graph (DAG) representing the hierarchy.
-
-    """
-    top_sort = nx.topological_sort(hierarchy)
-
-    # node i = 0: source is either in or not in, as there are no predecessors,
-    # there should not be any artificial edge
-    # i: for each pred there is a direct edge to the pred and iff pred not in x_ide
-    #       also to their pred2. (it does not matter if pred2 is really in x, if it is not,
-    #       the edge will be removed later anyway)
-    # i+1: if i is in -> no artificial edge on this path needed
-    #       if i is not -> artifical edge to every pred of i, so each path going through i
-    #       will be continued, if i is removed later
-
-    for node in list(top_sort):
-        predecessors = list(hierarchy.predecessors(node))
-        for predecessor in predecessors:
-            new_connections = []
-            if predecessor not in relevant_nodes:
-                for pred_of_pred in hierarchy.predecessors(predecessor):
-                    new_connections.append(pred_of_pred)
-                for new_connection in new_connections:
-                    hierarchy.add_edge(new_connection, node)
-
-    # remove all nodes (and edges) that are not in relevant_nodes
-    nodes_to_remove = [
-        node for node in hierarchy.nodes if node not in set(relevant_nodes)
-    ]
-    hierarchy.remove_nodes_from(nodes_to_remove)
-    return hierarchy
 
 
 def add_virtual_root_node(hierarchy: nx.DiGraph):

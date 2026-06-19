@@ -8,7 +8,6 @@ from info_gain.info_gain import info_gain, info_gain_ratio
 from scihfs.helpers import (
     add_virtual_root_node,
     compute_aggregated_values,
-    connect_dag,
     get_relevance,
     shrink_dag,
 )
@@ -80,15 +79,6 @@ def test_shrink_dag_keeps_interior_identifier_and_its_subtree_ancestors():
     # 1 (relevant) + 0 (ancestor) + ROOT survive; 2, 3 (descendants) and the
     # unrelated branch 4 are pruned.
     assert set(graph.nodes()) == {"ROOT", 0, 1}
-
-
-def test_connect_dag(lazy_data4):
-    small_DAG, big_DAG = lazy_data4
-    graph = nx.DiGraph(big_DAG)
-    relevant_nodes = [0, 1, 2, 5, 6, 7, 8]
-    graph = connect_dag(hierarchy=graph, relevant_nodes=relevant_nodes)
-    new_graph = nx.DiGraph([(0, 1), (0, 2), (1, 6), (1, 5), (1, 7), (0, 7), (5, 8)])
-    assert nx.is_isomorphic(graph, new_graph)
 
 
 def test_relevance(lazy_data2):

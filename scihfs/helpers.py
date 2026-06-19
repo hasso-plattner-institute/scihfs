@@ -67,6 +67,30 @@ def check_bool_dtype(X):
         )
 
 
+def _check_unique_column_mappings(columns):
+    """Raise ValueError if any non-(-1) value appears more than once in columns.
+
+    The ``columns`` variable is a list of integers doing the column->node mapping and can be supplied
+    directly by the user or be auto-derived from the DataFrame feature names.
+    Two equal non-(-1) entries mean two data columns map to the same hierarchy node, which is ill-defined (the orphan column marker -1 is exempt and may repeat).
+    The values reported on failure are node positions (not DataFrame column names).
+    """
+    seen, duplicates = set(), set()
+    for c in columns:
+        if c == -1:
+            continue
+        (duplicates if c in seen else seen).add(c)
+    if duplicates:
+        raise ValueError(
+            f"Duplicate column->node mappings detected: {sorted(duplicates)}. "
+            f"Each entry in `columns` (except for the orphan column marker -1) "
+            f"must map a data column to a unique hierarchy node."
+            f"Suggested solution: If X was a DataFrame, check it for duplicate column names with "
+            f"df.columns[df.columns.duplicated()]. "
+            f"prior to feeding the dataset to the Estimator."
+        )
+
+
 def check_data(dag, x_data, y_data):
     """Checks whether the given dataset satisfies the 0-1-propagation on the DAG.
 

@@ -1231,3 +1231,101 @@ def test_clone_preserves_digraph_hierarchy_input():
     assert set(cloned.hierarchy.edges) == set(hierarchy.edges)
     assert not hasattr(cloned, "_hierarchy_graph")
     assert not hasattr(cloned, "is_fitted_")
+
+
+# ---------------------------------------------------------------------------
+# `columns` uniqueness validation. Two data columns mapping to
+# the same hierarchy node is semantically ill-defined and rejected at fit;
+# -1 (orphan) markers are exempt, including when repeated.
+# ---------------------------------------------------------------------------
+
+
+def _six_column_setup():
+    """Bool X with 6 columns and a 6-node adjacency hierarchy (indices 0..5)."""
+    graph = nx.DiGraph([(0, 1), (0, 2), (1, 3), (1, 4), (2, 5)])
+    hierarchy = nx.to_numpy_array(graph)
+    X = np.array(
+        [
+            [1, 0, 0, 1, 0, 0],
+            [0, 1, 0, 0, 1, 0],
+            [0, 0, 1, 0, 0, 1],
+            [1, 1, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 1],
+        ],
+        dtype=bool,
+    )
+    return X, hierarchy
+
+
+def test_fit_rejects_duplicate_columns_manual():
+    """Two non-(-1) entries mapping to the same node are rejected."""
+    X, hierarchy = _six_column_setup()
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="Duplicate"):
+        pre.fit(X, columns=[0, 0, 1, 2, 3, 4])
+
+
+def test_fit_allows_multiple_orphan_columns():
+    """Multiple -1 entries are legitimate; each mints a fresh node downstream."""
+    X, hierarchy = _six_column_setup()
+    pre = HierarchicalPreprocessor(hierarchy)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ColumnNotInHierarchyWarning)
+        pre.fit(X, columns=[-1, -1, 1, 2, 3, 4])
+    assert pre.is_fitted_
+
+
+def test_fit_allows_single_orphan():
+    """A single -1 orphan succeeds (regression guard on the existing path)."""
+    X, hierarchy = _six_column_setup()
+    pre = HierarchicalPreprocessor(hierarchy)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ColumnNotInHierarchyWarning)
+        pre.fit(X, columns=[-1, 1, 2, 3, 4, 5])
+    assert pre.is_fitted_
+
+
+def test_fit_rejects_duplicate_columns_with_orphans():
+    """A -1 entry does not suppress duplicate detection among non-(-1) values."""
+    X, hierarchy = _six_column_setup()
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="Duplicate"):
+        pre.fit(X, columns=[-1, 0, 0, 2, 3, 4])
+
+
+def test_fit_dataframe_autoderive_path_unaffected():
+    """The DataFrame auto-derive path still fits (names are unique)."""
+    df = _canonical_dataframe()
+    graph = _canonical_digraph()
+    pre = HierarchicalPreprocessor(graph)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ColumnNotInHierarchyWarning)
+        pre.fit(df)
+    assert pre.is_fitted_
+
+
+def test_fit_no_columns_no_validation_error():
+    """fit(X) with no columns uses the positional default and does not raise."""
+    X, hierarchy = _six_column_setup()
+    pre = HierarchicalPreprocessor(hierarchy)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ColumnNotInHierarchyWarning)
+        pre.fit(X)
+    assert pre.is_fitted_
+
+
+def test_fit_rejects_duplicate_dataframe_column_names():
+    """Duplicate DataFrame column names (feature_names_in_) are rejected.
+
+    validate_data captures DataFrame column labels verbatim into
+    feature_names_in_ without deduplication, so two columns sharing a name
+    auto-derive to the same hierarchy node. The fit-time guard catches it.
+    """
+    df = pd.DataFrame(
+        np.array([[1, 0, 1], [0, 1, 1]], dtype=bool),
+        columns=["dog", "dog", "cat"],
+    )
+    graph = nx.DiGraph([("animal", "dog"), ("animal", "cat")])
+    pre = HierarchicalPreprocessor(graph)
+    with pytest.raises(ValueError, match="Duplicate"):
+        pre.fit(df)

@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted, validate_data
 
-from scihfs.helpers import add_virtual_root_node
+from scihfs.helpers import _check_unique_column_mappings, add_virtual_root_node
 
 # Node-attribute key for recording a node's original identity (name or index) in the hierarchy graph. Left untouched by all operations on the graph.
 # Consumed by get_feature_names_out to map back to original node names / indexes.
@@ -94,6 +94,10 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
             self._columns = columns
         else:
             self._columns = list(range(self.n_features_in_))
+
+        # Check whether there are duplicate column mappings (not dependent of the input route).
+        # Placed at this point because unique column<->node mappings are required for the downstream processing and no such validation has been performed yet (specifically not in sklearn.utils.validation.validate_data).
+        _check_unique_column_mappings(self._columns)
 
         self._set_hierarchy()
         self._check_dag()

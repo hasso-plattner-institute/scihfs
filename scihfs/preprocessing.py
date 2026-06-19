@@ -79,8 +79,8 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         method.
 
         After fitting, the dataset can be transformed with the `transform` method, and
-        the updated hierarchy and column mapping can be retrieved with `get_hierarchy`
-        and `get_columns`.
+        the updated hierarchy and column mapping can be retrieved with the
+        `to_adjacency_matrix` method and `get_columns`.
 
         Parameters
         ----------
@@ -212,21 +212,46 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         X_ = self._propagate_ones(X_)
         return X_
 
-    def get_hierarchy(self):
-        """Get the transformed hierarchy graph.
+    def to_adjacency_matrix(self, sparse=False):
+        """Return the hierarchy as an adjacency matrix (after fit).
+
+        Computed from ``self._hierarchy_graph`` (which remains the immutable
+        single source of truth) on each call, with the synthetic ``"ROOT"`` node excluded.
+
+        Parameters
+        ----------
+        sparse : bool, default=False
+            If ``True``, return a ``scipy.sparse`` CSR array; if ``False``,
+            return a dense ``np.ndarray``. Both encode the same matrix with the
+            same node ordering, so ``result.toarray()`` of the sparse form
+            equals its equivalent for the dense form.
+
+            .. note::
+                The sensible way to use this function is with `sparse=True`.
+                However at the moment, the default is ``False`` (dense) because the selectors do
+                not yet accept a sparse hierarchy. This behaviour is expected to flip
+                to ``True`` once selector-side sparse support will be implemented.
+
+        Returns
+        -------
+        np.ndarray or scipy.sparse.csr_array
+            The transformed hierarchy as an adjacency matrix -- dense when
+            ``sparse=False``, CSR when ``sparse=True``.
 
         Raises
-        ----------
-        RuntimeError
-            If the method is called before fit has been called.
-            In this case the hierarchy graph has not been updated yet.
+        ------
+        NotFittedError
+            If called before ``fit`` has been called.
         """
-        if self.is_fitted_:
-            output_hierarchy = self._hierarchy_graph
-            output_hierarchy.remove_node("ROOT")
-            return nx.to_numpy_array(self._hierarchy_graph)
-        else:
-            raise RuntimeError("Instance has not been fitted.")
+        check_is_fitted(self, "is_fitted_")
+        # Copy before removing ROOT so the canonical graph is never mutated.
+        # The copy is load-bearing: without it this would mutate
+        # _hierarchy_graph and only be callable once.
+        graph_view = self._hierarchy_graph.copy()
+        graph_view.remove_node("ROOT")
+        if sparse:
+            return nx.to_scipy_sparse_array(graph_view, format="csr")
+        return nx.to_numpy_array(graph_view)
 
     def get_feature_names_out(self, input_features=None):
         """Map each output column to its hierarchy node name.

@@ -26,7 +26,7 @@ def test_hierarchical_preprocessor(data, request):
     assert preprocessor.is_fitted_
     X = preprocessor.transform(X)
     assert np.array_equal(X, X_transformed)
-    hierarchy_transformed = preprocessor.get_hierarchy()
+    hierarchy_transformed = preprocessor.to_adjacency_matrix()
     assert np.array_equal(hierarchy_transformed, hierarchy_expected)
 
 
@@ -35,7 +35,7 @@ def test_fit(data3_preprocessing):
     preprocessor = HierarchicalPreprocessor(hierarchy)
     preprocessor.fit(X.astype(bool), columns=X_identifiers)
     assert preprocessor.is_fitted_
-    hierarchy = preprocessor.get_hierarchy()
+    hierarchy = preprocessor.to_adjacency_matrix()
     assert np.equal(hierarchy.all(), hierarchy_transformed.all())
 
 
@@ -1132,3 +1132,102 @@ def test_node_attributes_survive_shrink_and_relabel():
         if node == "ROOT":
             continue
         assert ORIGINAL_NODE_IDENTIFIER in data, f"node {node} lost its attribute"
+
+
+# ---------------------------------------------------------------------------
+# to_adjacency_matrix(): idempotency, non-mutation, fit-gating, and the sklearn
+# clone() round-trip that pins the user-input-preservation contract.
+# ---------------------------------------------------------------------------
+
+
+def _fitted_canonical_preprocessor():
+    """A HierarchicalPreprocessor fitted on the canonical DiGraph + DataFrame."""
+    pre = HierarchicalPreprocessor(_canonical_digraph())
+    pre.fit(_canonical_dataframe())
+    return pre
+
+
+def test_to_adjacency_matrix_idempotent():
+    """Repeated calls return equal arrays and leave ROOT in the graph."""
+    pre = _fitted_canonical_preprocessor()
+
+    first = pre.to_adjacency_matrix()
+    second = pre.to_adjacency_matrix()
+    third = pre.to_adjacency_matrix()
+
+    assert np.array_equal(first, second)
+    assert np.array_equal(second, third)
+    # The synthetic ROOT must survive every call.
+    assert "ROOT" in pre._hierarchy_graph.nodes
+
+
+def test_to_adjacency_matrix_does_not_mutate_underlying_graph():
+    """The canonical graph is byte-for-byte identical after a call."""
+    pre = _fitted_canonical_preprocessor()
+
+    nodes_before = set(pre._hierarchy_graph.nodes)
+    edges_before = set(pre._hierarchy_graph.edges)
+    attrs_before = {
+        node: dict(data) for node, data in pre._hierarchy_graph.nodes(data=True)
+    }
+
+    _ = pre.to_adjacency_matrix()
+
+    assert set(pre._hierarchy_graph.nodes) == nodes_before
+    assert set(pre._hierarchy_graph.edges) == edges_before
+    attrs_after = {
+        node: dict(data) for node, data in pre._hierarchy_graph.nodes(data=True)
+    }
+    assert attrs_after == attrs_before
+
+
+def test_to_adjacency_matrix_raises_before_fit():
+    """Calling to_adjacency_matrix() before fit raises NotFittedError."""
+    from sklearn.exceptions import NotFittedError
+
+    pre = HierarchicalPreprocessor(_canonical_digraph())
+    with pytest.raises(NotFittedError):
+        pre.to_adjacency_matrix()
+
+
+def test_to_adjacency_matrix_sparse_matches_dense():
+    """sparse=True returns a scipy CSR array equal to the dense default."""
+    pre = _fitted_canonical_preprocessor()
+
+    dense = pre.to_adjacency_matrix()  # default
+    spar = pre.to_adjacency_matrix(sparse=True)
+
+    assert isinstance(dense, np.ndarray)  # default is dense
+    assert sp.issparse(spar)
+    assert np.array_equal(spar.toarray(), dense)
+
+
+def test_clone_preserves_ndarray_hierarchy_input():
+    """clone() round-trips an ndarray hierarchy without fit-time state."""
+    from sklearn.base import clone
+
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1), (0, 2), (1, 3)]))
+    pre = HierarchicalPreprocessor(hierarchy=hierarchy)
+
+    cloned = clone(pre)
+
+    assert isinstance(cloned.hierarchy, np.ndarray)
+    assert np.array_equal(cloned.hierarchy, hierarchy)
+    assert not hasattr(cloned, "_hierarchy_graph")
+    assert not hasattr(cloned, "is_fitted_")
+
+
+def test_clone_preserves_digraph_hierarchy_input():
+    """clone() round-trips a DiGraph hierarchy without fit-time state."""
+    from sklearn.base import clone
+
+    hierarchy = _canonical_digraph()
+    pre = HierarchicalPreprocessor(hierarchy=hierarchy)
+
+    cloned = clone(pre)
+
+    assert isinstance(cloned.hierarchy, nx.DiGraph)
+    assert set(cloned.hierarchy.nodes) == set(hierarchy.nodes)
+    assert set(cloned.hierarchy.edges) == set(hierarchy.edges)
+    assert not hasattr(cloned, "_hierarchy_graph")
+    assert not hasattr(cloned, "is_fitted_")

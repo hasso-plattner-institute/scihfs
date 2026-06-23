@@ -19,8 +19,10 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
 
         Parameters
         ----------
-        hierarchy : np.ndarray
-                    The hierarchy graph as an adjacency matrix."""
+        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
+                    The hierarchy graph, given either as a dense adjacency
+                    matrix (``np.ndarray``), a sparse adjacency matrix
+                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X)."""
         super().__init__(hierarchy)
 
     def fit(self, X, y=None, columns=None):

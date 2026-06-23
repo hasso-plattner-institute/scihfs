@@ -26,7 +26,7 @@ def test_hierarchical_preprocessor(data, request):
     assert preprocessor.is_fitted_
     X = preprocessor.transform(X)
     assert np.array_equal(X, X_transformed)
-    hierarchy_transformed = preprocessor.to_adjacency_matrix()
+    hierarchy_transformed = preprocessor.to_adjacency_matrix(sparse=False)
     assert np.array_equal(hierarchy_transformed, hierarchy_expected)
 
 
@@ -35,7 +35,7 @@ def test_fit(data3_preprocessing):
     preprocessor = HierarchicalPreprocessor(hierarchy)
     preprocessor.fit(X.astype(bool), columns=X_identifiers)
     assert preprocessor.is_fitted_
-    hierarchy = preprocessor.to_adjacency_matrix()
+    hierarchy = preprocessor.to_adjacency_matrix(sparse=False)
     assert np.equal(hierarchy.all(), hierarchy_transformed.all())
 
 
@@ -533,6 +533,76 @@ def test_preprocessor_sparse_canonical_equivalence():
     assert np.array_equal(out_s.toarray().astype(int), _EXPECTED_CANONICAL)
 
 
+def test_hierarchical_estimator_accepts_sparse_hierarchy():
+    """A scipy.sparse adjacency hierarchy behaves exactly like the dense ndarray.
+
+    A sparse adjacency is positionally identical to its dense equivalent, so the
+    sparse-input branch of _set_hierarchy stamps the same integer-index
+    ORIGINAL_NODE_IDENTIFIER attributes and yields the same fitted hierarchy,
+    column mapping, transform output AND feature names as the dense ndarray path.
+    """
+    from scihfs.selectors.base import ORIGINAL_NODE_IDENTIFIER
+
+    X, hierarchy, columns = _canonical_setup()  # hierarchy is a dense ndarray
+    sparse_hierarchy = sp.csr_array(hierarchy)
+    assert sp.issparse(sparse_hierarchy)
+
+    pre_dense = HierarchicalPreprocessor(hierarchy)
+    pre_dense.fit(X, columns=columns)
+
+    pre_sparse = HierarchicalPreprocessor(sparse_hierarchy)
+    pre_sparse.fit(X, columns=columns)
+
+    # Same fitted hierarchy structure, column mapping, transform output and names.
+    assert pre_sparse.get_columns() == pre_dense.get_columns()
+    assert np.array_equal(
+        pre_sparse.to_adjacency_matrix(sparse=False),
+        pre_dense.to_adjacency_matrix(sparse=False),
+    )
+    assert np.array_equal(
+        pre_sparse.to_adjacency_matrix(sparse=True).toarray(),
+        pre_dense.to_adjacency_matrix(sparse=True).toarray(),
+    )
+    assert np.array_equal(pre_sparse.transform(X), pre_dense.transform(X))
+    assert list(pre_sparse.get_feature_names_out()) == list(
+        pre_dense.get_feature_names_out()
+    )
+
+    # Sparse and dense inputs both stamp integer-index identifiers on every node;
+    # neither falls back to the "x<node>" label.
+    for pre in (pre_dense, pre_sparse):
+        assert all(
+            ORIGINAL_NODE_IDENTIFIER in pre._hierarchy_graph.nodes[node]
+            for node in pre._hierarchy_graph.nodes
+            if node != "ROOT"
+        )
+        assert not any(n.startswith("x") for n in pre.get_feature_names_out())
+
+
+def test_hierarchy_round_trip_via_to_adjacency_matrix_sparse():
+    """A hierarchy round-trips through to_adjacency_matrix(sparse=True).
+
+    Feeding the sparse adjacency produced by one fitted preprocessor into a new
+    preprocessor yields an equivalent transform. A 1:1 column<->node hierarchy
+    is used so fit neither extends nor shrinks the graph, making the adjacency
+    round-trip exact.
+    """
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1), (0, 2), (1, 3)]))
+    n = hierarchy.shape[0]
+    X = np.array([[0, 0, 0, 1], [0, 1, 0, 0], [1, 0, 1, 1]], dtype=bool)
+
+    pre1 = HierarchicalPreprocessor(hierarchy)
+    pre1.fit(X, columns=list(range(n)))
+
+    sparse_adj = pre1.to_adjacency_matrix(sparse=True)
+    assert sp.issparse(sparse_adj)
+
+    pre2 = HierarchicalPreprocessor(sparse_adj)
+    pre2.fit(X, columns=list(range(n)))
+
+    assert np.array_equal(pre1.transform(X), pre2.transform(X))
+
+
 def test_scipy_sparse_bool_matmul_preserves_bool():
     """Test whether matmul (``@``) and ``maximum()`` preserve dtype in scipy sparse arrays. This behaviour is not immediately obvious from the scipy docs at first glance, so this is just a defensive test."""
     a = sp.csr_array(np.array([[True, False], [False, True]]))
@@ -851,10 +921,10 @@ def test_none_hierarchy_raises_type_error_in_fit():
 
 
 def test_invalid_hierarchy_type_raises_type_error():
-    """A hierarchy that is neither ndarray nor DiGraph raises TypeError."""
+    """A hierarchy that is none of ndarray / scipy.sparse / DiGraph raises TypeError."""
     X = np.zeros((2, 2), dtype=bool)
     pre = HierarchicalPreprocessor("not a graph")
-    with pytest.raises(TypeError, match="must be np.ndarray or nx.DiGraph"):
+    with pytest.raises(TypeError, match="must be np.ndarray, scipy.sparse or nx.DiGraph"):
         pre.fit(X)
 
 
@@ -1151,12 +1221,12 @@ def test_to_adjacency_matrix_idempotent():
     """Repeated calls return equal arrays and leave ROOT in the graph."""
     pre = _fitted_canonical_preprocessor()
 
-    first = pre.to_adjacency_matrix()
-    second = pre.to_adjacency_matrix()
-    third = pre.to_adjacency_matrix()
+    first = pre.to_adjacency_matrix(sparse=True)
+    second = pre.to_adjacency_matrix(sparse=True)
+    third = pre.to_adjacency_matrix(sparse=True)
 
-    assert np.array_equal(first, second)
-    assert np.array_equal(second, third)
+    assert np.array_equal(first.toarray(), second.toarray())
+    assert np.array_equal(second.toarray(), third.toarray())
     # The synthetic ROOT must survive every call.
     assert "ROOT" in pre._hierarchy_graph.nodes
 
@@ -1190,16 +1260,64 @@ def test_to_adjacency_matrix_raises_before_fit():
         pre.to_adjacency_matrix()
 
 
+def test_to_adjacency_matrix_default_is_sparse():
+    """The default (no arg) returns a scipy.sparse array."""
+    pre = _fitted_canonical_preprocessor()
+    result = pre.to_adjacency_matrix()
+    assert sp.issparse(result)
+
+
+def test_to_adjacency_matrix_sparse_false_still_works():
+    """The dense opt-out (sparse=False) still returns an ndarray."""
+    pre = _fitted_canonical_preprocessor()
+    result = pre.to_adjacency_matrix(sparse=False)
+    assert isinstance(result, np.ndarray)
+
+
 def test_to_adjacency_matrix_sparse_matches_dense():
-    """sparse=True returns a scipy CSR array equal to the dense default."""
+    """sparse=True and sparse=False encode the same matrix."""
     pre = _fitted_canonical_preprocessor()
 
-    dense = pre.to_adjacency_matrix()  # default
+    dense = pre.to_adjacency_matrix(sparse=False)
     spar = pre.to_adjacency_matrix(sparse=True)
 
-    assert isinstance(dense, np.ndarray)  # default is dense
+    assert isinstance(dense, np.ndarray)
     assert sp.issparse(spar)
     assert np.array_equal(spar.toarray(), dense)
+
+
+def test_hierarchy_edge_weights_dropped_and_output_is_binary():
+    """A weighted adjacency is treated as edge presence only.
+
+    The hierarchy is purely structural: input edge weights are dropped, so
+    (a) the internal graph carries no ``weight`` edge attribute and
+    (b) ``to_adjacency_matrix`` emits only 0/1 for a present edge, never echoing
+    the input's stored magnitude.
+    """
+    # Adjacency with non-1 weights on edges 0->1, 0->2, 1->3.
+    weighted = np.array(
+        [
+            [0.0, 2.5, 7.0, 0.0],
+            [0.0, 0.0, 0.0, 3.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+        ]
+    )
+    X = np.array([[0, 0, 0, 1], [1, 1, 0, 0]], dtype=bool)
+
+    pre = HierarchicalPreprocessor(weighted)
+    pre.fit(X, columns=[0, 1, 2, 3])
+
+    # (a) No edge retains a 'weight' attribute.
+    assert all(
+        "weight" not in data for _, _, data in pre._hierarchy_graph.edges(data=True)
+    )
+
+    # (b) Output is binary, not the 2.5 / 7.0 / 3.0 input weights.
+    dense = pre.to_adjacency_matrix(sparse=False)
+    sparse = pre.to_adjacency_matrix(sparse=True)
+    assert set(np.unique(dense)).issubset({0.0, 1.0})
+    assert set(np.unique(sparse.toarray())).issubset({0.0, 1.0})
 
 
 def test_clone_preserves_ndarray_hierarchy_input():

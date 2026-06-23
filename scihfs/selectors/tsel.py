@@ -29,10 +29,12 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
 
         Parameters
         ----------
-        hierarchy : np.ndarray
-                    The hierarchy graph as an adjacency matrix. The
-                    feature selection method is intended for a hierarchy
-                    graph that has a tree structure.
+        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
+                    The hierarchy graph, given either as a dense adjacency
+                    matrix (``np.ndarray``), a sparse adjacency matrix
+                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    The feature selection method is intended for a
+                    hierarchy graph that has a tree structure.
         use_original_implementation: bool
                     Should the original implementation from the
                     paper be used. If False, a slightly different

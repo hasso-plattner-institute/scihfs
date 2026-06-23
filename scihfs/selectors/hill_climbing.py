@@ -30,8 +30,10 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
 
         Parameters
         ----------
-        hierarchy : np.ndarray
-                    The hierarchy graph as an adjacency matrix.
+        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
+                    The hierarchy graph, given either as a dense adjacency
+                    matrix (``np.ndarray``), a sparse adjacency matrix
+                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
         alpha: float
                 A hyperparameter needed for the hill climbing methods.
                 The default value is 0.99.
@@ -202,8 +204,10 @@ class TopDownSelector(HillClimbingSelector):
 
         Parameters
         ----------
-        hierarchy : np.ndarray
-                    The hierarchy graph as an adjacency matrix.
+        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
+                    The hierarchy graph, given either as a dense adjacency
+                    matrix (``np.ndarray``), a sparse adjacency matrix
+                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
         alpha: float
                 A hyperparameter needed for the hill climbing methods.
                 The default value is 0.99.
@@ -358,10 +362,12 @@ class BottomUpSelector(HillClimbingSelector):
 
         Parameters
         ----------
-        hierarchy : np.ndarray
-                    The hierarchy graph as an adjacency matrix. For this
-                    feature selection method to work as intended the graph
-                    needs to be a tree.
+        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
+                    The hierarchy graph, given either as a dense adjacency
+                    matrix (``np.ndarray``), a sparse adjacency matrix
+                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    For this feature selection method to work as
+                    intended the graph needs to be a tree.
         alpha: float
                 A hyperparameter needed for the feature selection. In
                 the paper by Wang et al. this parameter is called beta.

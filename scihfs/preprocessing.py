@@ -45,11 +45,12 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
 
         Parameters
         ----------
-        hierarchy : np.ndarray or nx.DiGraph
-                    The hierarchy graph. Either an adjacency matrix
-                    (``np.ndarray``), whose nodes are the integer column
-                    positions, or a ``networkx.DiGraph`` whose nodes carry
-                    names (typically strings matching the DataFrame columns).
+        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
+                    The hierarchy graph, given either as a dense adjacency
+                    matrix (``np.ndarray``), a sparse adjacency matrix
+                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    Any ``scipy.sparse`` format (``csr_array``, ``csr_matrix``,
+                    ``coo_array``, ...) is accepted and converted internally.
                     Note: ``None`` is accepted for scikit-learn ``clone()`` compatibility but raises ``TypeError`` in ``fit``.
 
         .. note::
@@ -130,8 +131,15 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         # get_feature_names_out / set_output) and is redundant work here.
         self._fit_hierarchy(columns)
 
+        # Number of nodes in the ORIGINAL hierarchy provided by the user.
+        # Uses .shape[0] for the adjacency matrix case, and number_of_nodes() for the DiGraph case.
+        n_hierarchy_nodes = (
+            self.hierarchy.number_of_nodes()
+            if isinstance(self.hierarchy, nx.DiGraph)
+            else self.hierarchy.shape[0]
+        )
         self._columns = [
-            column if column < len(self.hierarchy) else -1 for column in self._columns
+            column if column < n_hierarchy_nodes else -1 for column in self._columns
         ]
 
         self._extend_dag()
@@ -212,7 +220,7 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         X_ = self._propagate_ones(X_)
         return X_
 
-    def to_adjacency_matrix(self, sparse=False):
+    def to_adjacency_matrix(self, sparse=True):
         """Return the hierarchy as an adjacency matrix (after fit).
 
         Computed from ``self._hierarchy_graph`` (which remains the immutable
@@ -220,17 +228,11 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
 
         Parameters
         ----------
-        sparse : bool, default=False
+        sparse : bool, default=True
             If ``True``, return a ``scipy.sparse`` CSR array; if ``False``,
             return a dense ``np.ndarray``. Both encode the same matrix with the
             same node ordering, so ``result.toarray()`` of the sparse form
             equals its equivalent for the dense form.
-
-            .. note::
-                The sensible way to use this function is with `sparse=True`.
-                However at the moment, the default is ``False`` (dense) because the selectors do
-                not yet accept a sparse hierarchy. This behaviour is expected to flip
-                to ``True`` once selector-side sparse support will be implemented.
 
         Returns
         -------

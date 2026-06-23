@@ -4,6 +4,7 @@ Base class for Sklearn compatible estimators using hierarchical data.
 
 import networkx as nx
 import numpy as np
+import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted, validate_data
 
@@ -27,10 +28,13 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
 
         Parameters
         ----------
-        hierarchy : np.ndarray or nx.DiGraph
-                    The hierarchy graph, given either as an adjacency matrix
-                    (``np.ndarray``) or as a ``networkx.DiGraph`` with named
-                    nodes. ``None`` is accepted for scikit-learn ``clone()``
+        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
+                    The hierarchy graph, given either as a dense adjacency
+                    matrix (``np.ndarray``), a sparse adjacency matrix
+                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    Any ``scipy.sparse`` format (``csr_array``, ``csr_matrix``,
+                    ``coo_array``, ...) is accepted and converted internally.
+                    Note: ``None`` is accepted for scikit-learn ``clone()``
                     compatibility but raises ``TypeError`` in ``fit``."""
         self.hierarchy = hierarchy
 
@@ -147,22 +151,23 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
     def _set_hierarchy(self):
         """Build ``self._hierarchy_graph`` from ``self.hierarchy``.
 
-        The ``hierarchy`` parameter is accepted in two formats:
+        The ``hierarchy`` parameter is accepted in three formats:
 
         - ``np.ndarray``: interpreted as an adjacency matrix; nodes are the
-          integer row/column positions (existing behaviour).
+          integer row/column positions.
+        - ``scipy.sparse`` array/matrix: interpreted as a sparse adjacency
+          matrix; nodes are the integer row/column positions.
         - ``nx.DiGraph``: nodes may carry arbitrary (e.g. string) names. They
           are relabelled to integer positions ``0..n-1`` (preserving node
           order) so the rest of the pipeline keeps operating on integer node
           names.
 
-        In both cases each node is stamped with an ``ORIGINAL_NODE_IDENTIFIER``
-        attribute recording its original identity -- the integer index for an
-        adjacency matrix, the node name for a ``DiGraph``. The attribute travels
-        with the node through the later relabel/shrink/adjust passes (networkx
-        preserves node attributes across ``relabel_nodes``), so
-        ``get_feature_names_out`` can map each output column back to its original
-        node even after the internal renumbering.
+        In all three cases each node is stamped with an
+        ``ORIGINAL_NODE_IDENTIFIER`` attribute recording its original identity --
+        the integer row/column index for an adjacency matrix, or the node name for a ``DiGraph``.
+
+        The hierarchy is stored as a purely structural DAG: only edge
+        *presence* is kept, never magnitude (edge weights are dropped).
 
         The user's original ``DiGraph`` is never mutated: ``relabel_nodes`` is
         called with ``copy=True`` and the virtual ROOT is added to the copy.
@@ -172,12 +177,21 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         Raises
         ------
         TypeError
-            If ``hierarchy`` is None or neither ``np.ndarray`` nor ``nx.DiGraph``.
+            If ``hierarchy`` is None or is none of ``np.ndarray``,
+            ``scipy.sparse``, or ``nx.DiGraph``.
         """
         if self.hierarchy is None:
             raise TypeError("Hierarchy is None but is required.")
         if isinstance(self.hierarchy, np.ndarray):
             hierarchy_graph = nx.from_numpy_array(self.hierarchy, create_using=nx.DiGraph)
+            # Adjacency nodes already ARE their original integer indices.
+            original_identifiers = {
+                node_index: node_index for node_index in hierarchy_graph.nodes
+            }
+        elif sp.issparse(self.hierarchy):
+            hierarchy_graph = nx.from_scipy_sparse_array(
+                self.hierarchy, create_using=nx.DiGraph
+            )
             # Adjacency nodes already ARE their original integer indices.
             original_identifiers = {
                 node_index: node_index for node_index in hierarchy_graph.nodes
@@ -193,12 +207,17 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
             }
         else:
             raise TypeError(
-                f"hierarchy must be np.ndarray or nx.DiGraph, "
+                f"hierarchy must be np.ndarray, scipy.sparse or nx.DiGraph, "
                 f"got {type(self.hierarchy)}."
             )
         nx.set_node_attributes(
             hierarchy_graph, original_identifiers, ORIGINAL_NODE_IDENTIFIER
         )
+        # The hierarchy is purely meant as structural information.
+        # Thus, any edge weights from the user input are dropped.
+        # This also ensures that to_adjacency_matrix returns a boolean matrix, which is expected by the rest of the pipeline.
+        for _, _, edge_data in hierarchy_graph.edges(data=True):
+            edge_data.pop("weight", None)
         # Add "ROOT" node and connect components if there are multiple
         self._hierarchy_graph = add_virtual_root_node(hierarchy_graph)
 

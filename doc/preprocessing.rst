@@ -75,6 +75,13 @@ The following function demonstrates how to use `HierarchicalPreprocessor` to pre
        columns_updated = preprocessor.get_columns()
        return X_train_transformed, X_test_transformed, hierarchy_updated, columns_updated
 
+.. note::
+   ``to_adjacency_matrix()`` returns a ``scipy.sparse`` CSR array **by default**
+   (``sparse=True``). The selectors accept a sparse hierarchy directly, so the
+   updated hierarchy can be fed straight back into a selector without
+   densifying -- which at large scale avoids allocating a dense adjacency matrix.
+   Pass ``sparse=False`` if you specifically need a dense ``np.ndarray``.
+
 
 Handling Node Name Changes
 ---------------------------

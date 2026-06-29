@@ -124,6 +124,11 @@ def cosine_similarity(i: np.ndarray, j: np.ndarray):
     ----------
     float : The cosine similarity for the input rows.
     """
+    # Input are non-negative uint32 count vectors. Upcast to uint64 to avoid overflow
+    # np.linalg.norm promotes to float internally, and so does final uint64 / (float * float).
+    # NOTE: This function currently assumes integer input - if float scores were reintroduced, this section would need to be updated (branched on dtype).
+    i = i.astype(np.uint64)
+    j = j.astype(np.uint64)
     return np.dot(i, j) / (norm(i) * norm(j))
 
 

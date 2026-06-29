@@ -310,10 +310,13 @@ def compute_aggregated_values(X, hierarchy: nx.DiGraph, columns: list[int], node
         The input array `X` with the aggregated values based on the provided
         hierarchy.
     """
+    # Note that we deliberately use uint32 (unsigned, min 0, max 4294967295), to keep memory footprint low and because feature counts are always positive integers.
+    if X.dtype == np.bool_:
+        X = X.astype(np.uint32)
     if hierarchy.out_degree(node) == 0:
         return X
     children = hierarchy.successors(node)
-    aggregated = np.zeros((X.shape[0]))
+    aggregated = np.zeros((X.shape[0]), dtype=np.uint32)
     for child in list(children):
         X = compute_aggregated_values(X, hierarchy, columns, node=child)
         aggregated = np.add(aggregated, X[:, columns.index(child)])

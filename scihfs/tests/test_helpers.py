@@ -114,6 +114,12 @@ def test_compute_aggregated_values(data, result, request):
     data = request.getfixturevalue(data)
     result = request.getfixturevalue(result)
     X, _, hierarchy, columns = data
+    # Contract: the input is bool (binary features). Aggregation must COUNT the
+    # 'True' values per subtree, returning a compact uint32 count array.
+    assert X.dtype == np.bool_
     hierarchy = add_virtual_root_node(nx.DiGraph(hierarchy))
     X_transformed = compute_aggregated_values(X, hierarchy, columns)
+    assert X_transformed.dtype == np.uint32
     assert np.array_equal(X_transformed, result)
+    # The bool input is left untouched (a fresh integer working copy is built).
+    assert X.dtype == np.bool_

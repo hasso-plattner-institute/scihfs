@@ -315,11 +315,12 @@ class TopDownSelector(HillClimbingSelector):
         distance = 0
         for column in feature_set:
             column_index = self._column_index(column)
-            difference = (
-                self._score_matrix[sample_i, column_index]
-                - self._score_matrix[sample_j, column_index]
+            # To accomodate large int (squares+sum), the uint32 input (_score_matrix coming from compute_aggregated_values) is transiently transformed to unbounded integers.
+            # The sqrt at the end transforms the int input to float output.
+            difference = int(self._score_matrix[sample_i, column_index]) - int(
+                self._score_matrix[sample_j, column_index]
             )
-            distance += math.pow(difference, 2)
+            distance += difference * difference
         return math.sqrt(distance)
 
     def _fitness_function(self, comparison_matrix: np.ndarray) -> float:

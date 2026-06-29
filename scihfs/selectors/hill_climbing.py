@@ -8,7 +8,9 @@ import numpy as np
 from scipy import sparse
 from sklearn.utils.validation import validate_data
 
-from scihfs.helpers import compute_aggregated_values, get_leaves, normalize_score
+# Numerical input is not supported and previous related code commented out throughout this file, such as the 'dataset_type' variable with "binary" and "numerical" branches.
+# Restore the `normalize_score` import here when reintroducing.
+from scihfs.helpers import compute_aggregated_values, get_leaves
 from scihfs.metrics import cosine_similarity
 from scihfs.selectors import EagerHierarchicalFeatureSelector
 
@@ -24,7 +26,7 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
         self,
         hierarchy: np.ndarray = None,
         alpha: float = 0.99,
-        dataset_type: str = "binary",
+        # dataset_type: str = "binary",
     ):
         """Initializes a HillClimbingSelector.
 
@@ -37,13 +39,19 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
         alpha: float
                 A hyperparameter needed for the hill climbing methods.
                 The default value is 0.99.
+
+        Notes
+        -----
+        Numerical input is currently not supported. Corresponding code is retained (but inactive) for future reintroduction.
+        This also applies to the `dataset_type` parameter.
+
         dataset_type: string, either "binary" or "numerical"
                 A value indicating if the input dataset contains binary or
                 numerical data. Default is "binary".
         """
         super().__init__(hierarchy)
         self.alpha = alpha
-        self.dataset_type = dataset_type
+        # self.dataset_type = dataset_type
 
     def fit(self, X, y, columns=None):
         """Fitting function that sets self.representatives\_.
@@ -121,15 +129,15 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
             X.copy(), self._hierarchy_graph, self._columns
         )
 
-        if self.dataset_type == "numerical":
-            normalized_matrix = np.zeros_like(score_matrix, dtype=float)
-            for row_index in range(self._num_rows):
-                for column_index in range(self.n_features_in_):
-                    score = score_matrix[row_index, column_index]
-                    normalized_matrix[row_index, column_index] = normalize_score(
-                        score, max(score_matrix[row_index, :])
-                    )
-            score_matrix = normalized_matrix
+        # if self.dataset_type == "numerical":
+        #     normalized_matrix = np.zeros_like(score_matrix, dtype=float)
+        #     for row_index in range(self._num_rows):
+        #         for column_index in range(self.n_features_in_):
+        #             score = score_matrix[row_index, column_index]
+        #             normalized_matrix[row_index, column_index] = normalize_score(
+        #                 score, max(score_matrix[row_index, :])
+        #             )
+        #     score_matrix = normalized_matrix
         return score_matrix
 
     def _compare(
@@ -198,7 +206,7 @@ class TopDownSelector(HillClimbingSelector):
         self,
         hierarchy: np.ndarray = None,
         alpha: float = 0.99,
-        dataset_type: str = "binary",
+        # dataset_type: str = "binary",
     ):
         """Initializes a TopDownSelector.
 
@@ -211,11 +219,18 @@ class TopDownSelector(HillClimbingSelector):
         alpha: float
                 A hyperparameter needed for the hill climbing methods.
                 The default value is 0.99.
+
+        Notes
+        -----
+        Numerical input is currently not supported. Corresponding code is retained (but inactive) for future reintroduction.
+        This also applies to the `dataset_type` parameter.
+
         dataset_type: string, either "binary" or "numerical"
                 A value indicating if the input dataset contains binary or
                 numerical data. Default is "binary".
         """
-        super().__init__(hierarchy, alpha=alpha, dataset_type=dataset_type)
+        # dataset_type disabled:
+        super().__init__(hierarchy, alpha=alpha)
 
     def fit(self, X, y, columns=None):
         """Fitting function that sets self.representatives\_.
@@ -357,7 +372,7 @@ class BottomUpSelector(HillClimbingSelector):
         hierarchy: np.ndarray = None,
         alpha: float = 0.01,
         k: int = 5,
-        dataset_type: str = "binary",
+        # dataset_type: str = "binary",
     ):
         """Initializes a BottomUpSelector.
 
@@ -377,11 +392,18 @@ class BottomUpSelector(HillClimbingSelector):
                 A hyperparameter needed to determine the k nearest
                 neighbors during the feature selection algorithm.
                 The default value is 5.
+
+        Notes
+        -----
+        Numerical input is currently not supported. Corresponding code is retained (but inactive) for future reintroduction.
+        This also applies to the `dataset_type` parameter.
+
         dataset_type: string, either "binary" or "numerical"
                 A value indicating if the input dataset contains binary or
                 numerical data. Default is "binary".
         """
-        super().__init__(hierarchy, alpha=alpha, dataset_type=dataset_type)
+        # dataset_type disabled:
+        super().__init__(hierarchy, alpha=alpha)
         self.k = k
 
     def fit(self, X, y, columns=None):

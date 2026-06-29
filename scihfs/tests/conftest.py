@@ -138,21 +138,22 @@ def data4():
     return (X, y, hierarchy, columns)
 
 
-@pytest.fixture()
-def data_numerical(hierarchy1):
-    X = np.array(
-        [
-            [1, 6, 3, 0, 1],
-            [4, 7, 1, 7, 0],
-            [2, 2, 5, 4, 0],
-            [6, 0, 2, 0, 2],
-            [1, 4, 1, 0, 3],
-        ]
-    )
-    columns = get_columns_for_numpy_hierarchy(hierarchy1, X.shape[1])
-    hierarchy = nx.to_numpy_array(hierarchy1)
-    y = np.array([0, 0, 0, 0, 1])
-    return (X, y, hierarchy, columns)
+# The "numerical" dataset_type has been disabled, so the following fixture becomes obsolete.
+# @pytest.fixture()
+# def data_numerical(hierarchy1):
+#     X = np.array(
+#         [
+#             [1, 6, 3, 0, 1],
+#             [4, 7, 1, 7, 0],
+#             [2, 2, 5, 4, 0],
+#             [6, 0, 2, 0, 2],
+#             [1, 4, 1, 0, 3],
+#         ]
+#     )
+#     columns = get_columns_for_numpy_hierarchy(hierarchy1, X.shape[1])
+#     hierarchy = nx.to_numpy_array(hierarchy1)
+#     y = np.array([0, 0, 0, 0, 1])
+#     return (X, y, hierarchy, columns)
 
 
 @pytest.fixture()
@@ -412,47 +413,49 @@ def result_score_matrix1():
     )
 
 
-@pytest.fixture()
-def result_score_matrix_numerical():
-    return np.array(
-        [
-            [
-                1.6931471805599454,
-                1.5978370007556206,
-                1.241162056816888,
-                0,
-                1.0870113769896297,
-            ],
-            [
-                1.6931471805599454,
-                1.3513978868378886,
-                1.0512932943875506,
-                1.3136575588550417,
-                0,
-            ],
-            [
-                1.6931471805599454,
-                1.4307829160924541,
-                1.325422400434628,
-                1.2682639865946794,
-                0,
-            ],
-            [
-                1.6931471805599454,
-                1.1823215567939547,
-                1.1823215567939547,
-                0,
-                1.1823215567939547,
-            ],
-            [
-                1.6931471805599454,
-                1.4418327522790393,
-                1.1053605156578263,
-                0,
-                1.2876820724517808,
-            ],
-        ]
-    )
+# "numerical" dataset_type disabled; this expected log-normalized-score
+# fixture is commented out with the numerical tests for re-enablement.
+# @pytest.fixture()
+# def result_score_matrix_numerical():
+#     return np.array(
+#         [
+#             [
+#                 1.6931471805599454,
+#                 1.5978370007556206,
+#                 1.241162056816888,
+#                 0,
+#                 1.0870113769896297,
+#             ],
+#             [
+#                 1.6931471805599454,
+#                 1.3513978868378886,
+#                 1.0512932943875506,
+#                 1.3136575588550417,
+#                 0,
+#             ],
+#             [
+#                 1.6931471805599454,
+#                 1.4307829160924541,
+#                 1.325422400434628,
+#                 1.2682639865946794,
+#                 0,
+#             ],
+#             [
+#                 1.6931471805599454,
+#                 1.1823215567939547,
+#                 1.1823215567939547,
+#                 0,
+#                 1.1823215567939547,
+#             ],
+#             [
+#                 1.6931471805599454,
+#                 1.4418327522790393,
+#                 1.1053605156578263,
+#                 0,
+#                 1.2876820724517808,
+#             ],
+#         ]
+#     )
 
 
 @pytest.fixture()

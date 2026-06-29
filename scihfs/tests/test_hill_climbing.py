@@ -3,6 +3,9 @@ import pytest
 
 from scihfs.selectors.hill_climbing import BottomUpSelector, TopDownSelector
 
+# The `dataset_type="numerical"` path is disabled (so is its initialization),
+# the two corresponding tests below are commented out.
+
 
 @pytest.mark.parametrize(
     "data",
@@ -12,7 +15,7 @@ def test_top_down_selection(data, result_hill_selection_td, request):
     data = request.getfixturevalue(data)
     X, y, hierarchy, columns = data
     expected, support = result_hill_selection_td
-    selector = TopDownSelector(hierarchy, dataset_type="binary")
+    selector = TopDownSelector(hierarchy)
     selector.fit(X, y, columns)
     X = selector.transform(X)
     assert np.array_equal(X, expected)
@@ -24,7 +27,7 @@ def test_top_down_selection(data, result_hill_selection_td, request):
 def test_bottom_up_selection(data1, result_hill_selection_bu):
     X, y, hierarchy, columns = data1
     expected, support, k = result_hill_selection_bu
-    selector = BottomUpSelector(hierarchy, k=k, dataset_type="binary")
+    selector = BottomUpSelector(hierarchy, k=k)
     selector.fit(X, y, columns)
     X = selector.transform(X)
     assert np.array_equal(X, expected)
@@ -33,16 +36,17 @@ def test_bottom_up_selection(data1, result_hill_selection_bu):
     assert np.array_equal(support_mask, support)
 
 
-def test_bottom_up_selection_numerical(data1, result_hill_selection_bu):
-    X, y, hierarchy, columns = data1
-    expected, support, k = result_hill_selection_bu
-    selector = BottomUpSelector(hierarchy, k=k, dataset_type="numerical")
-    selector.fit(X, y, columns)
-    X = selector.transform(X)
-    assert np.array_equal(X, expected)
-
-    support_mask = selector.get_support()
-    assert np.array_equal(support_mask, support)
+# Numerical input is currently not supported. Corresponding code is retained (but inactive) for future reintroduction.
+# def test_bottom_up_selection_numerical(data1, result_hill_selection_bu):
+#     X, y, hierarchy, columns = data1
+#     expected, support, k = result_hill_selection_bu
+#     selector = BottomUpSelector(hierarchy, k=k, dataset_type="numerical")
+#     selector.fit(X, y, columns)
+#     X = selector.transform(X)
+#     assert np.array_equal(X, expected)
+#
+#     support_mask = selector.get_support()
+#     assert np.array_equal(support_mask, support)
 
 
 @pytest.mark.parametrize(
@@ -59,22 +63,23 @@ def test_calculate_scores(data, result, request):
     X, y, hierarchy, columns = data
     score_matrix_expected = result
 
-    selector = TopDownSelector(hierarchy, dataset_type="binary")
+    selector = TopDownSelector(hierarchy)
     selector.fit(X, y, columns)
     score_matrix = selector._calculate_scores(X)
 
     assert np.array_equal(score_matrix, score_matrix_expected)
 
 
-def test_calculate_scores_numerical(data_numerical, result_score_matrix_numerical):
-    X, y, hierarchy, columns = data_numerical
-    score_matrix_expected = result_score_matrix_numerical
-
-    selector = TopDownSelector(hierarchy, dataset_type="numerical")
-    selector.fit(X, y, columns)
-    score_matrix = selector._calculate_scores(X)
-
-    assert np.array_equal(score_matrix, score_matrix_expected)
+# Numerical input is currently not supported. Corresponding code is retained (but inactive) for future reintroduction.
+# def test_calculate_scores_numerical(data_numerical, result_score_matrix_numerical):
+#     X, y, hierarchy, columns = data_numerical
+#     score_matrix_expected = result_score_matrix_numerical
+#
+#     selector = TopDownSelector(hierarchy, dataset_type="numerical")
+#     selector.fit(X, y, columns)
+#     score_matrix = selector._calculate_scores(X)
+#
+#     assert np.array_equal(score_matrix, score_matrix_expected)
 
 
 @pytest.mark.parametrize(

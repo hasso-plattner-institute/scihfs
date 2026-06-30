@@ -228,9 +228,10 @@ def result_shsel1(result_tsel1):
     return result_tsel1
 
 
-@pytest.fixture()
-def result_shsel_hfe1(result_shsel1):
-    return result_shsel1
+# HFE extension of SHSEL disabled.
+# @pytest.fixture()
+# def result_shsel_hfe1(result_shsel1):
+#     return result_shsel1
 
 
 @pytest.fixture()
@@ -248,34 +249,36 @@ def result_shsel2():
     return (result, support)
 
 
-@pytest.fixture()
-def result_shsel_hfe2():
-    result = np.array(
-        [
-            [0],
-            [1],
-            [1],
-            [0],
-            [0],
-        ],
-    )
-    support = np.array([False, False, True, False, False])
-    return (result, support)
+# HFE extension of SHSEL disabled.
+# @pytest.fixture()
+# def result_shsel_hfe2():
+#     result = np.array(
+#         [
+#             [0],
+#             [1],
+#             [1],
+#             [0],
+#             [0],
+#         ],
+#     )
+#     support = np.array([False, False, True, False, False])
+#     return (result, support)
 
 
-@pytest.fixture()
-def result_shsel_hfe4():
-    result = np.array(
-        [
-            [0, 1, 1],
-            [1, 0, 0],
-            [1, 1, 0],
-            [0, 1, 0],
-            [0, 1, 1],
-        ],
-    )
-    support = np.array([False, False, True, False, False, True, True])
-    return (result, support)
+# HFE extension of SHSEL disabled.
+# @pytest.fixture()
+# def result_shsel_hfe4():
+#     result = np.array(
+#         [
+#             [0, 1, 1],
+#             [1, 0, 0],
+#             [1, 1, 0],
+#             [0, 1, 0],
+#             [0, 1, 1],
+#         ],
+#     )
+#     support = np.array([False, False, True, False, False, True, True])
+#     return (result, support)
 
 
 @pytest.fixture()

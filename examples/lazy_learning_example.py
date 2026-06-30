@@ -32,10 +32,8 @@ def preprocess():
     train_x_data, train_y_data, test_x_data, test_y_data, hierarchy = data()
     preprocessor = HierarchicalPreprocessor(hierarchy=hierarchy)
     preprocessor.fit(train_x_data)
-    # Downstream lazy selectors index into CPT arrays with X values, which
-    # requires integer-valued samples; cast back to int after preprocessing.
-    train = preprocessor.transform(train_x_data).astype(int)
-    test = preprocessor.transform(test_x_data).astype(int)
+    train = preprocessor.transform(train_x_data)
+    test = preprocessor.transform(test_x_data)
     hierarchy = preprocessor.to_adjacency_matrix()
     return (train, test, train_y_data, test_y_data, hierarchy)
 

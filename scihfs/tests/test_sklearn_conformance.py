@@ -229,7 +229,7 @@ def check_n_features_in_after_fitting(name, estimator_orig):
     tags = get_tags(estimator_orig)
     is_supported_X_types = tags.input_tags.two_d_array or tags.input_tags.categorical
     if not is_supported_X_types or tags.no_validation:
-        return
+        return  # pragma: no cover
 
     estimator = clone(estimator_orig)
     set_random_state(estimator)
@@ -256,7 +256,7 @@ def check_n_features_in_after_fitting(name, estimator_orig):
             continue
         callable_method = getattr(estimator, method)
         if method == "score":
-            callable_method = partial(callable_method, y=y)
+            callable_method = partial(callable_method, y=y)  # pragma: no cover
         with pytest.raises(ValueError, match=msg):
             callable_method(X_bad)
 
@@ -322,7 +322,7 @@ def check_fit_idempotent(name, estimator_orig):
             if hasattr(new_result, "dtype") and np.issubdtype(
                 new_result.dtype, np.floating
             ):
-                tol = 2 * np.finfo(new_result.dtype).eps
+                tol = 2 * np.finfo(new_result.dtype).eps  # pragma: no cover
             else:
                 tol = 2 * np.finfo(np.float64).eps
             assert_allclose_dense_sparse(
@@ -480,7 +480,7 @@ def check_fit_score_takes_y(name, estimator_orig):
             func(X, y)
             args = [p.name for p in signature(func).parameters.values()]
             if args[0] == "self":
-                args = args[1:]
+                args = args[1:]  # pragma: no cover
             assert args[1] in [
                 "y",
                 "Y",
@@ -536,7 +536,7 @@ def check_methods_subset_invariance(name, estimator_orig):
 def check_pipeline_consistency(name, estimator_orig):
     # make_pipeline(est) gives the same result as est on its own.
     if get_tags(estimator_orig).non_deterministic:
-        pytest.skip(name + " is non deterministic")
+        pytest.skip(name + " is non deterministic")  # pragma: no cover
 
     X, y = _binary_Xy(n_samples=30)
     X = _enforce_estimator_tags_X(estimator_orig, X)
@@ -631,7 +631,7 @@ def _check_estimator_sparse_container(name, estimator_orig, sparse_type):
 
     estimator.fit(X, y)
     if hasattr(estimator, "predict"):
-        assert estimator.predict(X).shape[0] == X.shape[0]
+        assert estimator.predict(X).shape[0] == X.shape[0]  # pragma: no cover
     if hasattr(estimator, "transform"):
         assert estimator.transform(X).shape[0] == X.shape[0]
 
@@ -657,13 +657,13 @@ def check_estimator_sparse_tag(name, estimator_orig):
     if tags.input_tags.sparse:
         try:
             estimator.fit(X, y)  # should pass
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             raise AssertionError(
                 f"Estimator {name} raised an exception. The tag "
                 f"self.input_tags.sparse={tags.input_tags.sparse} might not be "
                 "consistent with the estimator's ability to handle sparse data."
             ) from e
-    else:
+    else:  # pragma: no cover
         # No scihfs estimator declares sparse=False, but keep the branch
         # faithful to sklearn: it must then reject sparse with a clear message.
         try:
@@ -709,7 +709,7 @@ def check_f_contiguous_array_estimator(name, estimator_orig):
     if hasattr(estimator, "transform"):
         estimator.transform(X)
     if hasattr(estimator, "predict"):
-        estimator.predict(X)
+        estimator.predict(X)  # pragma: no cover
 
 
 def check_transformer_general(name, transformer_orig):
@@ -738,7 +738,7 @@ def _check_transformer_binary(name, transformer_orig, X, y):
         X_pred3 = transformer.fit_transform(X, y=y)
 
         if get_tags(transformer_orig).non_deterministic:
-            pytest.skip(name + " is non deterministic")
+            pytest.skip(name + " is non deterministic")  # pragma: no cover
 
         assert_allclose_dense_sparse(
             X_pred,
@@ -790,7 +790,7 @@ def check_estimators_nan_inf(name, estimator_orig):
             estimator.fit(X_train, y)
         # fit on finite (bool) data, then check predict/transform reject it too
         estimator.fit(X_train_finite, y)
-        if hasattr(estimator, "predict"):
+        if hasattr(estimator, "predict"):  # pragma: no cover
             with pytest.raises(ValueError, match=r"inf|NaN"):
                 estimator.predict(X_train)
         if hasattr(estimator, "transform"):

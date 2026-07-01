@@ -22,3 +22,5 @@ coverage:
 
 ignore:
   - "**/pyitlib.py"
+  # Temporary: HieAODE is suspended until its dedicated refactoring.
+  - "scihfs/selectors/hie_aode.py"

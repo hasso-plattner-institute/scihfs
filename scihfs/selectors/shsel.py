@@ -3,13 +3,14 @@ SHSEL Feature Selector.
 """
 
 import statistics
-import warnings
 
 import numpy as np
 from scipy import sparse
 from sklearn.utils.validation import validate_data
 
-from scihfs.helpers import compute_aggregated_values, get_leaves, get_paths
+# The HFE extension from Oudah and Henschel (2018) is commented out below, as it requires numerical features in the input (currently only bool supported).
+# When it is restored, also restore the `compute_aggregated_values` and `get_leaves` imports.
+from scihfs.helpers import get_paths
 from scihfs.metrics import information_gain, pearson_correlation
 from scihfs.selectors import EagerHierarchicalFeatureSelector
 
@@ -22,9 +23,11 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
     parents that have a similar relevance and removing features with
     lower than average information gain for each path from leaf to
     root.
-    This Selector also implements the hierarchical feature
-    engineering (HFE) extension proposed by Oudah and Henschel in
-    2018.
+
+    The hierarchical feature engineering (HFE) extension proposed by
+    Oudah and Henschel (2018) is temporarily disabled. It requires
+    numerical input which is currently not supported.
+    Corresponding code is retained (but commented out).
     """
 
     def __init__(
@@ -32,8 +35,9 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         hierarchy: np.ndarray = None,
         relevance_metric: str = "IG",
         similarity_threshold=0.99,
-        use_hfe_extension=False,
-        preprocess_numerical_data=False,
+        # HFE extension disabled:
+        # use_hfe_extension=False,
+        # preprocess_numerical_data=False,
     ):
         """Initializes a SHSELSelector.
 
@@ -51,6 +55,15 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                     The similarity threshold to use in the initial selection
                     stage of the algorithm. This can be a number between
                     0 an 1. Default is 0.99.
+
+        Notes
+        -----
+        The hierarchical feature engineering (HFE) extension proposed
+        by Oudah and Henschel (2018) is temporarily disabled. It
+        requires numerical input which is currently not supported.
+        Corresponding code is retained though (but commented out),
+        such as the following two parameters, which are not active:
+
         use_hfe_extension : bool
                     If True the HFE algorithm proposed by Oudah and Henschel is
                     used. Set relevance_metric to "Correlation" when using this
@@ -60,13 +73,13 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                     This method is used in the HFE extension algorithm which
                     expects numerical data. If binary data is used it is
                     recommended to set this parameter to False. Default is False.
-
         """
         super().__init__(hierarchy)
         self.relevance_metric = relevance_metric
         self.similarity_threshold = similarity_threshold
-        self.use_hfe_extension = use_hfe_extension
-        self.preprocess_numerical_data = preprocess_numerical_data
+        # HFE extension disabled:
+        # self.use_hfe_extension = use_hfe_extension
+        # self.preprocess_numerical_data = preprocess_numerical_data
 
     def fit(self, X, y, columns=None):
         """Fitting function that sets self.representatives\_.
@@ -99,22 +112,14 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
             Returns self.
         """
         # Input validation
-        if self.use_hfe_extension and self.relevance_metric != "Correlation":
-            raise ValueError(
-                "When using the HFE extension the relevance_metric should be 'Correlation'."
-            )
+        # HFE extension disabled:
+        # if self.use_hfe_extension and self.relevance_metric != "Correlation":
+        #     raise ValueError(
+        #         "When using the HFE extension the relevance_metric should be 'Correlation'."
+        #     )
         X, y = validate_data(self, X, y, accept_sparse=True)
         if sparse.issparse(X):
             X = X.tocsc()
-        if not self.use_hfe_extension:
-            # make sure data is binary when SHSEL without extension is used
-            if not np.all((X.data == 0) | (X.data == 1)):
-                warnings.warn(
-                    "The sparse data is not binary. "
-                    "When using the original SHSEL algorithm, "
-                    "the data should contain only 0s and 1s.",
-                    UserWarning,
-                )
 
         super().fit(X, y, columns)
 
@@ -127,13 +132,15 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
 
     def _fit(self, X):
         """The feature selection algorithm."""
-        if self.preprocess_numerical_data:
-            X = self._preprocess(X)
+        # HFE extension disabled:
+        # if self.preprocess_numerical_data:
+        #     X = self._preprocess(X)
         paths = get_paths(self._hierarchy_graph, reverse=True)
         self._inital_selection(paths, X)
         self._pruning(paths)
-        if self.use_hfe_extension:
-            self._leaf_filtering()
+        # HFE extension disabled:
+        # if self.use_hfe_extension:
+        #     self._leaf_filtering()
 
     def _inital_selection(self, paths, X):
         """First part of the feature selection algorithm."""
@@ -180,11 +187,12 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                     node in self.representatives_
                     and self._relevance_values[node] >= average_relevance
                 ):
-                    if (
-                        self.use_hfe_extension is False
-                        or self._relevance_values[node] > 0.0
-                    ):
-                        updated_representatives.append(node)
+                    # HFE extension disabled:
+                    # if (
+                    #     self.use_hfe_extension is False
+                    #     or self._relevance_values[node] > 0.0
+                    # ):
+                    updated_representatives.append(node)
 
         self.representatives_ = list(set(updated_representatives))  # remove duplicates
 
@@ -192,49 +200,55 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         values = information_gain(X, y)
         self._relevance_values = dict(zip(self._columns, values))
 
-    def _preprocess(self, X):
-        """Preprocess numerical data by summing up child values.
+    # The following are all HFE extension methods.
+    # Note: `_preprocess` below additionally has an argument-
+    # order bug (passing "ROOT" as X); fix when re-enabling HFE.
 
-        This is part of the HFE extension and only makes sense for
-        numerial data and not for binary data.
-        """
-        return compute_aggregated_values("ROOT", X, self._hierarchy_graph, self._columns)
-
-    def _leaf_filtering(self):
-        """Filtering representatives by removing leaves with low relevance.
-
-        This is part of the HFE extension proposed by Oudah and Henschel.
-        """
-        average_ig = statistics.mean(
-            [self._relevance_values[node] for node in self.representatives_]
-        )
-
-        leaves = self._get_leaves_in_incomplete_paths()
-
-        nodes_to_remove = [
-            leaf
-            for leaf in leaves
-            if self._relevance_values[leaf] < average_ig
-            or self._relevance_values[leaf] == 0
-        ]
-        updated_representatives = [
-            node for node in self.representatives_ if node not in nodes_to_remove
-        ]
-        self.representatives_ = updated_representatives
-
-    def _get_leaves_in_incomplete_paths(self):
-        """Select leaves of incomplete paths (part of HFE extension)"""
-        leaves = [
-            leaf
-            for leaf in get_leaves(self._hierarchy_graph)
-            if leaf in self.representatives_
-        ]
-
-        paths = get_paths(self._hierarchy_graph)
-        max_path_len = max([len(path) for path in paths])
-        selected_leaves = []
-        for leaf in leaves:
-            for path in paths:
-                if leaf in path and len(path) != max_path_len:
-                    selected_leaves.append(leaf)
-        return selected_leaves
+    # def _preprocess(self, X):
+    #     """Preprocess numerical data by summing up child values.
+    #
+    #     This is part of the HFE extension and only makes sense for
+    #     numerial data and not for binary data.
+    #     """
+    #     return compute_aggregated_values(
+    #         "ROOT", X, self._hierarchy_graph, self._columns
+    #     )
+    #
+    # def _leaf_filtering(self):
+    #     """Filtering representatives by removing leaves with low relevance.
+    #
+    #     This is part of the HFE extension proposed by Oudah and Henschel.
+    #     """
+    #     average_ig = statistics.mean(
+    #         [self._relevance_values[node] for node in self.representatives_]
+    #     )
+    #
+    #     leaves = self._get_leaves_in_incomplete_paths()
+    #
+    #     nodes_to_remove = [
+    #         leaf
+    #         for leaf in leaves
+    #         if self._relevance_values[leaf] < average_ig
+    #         or self._relevance_values[leaf] == 0
+    #     ]
+    #     updated_representatives = [
+    #         node for node in self.representatives_ if node not in nodes_to_remove
+    #     ]
+    #     self.representatives_ = updated_representatives
+    #
+    # def _get_leaves_in_incomplete_paths(self):
+    #     """Select leaves of incomplete paths (part of HFE extension)"""
+    #     leaves = [
+    #         leaf
+    #         for leaf in get_leaves(self._hierarchy_graph)
+    #         if leaf in self.representatives_
+    #     ]
+    #
+    #     paths = get_paths(self._hierarchy_graph)
+    #     max_path_len = max([len(path) for path in paths])
+    #     selected_leaves = []
+    #     for leaf in leaves:
+    #         for path in paths:
+    #             if leaf in path and len(path) != max_path_len:
+    #                 selected_leaves.append(leaf)
+    #     return selected_leaves

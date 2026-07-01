@@ -6,7 +6,7 @@ from sklearn.metrics import classification_report
 from sklearn.naive_bayes import BernoulliNB
 from sklearn.utils.validation import validate_data
 
-from scihfs.helpers import check_data, get_relevance
+from scihfs.helpers import check_bool_dtype, check_data, get_relevance
 from scihfs.metrics import conditional_mutual_information
 from scihfs.selectors import HierarchicalEstimator
 
@@ -48,6 +48,7 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
             Fitted estimator.
         """
         X = validate_data(self, X, accept_sparse=True)
+        check_bool_dtype(X)
         if y is not None:
             if not isinstance(y, np.ndarray):
                 try:
@@ -74,7 +75,14 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
             converted into a sparse ``csc_matrix``.
         y_train : array-like of shape (n_samples, n_levels)
             The target values, i.e., hierarchical class labels for classification.
+
+        Raises
+        ------
+        ValueError
+            If X_train or X_test is not bool-dtype.
         """
+        check_bool_dtype(X_train)
+        check_bool_dtype(X_test)
         # Create DAG
         self.n_features_in_ = X_train.shape[1]
         self.n_classes_ = np.unique(y_train).shape[0]

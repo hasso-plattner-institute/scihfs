@@ -8,7 +8,11 @@ import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted, validate_data
 
-from scihfs.helpers import _check_unique_column_mappings, add_virtual_root_node
+from scihfs.helpers import (
+    _check_unique_column_mappings,
+    add_virtual_root_node,
+    check_bool_dtype,
+)
 
 # Node-attribute key for recording a node's original identity (name or index) in the hierarchy graph. Left untouched by all operations on the graph.
 # Consumed by get_feature_names_out to map back to original node names / indexes.
@@ -21,6 +25,10 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
     The HierarchicalEstimator implements scikit-learn's BaseEstimator and
     TransformerMixin interfaces. It can be used as a base class for feature
     selection classes or data preprocessors that use hierarchical data.
+
+    ..note:: This estimator currently supports only bool-dtype input.
+    Non-binary (numeric) inputs raise ``ValueError``. Sum-propagation
+    for numeric features could be a future enhancement.
     """
 
     def __init__(self, hierarchy=None):
@@ -65,6 +73,8 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         ------
         TypeError
             If the passed hierarchy is None.
+        ValueError
+            If X is not bool-dtype. Numerical inputs may be supported in the future.
 
         Returns
         -------
@@ -74,6 +84,7 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         if self.hierarchy is None:
             raise TypeError("Hierarchy is None but is required.")
         X = validate_data(self, X, accept_sparse=True)
+        check_bool_dtype(X)
         self._fit_hierarchy(columns)
 
         return self

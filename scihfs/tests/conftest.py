@@ -19,7 +19,7 @@ def data1(hierarchy1):
             [0, 1, 1, 1, 1],
             [1, 1, 1, 1, 1],
         ]
-    )
+    ).astype(bool)
     columns = get_columns_for_numpy_hierarchy(hierarchy1, X.shape[1])
     hierarchy = nx.to_numpy_array(hierarchy1)
     y = np.array([0, 0, 0, 0, 1])
@@ -36,7 +36,7 @@ def data1_2(hierarchy1_2):
             [0, 1, 1, 1, 1],
             [1, 1, 1, 1, 1],
         ]
-    )
+    ).astype(bool)
     columns = get_columns_for_numpy_hierarchy(hierarchy1_2, X.shape[1])
     hierarchy = nx.to_numpy_array(hierarchy1_2)
     y = np.array([0, 0, 0, 0, 1])
@@ -53,7 +53,7 @@ def data2(hierarchy2):
             [1, 0, 0, 0, 1],
             [1, 1, 0, 0, 0],
         ],
-    )
+    ).astype(bool)
     columns = get_columns_for_numpy_hierarchy(hierarchy2, X.shape[1])
     hierarchy = nx.to_numpy_array(hierarchy2)
     y = np.array([1, 0, 0, 1, 1])
@@ -70,7 +70,7 @@ def data2_1():
             [1, 0, 0, 0, 1],
             [1, 1, 0, 0, 0],
         ],
-    )
+    ).astype(bool)
     edges = [(0, 1), (1, 2), (1, 3)]
     hierarchy = nx.DiGraph(edges)
     hierarchy.add_node(4)
@@ -90,7 +90,7 @@ def data2_2():
             [1, 0, 0, 0, 1],
             [1, 1, 0, 0, 0],
         ],
-    )
+    ).astype(bool)
     edges = [(0, 1), (1, 2), (1, 3)]
     hierarchy = nx.DiGraph(edges)
     hierarchy.add_node(4)
@@ -111,7 +111,7 @@ def data3(hierarchy3):
             [1, 0, 0, 0, 1],
             [1, 1, 0, 0, 0],
         ],
-    )
+    ).astype(bool)
 
     columns = get_columns_for_numpy_hierarchy(hierarchy3, X.shape[1])
     hierarchy = nx.to_numpy_array(hierarchy3)
@@ -129,7 +129,7 @@ def data4():
             [1, 0, 0, 1, 0, 1, 0],
             [1, 1, 0, 0, 1, 1, 1],
         ],
-    )
+    ).astype(bool)
     edges = [(0, 1), (1, 2), (0, 3), (0, 4), (0, 5), (5, 6)]
     hierarchy = nx.DiGraph(edges)
     columns = get_columns_for_numpy_hierarchy(hierarchy, X.shape[1])
@@ -138,21 +138,22 @@ def data4():
     return (X, y, hierarchy, columns)
 
 
-@pytest.fixture()
-def data_numerical(hierarchy1):
-    X = np.array(
-        [
-            [1, 6, 3, 0, 1],
-            [4, 7, 1, 7, 0],
-            [2, 2, 5, 4, 0],
-            [6, 0, 2, 0, 2],
-            [1, 4, 1, 0, 3],
-        ]
-    )
-    columns = get_columns_for_numpy_hierarchy(hierarchy1, X.shape[1])
-    hierarchy = nx.to_numpy_array(hierarchy1)
-    y = np.array([0, 0, 0, 0, 1])
-    return (X, y, hierarchy, columns)
+# The "numerical" dataset_type has been disabled, so the following fixture becomes obsolete.
+# @pytest.fixture()
+# def data_numerical(hierarchy1):
+#     X = np.array(
+#         [
+#             [1, 6, 3, 0, 1],
+#             [4, 7, 1, 7, 0],
+#             [2, 2, 5, 4, 0],
+#             [6, 0, 2, 0, 2],
+#             [1, 4, 1, 0, 3],
+#         ]
+#     )
+#     columns = get_columns_for_numpy_hierarchy(hierarchy1, X.shape[1])
+#     hierarchy = nx.to_numpy_array(hierarchy1)
+#     y = np.array([0, 0, 0, 0, 1])
+#     return (X, y, hierarchy, columns)
 
 
 @pytest.fixture()
@@ -227,9 +228,10 @@ def result_shsel1(result_tsel1):
     return result_tsel1
 
 
-@pytest.fixture()
-def result_shsel_hfe1(result_shsel1):
-    return result_shsel1
+# HFE extension of SHSEL disabled.
+# @pytest.fixture()
+# def result_shsel_hfe1(result_shsel1):
+#     return result_shsel1
 
 
 @pytest.fixture()
@@ -247,34 +249,36 @@ def result_shsel2():
     return (result, support)
 
 
-@pytest.fixture()
-def result_shsel_hfe2():
-    result = np.array(
-        [
-            [0],
-            [1],
-            [1],
-            [0],
-            [0],
-        ],
-    )
-    support = np.array([False, False, True, False, False])
-    return (result, support)
+# HFE extension of SHSEL disabled.
+# @pytest.fixture()
+# def result_shsel_hfe2():
+#     result = np.array(
+#         [
+#             [0],
+#             [1],
+#             [1],
+#             [0],
+#             [0],
+#         ],
+#     )
+#     support = np.array([False, False, True, False, False])
+#     return (result, support)
 
 
-@pytest.fixture()
-def result_shsel_hfe4():
-    result = np.array(
-        [
-            [0, 1, 1],
-            [1, 0, 0],
-            [1, 1, 0],
-            [0, 1, 0],
-            [0, 1, 1],
-        ],
-    )
-    support = np.array([False, False, True, False, False, True, True])
-    return (result, support)
+# HFE extension of SHSEL disabled.
+# @pytest.fixture()
+# def result_shsel_hfe4():
+#     result = np.array(
+#         [
+#             [0, 1, 1],
+#             [1, 0, 0],
+#             [1, 1, 0],
+#             [0, 1, 0],
+#             [0, 1, 1],
+#         ],
+#     )
+#     support = np.array([False, False, True, False, False, True, True])
+#     return (result, support)
 
 
 @pytest.fixture()
@@ -385,7 +389,7 @@ def result_hill_selection_bu():
 
 @pytest.fixture()
 def wrong_hierarchy_X():
-    X = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    X = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]]).astype(bool)
     hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))
     columns = [0, 1]
     return (X, hierarchy, columns)
@@ -393,7 +397,7 @@ def wrong_hierarchy_X():
 
 @pytest.fixture()
 def wrong_hierarchy_X1():
-    X = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    X = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]]).astype(bool)
     hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1), (1, 2), (3, 4), (0, 5)]))
     columns = [0, 1, 2]
     return (X, hierarchy, columns)
@@ -412,47 +416,49 @@ def result_score_matrix1():
     )
 
 
-@pytest.fixture()
-def result_score_matrix_numerical():
-    return np.array(
-        [
-            [
-                1.6931471805599454,
-                1.5978370007556206,
-                1.241162056816888,
-                0,
-                1.0870113769896297,
-            ],
-            [
-                1.6931471805599454,
-                1.3513978868378886,
-                1.0512932943875506,
-                1.3136575588550417,
-                0,
-            ],
-            [
-                1.6931471805599454,
-                1.4307829160924541,
-                1.325422400434628,
-                1.2682639865946794,
-                0,
-            ],
-            [
-                1.6931471805599454,
-                1.1823215567939547,
-                1.1823215567939547,
-                0,
-                1.1823215567939547,
-            ],
-            [
-                1.6931471805599454,
-                1.4418327522790393,
-                1.1053605156578263,
-                0,
-                1.2876820724517808,
-            ],
-        ]
-    )
+# "numerical" dataset_type disabled; this expected log-normalized-score
+# fixture is commented out with the numerical tests for re-enablement.
+# @pytest.fixture()
+# def result_score_matrix_numerical():
+#     return np.array(
+#         [
+#             [
+#                 1.6931471805599454,
+#                 1.5978370007556206,
+#                 1.241162056816888,
+#                 0,
+#                 1.0870113769896297,
+#             ],
+#             [
+#                 1.6931471805599454,
+#                 1.3513978868378886,
+#                 1.0512932943875506,
+#                 1.3136575588550417,
+#                 0,
+#             ],
+#             [
+#                 1.6931471805599454,
+#                 1.4307829160924541,
+#                 1.325422400434628,
+#                 1.2682639865946794,
+#                 0,
+#             ],
+#             [
+#                 1.6931471805599454,
+#                 1.1823215567939547,
+#                 1.1823215567939547,
+#                 0,
+#                 1.1823215567939547,
+#             ],
+#             [
+#                 1.6931471805599454,
+#                 1.4418327522790393,
+#                 1.1053605156578263,
+#                 0,
+#                 1.2876820724517808,
+#             ],
+#         ]
+#     )
 
 
 @pytest.fixture()
@@ -597,11 +603,11 @@ def lazy_data1():
         (5, 11),
     ]
     hierarchy = nx.DiGraph(edges)
-    X_train = np.ones((2, len(hierarchy.nodes)))
+    X_train = np.ones((2, len(hierarchy.nodes))).astype(bool)
     y_train = np.array([0, 1])
     X_test = np.array(
         [[1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0], [1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0]]
-    )
+    ).astype(bool)
     y_test = np.array([1, 0])
     relevance = [0.25, 0.23, 0.38, 0.25, 0.28, 0.38, 0.26, 0.31, 0.26, 0.23, 0.21, 0.26]
 
@@ -618,9 +624,11 @@ def lazy_data1():
 @pytest.fixture()
 def lazy_data2():
     small_DAG = nx.to_numpy_array(nx.DiGraph([(0, 1), (0, 2), (1, 2), (1, 3)]))
-    train_x_data = np.array([[1, 1, 0, 1], [1, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]])
+    train_x_data = np.array(
+        [[1, 1, 0, 1], [1, 0, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]]
+    ).astype(bool)
     train_y_data = np.array([0, 0, 1, 1])
-    test_x_data = np.array([[1, 1, 0, 0], [1, 1, 1, 0]])
+    test_x_data = np.array([[1, 1, 0, 0], [1, 1, 1, 0]]).astype(bool)
     test_y_data = np.array([1, 0])
     return (small_DAG, train_x_data, train_y_data, test_x_data, test_y_data)
 
@@ -629,7 +637,7 @@ def lazy_data2():
 def lazy_data3():
     edges = [(4, 0), (0, 3), (2, 3), (5, 2), (5, 1)]
     hierarchy = nx.DiGraph(edges)
-    X_train_ones = np.ones((9, len(hierarchy.nodes)))
+    X_train_ones = np.ones((9, len(hierarchy.nodes))).astype(bool)
     X_train = np.array(
         [
             [1, 1, 1, 1, 1, 1],
@@ -642,9 +650,9 @@ def lazy_data3():
             [1, 0, 0, 1, 1, 0],
             [0, 1, 0, 0, 0, 1],
         ]
-    )
+    ).astype(bool)
     y_train = np.array([0, 1, 1, 0, 1, 1, 0, 1, 1])
-    X_test = np.array([[0, 0, 1, 0, 1, 1], [0, 1, 1, 0, 1, 1]])
+    X_test = np.array([[0, 0, 1, 0, 1, 1], [0, 1, 1, 0, 1, 1]]).astype(bool)
     y_test = np.array([1, 0])
     resulted_features = np.array(
         [[0.0, 1.0, 1.0, 1.0, 1.0, 0.0], [0.0, 1.0, 1.0, 1.0, 1.0, 0.0]]

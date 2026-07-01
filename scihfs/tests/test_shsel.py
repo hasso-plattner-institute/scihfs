@@ -1,6 +1,8 @@
+import networkx as nx
 import numpy as np
 import pytest
 
+from scihfs.helpers import get_columns_for_numpy_hierarchy
 from scihfs.selectors import SHSELSelector
 
 
@@ -49,32 +51,59 @@ def test_SHSEL_selection_with_initial_selection(data, result, request):
     assert np.array_equal(support_mask, support)
 
 
-@pytest.mark.parametrize(
-    "data, result",
-    [
-        ("data1", "result_shsel_hfe1"),
-        ("data2", "result_shsel_hfe2"),
-        ("data4", "result_shsel_hfe4"),
-    ],
-)
-def test_leaf_filtering(data, result, request):
-    data = request.getfixturevalue(data)
-    result = request.getfixturevalue(result)
-    X, y, hierarchy, columns = data
-    expected, support = result
+# HFE extension disabled; the corresponding tests are
+# commented out (with their result_shsel_hfe* fixtures in conftest.py) and
+# kept for re-enablement when the extension returns.
+# @pytest.mark.parametrize(
+#     "data, result",
+#     [
+#         ("data1", "result_shsel_hfe1"),
+#         ("data2", "result_shsel_hfe2"),
+#         ("data4", "result_shsel_hfe4"),
+#     ],
+# )
+# def test_leaf_filtering(data, result, request):
+#     data = request.getfixturevalue(data)
+#     result = request.getfixturevalue(result)
+#     X, y, hierarchy, columns = data
+#     expected, support = result
+#     selector = SHSELSelector(
+#         hierarchy, use_hfe_extension=True, relevance_metric="Correlation"
+#     )
+#     selector.fit(X, y, columns)
+#     X = selector.transform(X)
+#     assert np.array_equal(X, expected)
+#
+#     support_mask = selector.get_support()
+#     assert np.array_equal(support_mask, support)
+#
+#
+# def test_fail_on_invalid_relevance_metric(data1):
+#     X, y, _, _ = data1
+#     selector = SHSELSelector(use_hfe_extension=True, relevance_metric="IG")
+#     with pytest.raises(ValueError):
+#         selector.fit(X, y)
+
+
+def test_SHSEL_selection_correlation_on_bool():
+    """The non-HFE (Pearson) Correlation path works on bool input."""
+    edges = [(0, 1), (1, 2), (0, 3)]
+    hierarchy = nx.to_numpy_array(nx.DiGraph(edges))
+    columns = get_columns_for_numpy_hierarchy(nx.DiGraph(edges), 4)
+    X = np.array(
+        [[1, 1, 1, 0], [1, 1, 0, 1], [1, 0, 0, 1], [1, 1, 0, 0], [0, 0, 0, 0]],
+        dtype=bool,
+    )
+    y = np.array([1, 0, 0, 1, 0])
+
     selector = SHSELSelector(
-        hierarchy, use_hfe_extension=True, relevance_metric="Correlation"
+        hierarchy, relevance_metric="Correlation", similarity_threshold=0.8
     )
     selector.fit(X, y, columns)
-    X = selector.transform(X)
-    assert np.array_equal(X, expected)
+    X_transformed = selector.transform(X)
 
-    support_mask = selector.get_support()
-    assert np.array_equal(support_mask, support)
-
-
-def test_fail_on_invalid_relevance_metric(data1):
-    X, y, _, _ = data1
-    selector = SHSELSelector(use_hfe_extension=True, relevance_metric="IG")
-    with pytest.raises(ValueError):
-        selector.fit(X, y)
+    assert np.array_equal(selector.get_support(), np.array([False, True, True, True]))
+    expected = np.array(
+        [[1, 1, 0], [1, 0, 1], [0, 0, 1], [1, 0, 0], [0, 0, 0]], dtype=bool
+    )
+    assert np.array_equal(X_transformed, expected)

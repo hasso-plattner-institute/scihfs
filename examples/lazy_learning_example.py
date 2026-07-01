@@ -32,10 +32,8 @@ def preprocess():
     train_x_data, train_y_data, test_x_data, test_y_data, hierarchy = data()
     preprocessor = HierarchicalPreprocessor(hierarchy=hierarchy)
     preprocessor.fit(train_x_data)
-    # Downstream lazy selectors index into CPT arrays with X values, which
-    # requires integer-valued samples; cast back to int after preprocessing.
-    train = preprocessor.transform(train_x_data).astype(int)
-    test = preprocessor.transform(test_x_data).astype(int)
+    train = preprocessor.transform(train_x_data)
+    test = preprocessor.transform(test_x_data)
     hierarchy = preprocessor.to_adjacency_matrix()
     return (train, test, train_y_data, test_y_data, hierarchy)
 
@@ -48,18 +46,21 @@ HieAODE -
 =========================================================================
 """
 
-print("\nHieAODE:")
-# Initialize and fit HNB model with threshold k = 3 features to select
-model = HieAODE(hierarchy=hierarchy)
-model.fit_selector(X_train=train, y_train=train_y_data, X_test=test)
-# %%
-# Select features and predict
-predictions = model.select_and_predict(predict=True, saveFeatures=True)
-print(predictions)
-# %%
-# Calculate score
-score = model.get_score(test_y_data, predictions)
-print(score)
+# TODO: Update this section once merged with main (currently outdated).
+# The following is the original code snippet for HieAODE, now commented out.
+
+# print("\nHieAODE:")
+# # Initialize and fit HNB model with threshold k = 3 features to select
+# model = HieAODE(hierarchy=hierarchy)
+# model.fit_selector(X_train=train, y_train=train_y_data, X_test=test)
+# # %%
+# # Select features and predict
+# predictions = model.select_and_predict(predict=True, saveFeatures=True)
+# print(predictions)
+# # %%
+# # Calculate score
+# score = model.get_score(test_y_data, predictions)
+# print(score)
 
 """
 =========================================================================

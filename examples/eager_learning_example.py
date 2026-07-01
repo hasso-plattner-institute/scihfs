@@ -23,14 +23,14 @@ import numpy as np
 from scihfs.helpers import get_columns_for_numpy_hierarchy
 from scihfs.selectors import SHSELSelector
 
-# Example dataset X with 3 samples and 5 features.
+# Example dataset X with 3 samples and 5 features, all bool-encoded binary features.
 X = np.array(
     [
         [1, 1, 0, 0, 1],
         [1, 1, 1, 1, 0],
         [1, 1, 1, 0, 0],
     ],
-)
+).astype(bool)
 
 # Example labels
 y = np.array([1, 0, 0])

@@ -2,12 +2,13 @@
 Collection of helper methods for the feature selection algorithms.
 """
 
-import math
+# import math
 import warnings
 from fractions import Fraction
 
 import networkx as nx
 import numpy as np
+import scipy.sparse as sp
 from networkx.algorithms.simple_paths import all_simple_paths
 
 
@@ -262,23 +263,24 @@ def get_columns_for_numpy_hierarchy(hierarchy: nx.DiGraph, num_columns: int):
     return columns
 
 
-def normalize_score(score, max_value):
-    """Normalize the given score using logarithmic scaling and a maximum value.
+# Numerical input is currently not supported and previous related code has been commented out throughout this repository.
+# def normalize_score(score, max_value):
+#     """Normalize the given score using logarithmic scaling and a maximum value.
 
-    Parameters
-    ----------
-    score : float or int
-            The score to be normalized.
-    max_value : float or int
-            The maximum of the scores in the corresponding row.
+#     Parameters
+#     ----------
+#     score : float or int
+#             The score to be normalized.
+#     max_value : float or int
+#             The maximum of the scores in the corresponding row.
 
-    Returns
-    ----------
-    float or int : The normalized score after applying logarithmic scaling.
-    """
-    if score != 0:
-        score = math.log(1 + (score / max_value)) + 1
-    return score
+#     Returns
+#     ----------
+#     float or int : The normalized score after applying logarithmic scaling.
+#     """
+#     if score != 0:
+#         score = math.log(1 + (score / max_value)) + 1
+#     return score
 
 
 def compute_aggregated_values(X, hierarchy: nx.DiGraph, columns: list[int], node="ROOT"):
@@ -310,6 +312,12 @@ def compute_aggregated_values(X, hierarchy: nx.DiGraph, columns: list[int], node
         The input array `X` with the aggregated values based on the provided
         hierarchy.
     """
+    # Sparse input is accepted throughout the library, but
+    # currently 'densified' here. To avoid excessive memory
+    # allocation, add a dedicated sparse implementation here in
+    # the future.
+    if sp.issparse(X):
+        X = X.toarray()
     # Note that we deliberately use uint32 (unsigned, min 0, max 4294967295), to keep memory footprint low and because feature counts are always positive integers.
     if X.dtype == np.bool_:
         X = X.astype(np.uint32)

@@ -456,6 +456,13 @@ class BottomUpSelector(HillClimbingSelector):
                     A list of nodes (int or str) that represent the
                     optimal features set.
         """
+        # The kNN implementation in this file requires n_samples > k_neighbors.
+        if self._num_rows <= self.k:
+            raise ValueError(
+                f"BottomUpSelector needs n (samples) > k (neighbors) for the k-nearest-"
+                f"neighbors step, but got n_samples={self._num_rows} with "
+                f"k={self.k}."
+            )
         self._score_matrix = self._calculate_scores(X)
 
         # Start with the leaves.

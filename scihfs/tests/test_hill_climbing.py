@@ -97,7 +97,8 @@ def test_comparison_matrix(data, result, Selector, request):
     X, y, hierarchy, columns = data
     comparison_matrix_expected = result
 
-    selector = Selector(hierarchy)
+    kwargs = {"k": 3} if Selector is BottomUpSelector else {}
+    selector = Selector(hierarchy, **kwargs)
     selector.fit(X, y, columns)
     comparison_matrix = selector._comparison_matrix(columns)
 

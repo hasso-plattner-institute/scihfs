@@ -2476,12 +2476,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "info-gain", specifier = ">=1.0.1,<2" },
-    { name = "networkx", specifier = ">=3.2.1,<4" },
+    { name = "info-gain", specifier = ">=1.0.0,<2" },
+    { name = "networkx", specifier = ">=3.0.0,<4" },
     { name = "numpy", specifier = ">=2.0.0,<3" },
-    { name = "pandas", specifier = ">=2.2.3,<3" },
-    { name = "scikit-learn", specifier = ">=1.7.2,<2" },
-    { name = "scipy", specifier = ">=1.15.2,<2" },
+    { name = "pandas", specifier = ">=2.2.2,<4" },
+    { name = "scikit-learn", specifier = ">=1.6.0,<2" },
+    { name = "scipy", specifier = ">=1.15.0,<2" },
 ]
 
 [package.metadata.requires-dev]

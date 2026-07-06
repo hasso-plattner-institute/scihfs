@@ -15,12 +15,12 @@ license = { file = "LICENSE"}
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "info-gain>=1.0.1,<2",
-    "networkx>=3.2.1,<4",
-    "numpy>=2.0.0,<3",
-    "pandas>=2.2.3,<3",
-    "scikit-learn>=1.7.2,<2",
-    "scipy>=1.15.2,<2",
+    "info-gain>=1.0.0,<2", # Will be taken out once re-implemented
+    "networkx>=3.0.0,<4", # Clean major boundary, could technically be >=2.7.0
+    "numpy>=2.0.0,<3", # Required for py3.13+ compatibility
+    "pandas>=2.2.2,<4",  # First version compatible with numpy 2.0+
+    "scikit-learn>=1.6.0,<2", # First inclusion of validate_data
+    "scipy>=1.15.0,<2",  # <1.15 has no 1D sparse slicing yet
 ]
 
 [dependency-groups]

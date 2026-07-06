@@ -85,9 +85,7 @@ _BOOL_DTYPE_XFAIL_REASON = (
 # while these are recorded as expected failures. With on_fail='raise' (the
 # default), any NEW failure outside this set fails the test as a real regression.
 #
-# All ALL_ESTIMATORS share this identical set. It is sklearn-version-specific:
-# generated against sklearn 1.8.0. If sklearn is upgraded the set may drift --
-# re-enumerate (XPASS raises if a listed check actually starts passing).
+# All estimators in ALL_ESTIMATORS share this identical set.
 _EXPECTED_FAILED_CHECKS = {
     name: _BOOL_DTYPE_XFAIL_REASON
     for name in (

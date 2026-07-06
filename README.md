@@ -1,6 +1,8 @@
 
 **IMPORTANT: This repository is under active development. Prior to the first release version, all contents are still preliminary and might change without notice.**
 
+[![SPEC 0 — Minimum Supported Dependencies](https://img.shields.io/badge/SPEC-0-green?labelColor=%23004811&color=%235CA038)](https://scientific-python.org/specs/spec-0000/)
+
 ====================================================
 scihfs - A library for hierarchical feature selection
 ====================================================

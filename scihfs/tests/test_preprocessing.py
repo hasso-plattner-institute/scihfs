@@ -1435,9 +1435,12 @@ def test_fit_no_columns_no_validation_error():
 def test_fit_rejects_duplicate_dataframe_column_names():
     """Duplicate DataFrame column names (feature_names_in_) are rejected.
 
-    validate_data captures DataFrame column labels verbatim into
-    feature_names_in_ without deduplication, so two columns sharing a name
-    auto-derive to the same hierarchy node. The fit-time guard catches it.
+    Either catched by scihfs at fit-time (raising "Duplicate
+    column->node mappings...") or already during validate_data with an
+    "Expected unique column names" ValueError (on scikit-learn >= 1.9 where
+    validate_data extracts feature names via narwhals).
+
+    Both are acceptable; as no duplicate columns make it through fit.
     """
     df = pd.DataFrame(
         np.array([[1, 0, 1], [0, 1, 1]], dtype=bool),
@@ -1445,5 +1448,5 @@ def test_fit_rejects_duplicate_dataframe_column_names():
     )
     graph = nx.DiGraph([("animal", "dog"), ("animal", "cat")])
     pre = HierarchicalPreprocessor(graph)
-    with pytest.raises(ValueError, match="Duplicate"):
+    with pytest.raises(ValueError, match="Duplicate|unique column names"):
         pre.fit(df)

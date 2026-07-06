@@ -56,3 +56,59 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  minimum-versions:
+    name: Run tests (for minimum supported versions)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python 3.10 (scihfs current lower bound)
+        run: uv python install 3.10
+
+      - name: Install minimum supported versions for direct dependencies
+        run: uv sync --resolution lowest-direct --python 3.10
+
+      - name: Run tests
+        run: uv run --no-sync pytest scihfs
+
+  maximum-stable-versions:
+    name: Run tests (maximum stable versions)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python 3.14 (scihfs current upper bound)
+        run: uv python install 3.14
+
+      - name: Install maximum stable versions for all dependencies
+        run: uv sync --upgrade --python 3.14
+
+      - name: Run tests
+        run: uv run --no-sync pytest scihfs

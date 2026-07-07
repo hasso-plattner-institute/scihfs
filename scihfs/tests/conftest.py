@@ -336,6 +336,106 @@ def result_shsel_selection():
 
 
 @pytest.fixture()
+def data_shsel_normalization():
+    # Parent (node 0) subsumes child (node 1); the child is the more relevant
+    # feature (IG 0.45 vs 0.22 nats). At threshold 0.7, un-normalized nats
+    # relevance judges the two "similar" (1 - |0.45 - 0.22| = 0.77 >= 0.7) and
+    # merges the more specific child away, leaving the less relevant parent.
+    # Normalizing the relevance to [0, 1] (paper-faithful) makes them dissimilar
+    # (1 - |1.0 - 0.49| = 0.49 < 0.7), so the child survives and is selected.
+    X = np.array(
+        [
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [1, 0],
+            [1, 1],
+        ],
+    ).astype(bool)
+    graph = nx.DiGraph([(0, 1)])
+    columns = get_columns_for_numpy_hierarchy(graph, X.shape[1])
+    hierarchy = nx.to_numpy_array(graph)
+    y = np.array([0, 0, 0, 0, 0, 1])
+    return (X, y, hierarchy, columns)
+
+
+@pytest.fixture()
+def result_shsel_normalization():
+    # Normalized (paper-faithful) SHSEL keeps the more relevant child (node 1).
+    result = np.array(
+        [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [1],
+        ],
+    )
+    support = np.array([False, True])
+    return (result, support)
+
+
+@pytest.fixture()
+def data_shsel_ig_average():
+    # Pruning-average discriminator (hierarchy 0->1->2 and 0->3). Nodes 2 and 3
+    # are removed in the initial selection. Whether their (higher) information
+    # gain is counted in node 0's per-path averages decides node 0's fate:
+    # "full_path" counts them and drops node 0; "survivors_only" ignores them
+    # (node 0's 0->3 path collapses to a stub) and keeps it.
+    X = np.array(
+        [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [1, 0, 0, 1],
+            [1, 1, 1, 0],
+        ],
+    ).astype(bool)
+    graph = nx.DiGraph([(0, 1), (1, 2), (0, 3)])
+    columns = get_columns_for_numpy_hierarchy(graph, X.shape[1])
+    hierarchy = nx.to_numpy_array(graph)
+    y = np.array([0, 0, 0, 1, 0, 1])
+    return (X, y, hierarchy, columns)
+
+
+@pytest.fixture()
+def result_shsel_ig_average_full_path():
+    # "full_path" (default): node 0 is below its full-path average, only node 1 survives.
+    result = np.array(
+        [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [1],
+        ],
+    )
+    support = np.array([False, True, False, False])
+    return (result, support)
+
+
+@pytest.fixture()
+def result_shsel_ig_average_survivors():
+    # "survivors_only": node 0's average ignores the removed nodes, so it survives too.
+    result = np.array(
+        [
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [1, 0],
+            [1, 1],
+        ],
+    )
+    support = np.array([True, True, False, False])
+    return (result, support)
+
+
+@pytest.fixture()
 def result_gtd_selection2():
     result = np.array(
         [

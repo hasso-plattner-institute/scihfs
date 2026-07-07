@@ -34,7 +34,9 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         self,
         hierarchy: np.ndarray = None,
         relevance_metric: str = "IG",
-        similarity_threshold=0.99,
+        similarity_threshold=None,
+        pruning: bool = True,
+        ig_average: str = "full_path",
         # HFE extension disabled:
         # use_hfe_extension=False,
         # preprocess_numerical_data=False,
@@ -51,10 +53,30 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                     The relevance metric to use in the initial selection
                     stage of the algorithm. The options ore "IG" for
                     information gain and "Correlation". Default is IG.
-        similarity_threshold : float
+        similarity_threshold : float or None
                     The similarity threshold to use in the initial selection
-                    stage of the algorithm. This can be a number between
-                    0 an 1. Default is 0.99.
+                    stage of the algorithm, a number between 0 and 1. If None
+                    (the default), a metric-specific default is used: 0.99 for
+                    the "IG" (information gain) metric and 0.6 for "Correlation" according to the original paper.
+                    The IG metric is normalized to the [0,1] interval, so it
+                    is independent of the logarithm base of the IG calculation.
+        pruning : bool
+                    Whether to run the pruning stage (Algorithm 2) after the
+                    initial selection (Algorithm 1). If False, only the initial
+                    selection is applied (the paper's initialSHSEL); if True both stages run (pruneSHSEL).
+                    Default is True (pruneSHSEL).
+        ig_average : str
+                    How the per-path information-gain average is computed in the
+                    pruning stage (Algorithm 2). "full_path" averages over every
+                    node on the path, including nodes already removed in the
+                    initial selection.
+                    "survivors_only" averages over the surviving features from Algorithm 1 only.
+                    In both cases only features surviving the initial selection
+                    in Algorithm 1 can be subsequently selected in Algorithm 2.
+                    This parameter is only relevant if pruning=True, and has been
+                    introduced here because the original paper's Algorithm 2 textual
+                    and pseudocode descriptions are divergent on this point.
+                    Default is "full_path".
 
         Notes
         -----
@@ -77,6 +99,8 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         super().__init__(hierarchy)
         self.relevance_metric = relevance_metric
         self.similarity_threshold = similarity_threshold
+        self.pruning = pruning
+        self.ig_average = ig_average
         # HFE extension disabled:
         # self.use_hfe_extension = use_hfe_extension
         # self.preprocess_numerical_data = preprocess_numerical_data
@@ -137,13 +161,18 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         #     X = self._preprocess(X)
         paths = get_paths(self._hierarchy_graph, reverse=True)
         self._inital_selection(paths, X)
-        self._pruning(paths)
+        if self.pruning:
+            self._pruning(paths)
         # HFE extension disabled:
         # if self.use_hfe_extension:
         #     self._leaf_filtering()
 
     def _inital_selection(self, paths, X):
         """First part of the feature selection algorithm."""
+        if self.similarity_threshold is None:
+            self._effective_threshold = 0.99 if self.relevance_metric == "IG" else 0.6
+        else:
+            self._effective_threshold = self.similarity_threshold
         nodes_to_remove = set()
 
         for path in paths:
@@ -161,7 +190,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                         X[:, self._columns.index(parent_node)],
                         X[:, self._columns.index(node)],
                     )
-                if similarity >= self.similarity_threshold:
+                if similarity >= self._effective_threshold:
                     nodes_to_remove.add(node)
 
         self.representatives_ = [
@@ -170,16 +199,21 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
 
     def _pruning(self, paths):
         """Second part of the feature selection algorithm"""
+        if self.ig_average not in ("full_path", "survivors_only"):
+            raise ValueError(
+                f"Unknown ig_average {self.ig_average!r}; "
+                'expected "full_path" or "survivors_only".'
+            )
         updated_representatives = []
 
         for path in paths:
             path.remove("ROOT")
+            if self.ig_average == "full_path":
+                average_nodes = path
+            else:
+                average_nodes = [node for node in path if node in self.representatives_]
             average_relevance = statistics.mean(
-                [
-                    self._relevance_values[node]
-                    for node in path
-                    if node in self.representatives_
-                ]
+                [self._relevance_values[node] for node in average_nodes]
             )
             average_relevance = round(average_relevance, 6)
             for node in path:
@@ -198,6 +232,11 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
 
     def _calculate_ig_relevance(self, X, y):
         values = information_gain(X, y)
+        # Normalize the relevance to [0, 1] by dividing by the maximum, matching
+        # the paper's use of RapidMiner's normalized information-gain weights.
+        max_relevance = max(values)
+        if max_relevance > 0:
+            values = [round(value / max_relevance, 6) for value in values]
         self._relevance_values = dict(zip(self._columns, values))
 
     # The following are all HFE extension methods.

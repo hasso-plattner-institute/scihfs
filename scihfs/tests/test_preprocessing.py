@@ -6,8 +6,10 @@ import pandas as pd
 import pytest
 import scipy.sparse as sp
 
-from scihfs.data_utils import create_mapping_columns_to_nodes
-from scihfs.helpers import get_columns_for_numpy_hierarchy
+from scihfs.helpers import (
+    create_mapping_columns_to_nodes,
+    get_columns_for_numpy_hierarchy,
+)
 from scihfs.preprocessing import ColumnNotInHierarchyWarning, HierarchicalPreprocessor
 
 

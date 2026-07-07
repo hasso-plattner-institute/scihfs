@@ -3,11 +3,39 @@ Different metric functions.
 """
 
 import numpy as np
-from info_gain.info_gain import info_gain, info_gain_ratio
 from numpy.linalg import norm
 from scipy import sparse
+from sklearn.metrics import mutual_info_score
 
 from scihfs.pyitlib import information_mutual_conditional as imc
+
+
+def _information_gain(feature: np.ndarray, target: np.ndarray) -> float:
+    """Information gain (IG) of a ``feature`` (with respect to the ``target``), equivalent to the 'mutual information' (MI) and 'information measure' (IM).
+
+    Def.: ``IG(feature; target) = H(target) - H(target | feature)``
+
+    H(x) [H(x | y)] is the (conditional) entropy of x (given y).
+    The terms "feature" / "attribute", and "target" / "class" are used interchangeably.
+    """
+    return mutual_info_score(feature, target)
+
+
+def _gain_ratio(feature: np.ndarray, target: np.ndarray) -> float:
+    """Gain ratio (GR) of a ``feature`` (with respect to the ``target``).
+
+    Def.: ``GR(feature) = IG(feature; target) / H(feature)``
+
+    H(x) is the entropy of x, equivalent to IG(x; x). IG is the information gain.
+    The terms "feature" / "attribute", and "target" / "class" are used interchangeably.
+
+    A constant feature carries no information and cannot be split
+    (``H(feature) == 0``), so its gain ratio is defined as ``0``.
+    """
+    feature_entropy = mutual_info_score(feature, feature)
+    if feature_entropy == 0:
+        return 0.0
+    return _information_gain(feature, target) / feature_entropy
 
 
 def lift(data, labels):
@@ -71,6 +99,10 @@ def information_gain(data, labels):
     ig_values : list, length n_features
                 The information gain values for all features.
                 List of floats.
+
+    Notes
+    -----
+    For the information gain definition, see :func:`_information_gain`.
     """
     ig_values = []
     if sparse.issparse(data):
@@ -86,7 +118,7 @@ def information_gain(data, labels):
             column = column.toarray().ravel()
         else:
             column = data[:, column_index]
-        ig = round(info_gain(column, labels), 6)
+        ig = round(_information_gain(column, labels), 6)
         ig_values.append(ig)
     return ig_values
 
@@ -147,6 +179,10 @@ def gain_ratio(data, labels):
     gr_values : list, length n_features
                 A list of floats containing the information gain
                 values for each feature in the dataset.
+
+    Notes
+    -----
+    For the gain ratio definition, see :func:`_gain_ratio`.
     """
     gr_values = []
     if sparse.issparse(data):
@@ -162,7 +198,7 @@ def gain_ratio(data, labels):
             column = column.toarray().ravel()
         else:
             column = data[:, column_index]
-        gr = info_gain_ratio(column, labels)
+        gr = _gain_ratio(column, labels)
         gr_values.append(gr)
     return gr_values
 

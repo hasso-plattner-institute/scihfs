@@ -1,9 +1,10 @@
+from collections import Counter
 from fractions import Fraction
 
 import networkx as nx
 import numpy as np
 import pytest
-from info_gain.info_gain import info_gain, info_gain_ratio
+from scipy.stats import entropy
 
 from scihfs.helpers import (
     add_virtual_root_node,
@@ -12,6 +13,33 @@ from scihfs.helpers import (
     shrink_dag,
 )
 from scihfs.metrics import gain_ratio, information_gain
+
+# ---------------------------------------------------------------------------
+# Independent reference oracles for the information-gain and gain ratio metrics, reproducing the
+# algorithm of the (now-removed) unmaintained ``info_gain`` package. Kept local
+# to the test so it pins scihfs.metrics against an external definition.
+
+# Original code: Copyright (c) 2018 Thijsvanede under MIT License.
+
+
+def _reference_information_gain(examples: np.ndarray, attribute: np.ndarray) -> float:
+    examples_entropy = entropy(list(Counter(examples).values()))
+    conditional_entropy = 0.0
+    for value in set(attribute):
+        subset = [e for e, a in zip(examples, attribute) if a == value]
+        probability = len(subset) / len(examples)
+        conditional_entropy += probability * entropy(list(Counter(subset).values()))
+    return examples_entropy - conditional_entropy
+
+
+def _reference_information_gain_ratio(feature: np.ndarray, target: np.ndarray) -> float:
+    intrinsic_value = entropy(list(Counter(feature).values()))
+    if intrinsic_value == 0:
+        return 0.0
+    return _reference_information_gain(feature, target) / intrinsic_value
+
+
+# ---------------------------------------------------------------------------
 
 
 def test_shrink_dag():
@@ -92,15 +120,20 @@ def test_relevance(lazy_data2):
 def test_information_gain(data2):
     X, y, _, _ = data2
     ig = information_gain(X, y)
-    ig_expected = [round(info_gain(X[:, i], y), 6) for i in range(len(X))]
+    ig_expected = [
+        round(_reference_information_gain(X[:, i], y), 6) for i in range(len(X))
+    ]
     assert ig == ig_expected
 
 
 def test_gain_ratio(data2):
     X, y, _, _ = data2
     gr = gain_ratio(X, y)
-    gr_expected = [info_gain_ratio(X[:, i], y) for i in range(len(X))]
-    assert gr == gr_expected
+    # Oracle is the scipy/Counter reference above -- deliberately independent of
+    # the sklearn.mutual_info_score used in gain_ratio, so this is a genuine
+    # cross-check. The two implementations agree only to floating-point noise.
+    gr_expected = [_reference_information_gain_ratio(X[:, i], y) for i in range(len(X))]
+    assert gr == pytest.approx(gr_expected)
 
 
 @pytest.mark.parametrize(

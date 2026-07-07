@@ -7,8 +7,6 @@ from numpy.linalg import norm
 from scipy import sparse
 from sklearn.metrics import mutual_info_score
 
-from scihfs.pyitlib import information_mutual_conditional as imc
-
 
 def _information_gain(feature: np.ndarray, target: np.ndarray) -> float:
     """Information gain (IG) of a ``feature`` (with respect to the ``target``), equivalent to the 'mutual information' (MI) and 'information measure' (IM).
@@ -123,8 +121,45 @@ def information_gain(data, labels):
     return ig_values
 
 
+# ---------------------------------------------------------------------------
+# The two functions below replace the pyitlib module (removed
+# to keep dependency list short and because of lack of maintenance).
+# The following code has been LLM-generated; it mirrors the estimation
+# approach of pyitlib's information_mutual_conditional and was verified
+# to be numerically equivalent to it before the module's removal.
+# Corresponding unit tests were added to test_metrics.py with the dit library
+# as an oracle to verify the correctness of this implementation.
+
+# Original implementation: pyitlib, Copyright (c) 2016 Peter Foster under MIT
+# License, https://github.com/pafoster/pyitlib
+
+
+def _joint_entropy(variables) -> float:
+    """Joint Shannon entropy (in bits) of one or more discrete variables.
+
+    Parameters
+    ----------
+    variables : sequence of array-like, each shape (n_samples,)
+        Aligned realisations of the discrete random variables.
+
+    Returns
+    ----------
+    float : The joint entropy in bits.
+    """
+    observations = np.stack(variables)
+    _, counts = np.unique(observations, axis=1, return_counts=True)
+    probabilities = counts / observations.shape[-1]
+    return float(-np.sum(probabilities * np.log2(probabilities)))
+
+
 def conditional_mutual_information(node1, node2, y):
-    """Calculates conditional mutual information for two features using the dit library.
+    """Calculates conditional mutual information for two features given the target.
+
+    Def.: ``I(X; Y | Z) = H(X, Z) + H(Y, Z) - H(X, Y, Z) - H(Z)``
+
+    H(...) is the joint entropy (base 2). Estimated via maximum
+    likelihood from the observed frequencies; all inputs must be fully
+    observed (there is no missing-data placeholder handling).
 
     Parameters
     ----------
@@ -139,7 +174,15 @@ def conditional_mutual_information(node1, node2, y):
     ----------
     float : The conditional mutual information value.
     """
-    return imc(node1, node2, y)
+    return (
+        _joint_entropy((node1, y))
+        + _joint_entropy((node2, y))
+        - _joint_entropy((node1, node2, y))
+        - _joint_entropy((y,))
+    )
+
+
+# ---------------------------------------------------------------------------
 
 
 def cosine_similarity(i: np.ndarray, j: np.ndarray):

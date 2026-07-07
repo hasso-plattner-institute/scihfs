@@ -45,12 +45,12 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
         self.use_original_implementation = use_original_implementation
 
     def fit(self, X, y, columns=None):
-        """Fitting function that sets self.representatives\_.
+        """Fitting function that sets ``self.representatives_``.
 
         The number of columns in X and the number of nodes in the hierarchy
         are expected to be the same and each column should be mapped to
         exactly one node in the hierarchy with the columns parameter.
-        After fitting self.representatives\_ includes the names of all
+        After fitting ``self.representatives_`` includes the names of all
         nodes from the hierarchy that are left after feature selection.
         The features are selected by choosing the most
         representative nodes from each path and filtering these nodes further

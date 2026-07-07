@@ -54,13 +54,13 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
         # self.dataset_type = dataset_type
 
     def fit(self, X, y, columns=None):
-        """Fitting function that sets self.representatives\_.
+        """Fitting function that sets ``self.representatives_``.
 
         Calls the function performing feature selection algorithm.
         The number of columns in X and the number of nodes in the hierarchy
         are expected to be the same and each column should be mapped to
         exactly one node in the hierarchy with the columns parameter.
-        After fitting self.representatives\_ includes the names of all
+        After fitting ``self.representatives_`` includes the names of all
         nodes from the hierarchy that are left after feature selection.
         The features are selected comparing different sets of features
         with a fitness function.
@@ -233,13 +233,13 @@ class TopDownSelector(HillClimbingSelector):
         super().__init__(hierarchy, alpha=alpha)
 
     def fit(self, X, y, columns=None):
-        """Fitting function that sets self.representatives\_.
+        """Fitting function that sets ``self.representatives_``.
 
         Calls the function performing feature selection algorithm.
         The number of columns in X and the number of nodes in the hierarchy
         are expected to be the same and each column should be mapped to
         exactly one node in the hierarchy with the columns parameter.
-        After fitting self.representatives\_ includes the names of all
+        After fitting ``self.representatives_`` includes the names of all
         nodes from the hierarchy that are left after feature selection.
         The features are selected by going through the feature graph from
         top to bottom, replacing parent nodes with their children and
@@ -407,13 +407,13 @@ class BottomUpSelector(HillClimbingSelector):
         self.k = k
 
     def fit(self, X, y, columns=None):
-        """Fitting function that sets self.representatives\_.
+        """Fitting function that sets ``self.representatives_``.
 
         Calls the function performing feature selection algorithm.
         The number of columns in X and the number of nodes in the hierarchy
         are expected to be the same and each column should be mapped to
         exactly one node in the hierarchy with the columns parameter.
-        After fitting self.representatives\_ includes the names of all
+        After fitting ``self.representatives_`` includes the names of all
         nodes from the hierarchy that are left after feature selection.
         The features are selected by going through the feature graph from
         bottom to top, replacing child nodes with their parent node and

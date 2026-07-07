@@ -13,7 +13,7 @@ from scihfs.helpers import (
     get_relevance,
     shrink_dag,
 )
-from scihfs.metrics import gain_ratio, information_gain
+from scihfs.metrics import conditional_mutual_information, gain_ratio, information_gain
 
 # ---------------------------------------------------------------------------
 # Independent reference oracles for the information-gain and gain ratio metrics, reproducing the
@@ -174,3 +174,58 @@ def test_create_mapping_columns_to_nodes(hierarchy, dataframe, request):
     nodes = list(hierarchy.nodes)
     for index, node in enumerate(dataframe.columns):
         assert nodes[mapping[index]] == node
+
+
+# ---------------------------------------------------------------------------
+# External oracle for the implementation of conditional mutual
+# information is the actively maintained ``dit`` package
+# (dev-only dependency). dit requires Python 3.11+, so the
+# test is skipped on older interpreters.
+# ---------------------------------------------------------------------------
+
+
+def test_conditional_mutual_information(data2):
+    dit = pytest.importorskip("dit")
+    from dit.multivariate import coinformation
+
+    def reference_cmi(x, y, z):
+        """I(X;Y|Z) in bits via dit, from the empirical (ML) joint distribution."""
+        outcome_counts = Counter(zip(x.tolist(), y.tolist(), z.tolist()))
+        distribution = dit.Distribution(
+            list(outcome_counts), [c / len(x) for c in outcome_counts.values()]
+        )
+        return coinformation(distribution, [[0], [1]], [2])
+
+    # All ordered feature pairs of the real fixture data, conditioned on the target
+    # (i == j included: CMI(X;X|Z) is the conditional entropy H(X|Z)).
+    X, y, _, _ = data2
+    cases = [(X[:, i], X[:, j], y) for i in range(X.shape[1]) for j in range(X.shape[1])]
+
+    # Degenerate inputs: constants, identical/complementary features, single sample.
+    ones = np.ones(10, dtype=int)
+    alternating = np.array([0, 1] * 5)
+    cases += [
+        (ones, ones, ones),
+        (alternating, alternating, ones),
+        (alternating, 1 - alternating, ones),
+        (alternating, ones, alternating),
+        (np.array([0]), np.array([1]), np.array([2])),
+    ]
+
+    # Seeded random draws over varying sample counts, alphabet sizes, and dtypes.
+    rng = np.random.default_rng(42)
+    for _ in range(25):
+        n = int(rng.integers(2, 60))
+        node1 = rng.integers(0, int(rng.integers(2, 5)), n)
+        node2 = rng.integers(0, int(rng.integers(2, 5)), n)
+        target = rng.integers(0, int(rng.integers(2, 4)), n)
+        if rng.random() < 0.5:
+            node1 = (node1 % 2).astype(bool)
+            node2 = (node2 % 2).astype(bool)
+        cases.append((node1, node2, target))
+
+    for node1, node2, target in cases:
+        expected = reference_cmi(node1, node2, target)
+        assert conditional_mutual_information(node1, node2, target) == pytest.approx(
+            expected, abs=1e-12
+        )

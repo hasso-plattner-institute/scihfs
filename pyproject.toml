@@ -17,7 +17,6 @@ requires-python = ">=3.10"
 dependencies = [
     "networkx>=3.0.0,<4", # Clean major boundary, could technically be >=2.7.0
     "numpy>=2.0.0,<3", # Required for py3.13+ compatibility
-    "pandas>=2.2.2,<4",  # First version compatible with numpy 2.0+
     "scikit-learn>=1.6.0,<2", # First inclusion of validate_data
     "scipy>=1.15.0,<2",  # <1.15 has no 1D sparse slicing yet
 ]
@@ -40,7 +39,9 @@ dev = [
     "pytest-cov>=6.0.0,<7",
     "twine>=6.1.0,<7",
     "tomli>=2.2.1,<3",
+    "pandas>=2.2.2,<4",  # First version compatible with numpy 2.0+
     "polars>=1.0,<2",
+    "dit>=2.1,<3 ; python_version >= '3.11'",
 ]
 
 [build-system]
@@ -55,7 +56,6 @@ exclude = '''
     | \.venv
     | build
     | dist
-    | pyitlib.py
 )/
 '''
 
@@ -64,5 +64,5 @@ profile = "black"
 line_length = 90
 multi_line_output = 3
 include_trailing_comma = true
-known_third_party = ["numpy", "pandas"]
+known_third_party = ["dit", "numpy", "pandas"]
 skip = [".venv", "build", "dist"]

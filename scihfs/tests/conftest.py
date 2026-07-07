@@ -102,6 +102,30 @@ def data2_2():
 
 
 @pytest.fixture()
+def data_gtd_heuristic():
+    # A 2-node chain (parent 0 -> child 1) on which gain ratio and information
+    # gain rank the two nodes oppositely, so GTD's heuristic_function switch
+    # yields different selections. The child column is a subset of the parent's
+    # (a valid hierarchy). GR favours the low-entropy child (small intrinsic
+    # value); IG favours the parent (higher absolute mutual information).
+    X = np.array(
+        [
+            [0, 0],
+            [0, 0],
+            [1, 0],
+            [1, 0],
+            [1, 1],
+        ],
+    ).astype(bool)
+    edges = [(0, 1)]
+    hierarchy = nx.DiGraph(edges)
+    columns = get_columns_for_numpy_hierarchy(hierarchy, X.shape[1])
+    hierarchy = nx.to_numpy_array(hierarchy)
+    y = np.array([0, 0, 0, 1, 1])
+    return (X, y, hierarchy, columns)
+
+
+@pytest.fixture()
 def data3(hierarchy3):
     X = np.array(
         [
@@ -343,16 +367,53 @@ def result_gtd_selection2_1():
 
 @pytest.fixture()
 def result_gtd_selection2_2():
+    # DAG data2_2 (edge 4->3): under the paper's gain ratio, node 3 outranks its
+    # ancestor 4 (which is penalised for higher entropy), so 4 is pruned and both
+    # traversal modes select {2, 3}.
     result = np.array(
         [
-            [0, 1],
+            [0, 0],
+            [1, 1],
             [1, 0],
-            [1, 0],
-            [0, 1],
+            [0, 0],
             [0, 0],
         ],
     )
-    support = np.array([False, False, True, False, True])
+    support = np.array([False, False, True, True, False])
+    return (result, support)
+
+
+@pytest.fixture()
+def result_gtd_heuristic_gr():
+    # heuristic_function="GR" on data_gtd_heuristic: GR ranks the child (node 1)
+    # above its parent, so the leaf is selected and its ancestor pruned.
+    result = np.array(
+        [
+            [0],
+            [0],
+            [0],
+            [0],
+            [1],
+        ],
+    )
+    support = np.array([False, True])
+    return (result, support)
+
+
+@pytest.fixture()
+def result_gtd_heuristic_ig():
+    # heuristic_function="IG" on data_gtd_heuristic: IG ranks the parent (node 0)
+    # above its child, so the parent is selected and its descendant pruned.
+    result = np.array(
+        [
+            [0],
+            [0],
+            [1],
+            [1],
+            [1],
+        ],
+    )
+    support = np.array([True, False])
     return (result, support)
 
 

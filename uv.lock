@@ -840,15 +840,6 @@ wheels = [
 ]
 
 [[package]]
-name = "info-gain"
-version = "1.0.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/74/da/b7ac47b517b47ca3f0bcf87a8ed3f17c2b1978c4df9f000e0ac577b2106e/info_gain-1.0.1.tar.gz", hash = "sha256:e8159d09c58e7302507cea9ebc8e6b1c04310e7f9b30a99f831554d4f772e9c1", size = 2977, upload-time = "2018-07-16T09:00:52.788Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/41/53/198b263ac9fef93095d21a315007234aff4061132fa95f802ac32c7bfff9/info_gain-1.0.1-py3-none-any.whl", hash = "sha256:a4f1916be4b0eb51a2389f583fc0490b240e867aadf76dbd2898462270f2be9e", size = 3290, upload-time = "2018-07-16T09:00:51.762Z" },
-]
-
-[[package]]
 name = "iniconfig"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2441,7 +2432,6 @@ name = "scihfs"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "info-gain" },
     { name = "networkx", version = "3.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -2476,7 +2466,6 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "info-gain", specifier = ">=1.0.0,<2" },
     { name = "networkx", specifier = ">=3.0.0,<4" },
     { name = "numpy", specifier = ">=2.0.0,<3" },
     { name = "pandas", specifier = ">=2.2.2,<4" },

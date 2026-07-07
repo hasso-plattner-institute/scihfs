@@ -15,7 +15,6 @@ license = { file = "LICENSE"}
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "info-gain>=1.0.0,<2", # Will be taken out once re-implemented
     "networkx>=3.0.0,<4", # Clean major boundary, could technically be >=2.7.0
     "numpy>=2.0.0,<3", # Required for py3.13+ compatibility
     "pandas>=2.2.2,<4",  # First version compatible with numpy 2.0+

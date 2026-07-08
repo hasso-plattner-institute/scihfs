@@ -3,21 +3,22 @@ Base class for estimators for eager hierarchical feature selection.
 """
 
 import warnings
+from abc import abstractmethod
 
 import numpy as np
 from sklearn.feature_selection import SelectorMixin
-from sklearn.utils.validation import validate_data
 
-from scihfs.helpers import check_bool_dtype
 from scihfs.selectors import HierarchicalEstimator
 
 
 class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
-    """Base class for eager feature selectors using hierarchical data.
+    """Abstract base class for eager feature selectors using hierarchical data.
 
     Eager selectors are supervised: ``fit`` requires a target ``y``.
-    Subclasses implement their selection algorithm in ``_fit``, which runs
-    after the single input-validation pass and the hierarchy setup.
+    Subclasses implement their selection algorithm in ``_select``, which
+    runs after the single input-validation pass and the hierarchy setup
+    and fills ``representatives_`` with the names of all hierarchy nodes
+    that are left after feature selection.
     """
 
     def __init__(self, hierarchy: np.ndarray = None):
@@ -37,68 +38,27 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
         tags.target_tags.required = True
         return tags
 
-    def fit(self, X, y, columns=None):
-        """Fitting function that sets ``self.representatives_``.
+    def _fit(self, X, y):
+        """Runs the eager feature selection on the validated X and y.
 
-        X and y are validated exactly once on this path, so
-        ``feature_names_in_`` captured from a DataFrame input survives
-        fitting. The hierarchy is then prepared and the subclass's
-        selection algorithm (``_fit``) is run.
-
-        The number of columns in X and the number of nodes in the hierarchy
-        are expected to be the same and each column should be mapped to
-        exactly one node in the hierarchy with the columns parameter.
-        After fitting ``self.representatives_`` includes the names of all
-        nodes from the hierarchy that are left after feature selection.
-
-        Parameters
-        ----------
-        X : {array-like, sparse matrix}, shape (n_samples, n_features)
-            The training input samples.
-        y : array-like, shape (n_samples,)
-            The target values. An array of int.
-        columns: list or None, length n_features
-            The mapping from the hierarchy graph's nodes to the columns in X.
-            A list of ints. If this parameter is None the columns in X and
-            the corresponding nodes in the hierarchy are expected to be in the
-            same order.
-
-        Raises
-        ------
-        TypeError
-            If the passed hierarchy is None.
-        ValueError
-            If X is not bool-dtype. Numerical inputs may be supported in the future.
-
-        Returns
-        -------
-        self : object
-            Returns self.
+        Checks the hierarchy against X, resets ``representatives_`` and
+        delegates to the subclasses' ``_select``.
         """
-        if self.hierarchy is None:
-            raise TypeError("Hierarchy is None but is required.")
-        X, y = validate_data(self, X, y, accept_sparse=True)
-        check_bool_dtype(X)
-        self._fit_hierarchy(columns)
         self._check_hierarchy_X()
 
         # self.representatives_ includes all node names for selected nodes.
         # self._columns maps them to the respective column in X.
         self.representatives_ = []
-        self._fit(X, y)
+        self._select(X, y)
 
-        self.is_fitted_ = True
-        return self
+    @abstractmethod
+    def _select(self, X, y):
+        """The subclass's feature selection algorithm.
 
-    def _fit(self, X, y):
-        """Hook for the subclasses' feature selection algorithms.
-
-        Called by ``fit`` with the validated X and y after the hierarchy
-        setup, and expected to fill ``self.representatives_`` with the
-        names of the selected hierarchy nodes. The base implementation
-        here thus intentionally selects nothing.
+        Called with the validated X and y after the hierarchy setup, and
+        expected to fill ``self.representatives_`` with the names of the
+        selected hierarchy nodes.
         """
-        pass
 
     def _get_support_mask(self):
         # Implements _get_support_mask method from SelectorMixin to

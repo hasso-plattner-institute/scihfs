@@ -5,7 +5,9 @@ their properties.
 
 - ``ALL_ESTIMATORS`` - they expose the full sklearn estimator surface, and can
     be run through the sklearn conformance test suite. (Union of the eager and
-    lazy selectors, plus the base classes and the preprocessor.)
+    lazy selectors, plus the base classes and the preprocessor. The abstract
+    eager base is represented by the minimal concrete stub
+    ``_MinimalEagerSelector``.)
 - ``EAGER_SELECTORS`` - single pass fit().
 - ``LAZY_SELECTORS`` - fit_selector() with both X_train and X_test to fit per
     test instance.
@@ -34,10 +36,24 @@ from scihfs.selectors import (
     TSELSelector,
 )
 
+
+class _MinimalEagerSelector(EagerHierarchicalFeatureSelector):
+    """Minimal concrete eager selector for testing the abstract eager base.
+
+    ``EagerHierarchicalFeatureSelector`` cannot be instantiated directly
+    (``_select`` is abstract); this stub implements the hook as "select
+    nothing" so the base's estimator surface can still be exercised.
+    Might be moved to the eager base's test module or removed entirely in the future.
+    """
+
+    def _select(self, X, y):
+        pass
+
+
 ALL_ESTIMATORS = [
     TSELSelector,
     HierarchicalEstimator,
-    EagerHierarchicalFeatureSelector,
+    _MinimalEagerSelector,
     HierarchicalPreprocessor,
     TopDownSelector,
     SHSELSelector,

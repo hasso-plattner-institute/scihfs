@@ -52,17 +52,21 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         return tags
 
     def fit(self, X, y=None, columns=None):
-        """Fitting function that prepares the hierarchy and _columns parameter.
+        """Template fitting function shared by all estimators of this family.
 
-        The hierarchy is transformed to a nx.DiGraph with a virtual root node
-        named "ROOT" that connects all parts of the graph to one component.
+        X (and y, when given) are validated exactly once on this path, so
+        ``feature_names_in_`` captured from a DataFrame input survives
+        fitting. The hierarchy is then transformed to a nx.DiGraph with a
+        virtual root node named "ROOT" that connects all parts of the graph
+        to one component, and the subclass's ``_fit`` hook is run.
 
         Parameters
         ----------
         X : {array-like, sparse matrix}, shape (n_samples, n_features)
             The training input samples.
         y : array-like, shape (n_samples,) or None
-            The target values. Only necessary for some estimators.
+            The target values. Required by the supervised subclasses (the
+            eager selectors); ignored by the purely structural transformers.
         columns: list or None
             The mapping from the hierarchy graph's nodes to the columns in X.
             A list of ints. If this parameter is None the columns in X and
@@ -74,7 +78,8 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         TypeError
             If the passed hierarchy is None.
         ValueError
-            If X is not bool-dtype. Numerical inputs may be supported in the future.
+            If X is not bool-dtype (numerical inputs may be supported in the
+            future), or if y is None on a supervised subclass.
 
         Returns
         -------
@@ -83,11 +88,17 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         """
         if self.hierarchy is None:
             raise TypeError("Hierarchy is None but is required.")
-        X = validate_data(self, X, accept_sparse=True)
+        if y is None:
+            # validate_data raises here for supervised subclasses
+            # (target_tags.required) and validates X alone otherwise.
+            X = validate_data(self, X, y, accept_sparse=True)
+        else:
+            X, y = validate_data(self, X, y, accept_sparse=True)
         check_bool_dtype(X)
         self._fit_hierarchy(self._resolve_columns(columns))
         self._fit(X, y)
 
+        self.is_fitted_ = True
         return self
 
     def _resolve_columns(self, columns):

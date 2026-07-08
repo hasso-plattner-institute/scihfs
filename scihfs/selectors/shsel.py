@@ -104,7 +104,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         # self.use_hfe_extension = use_hfe_extension
         # self.preprocess_numerical_data = preprocess_numerical_data
 
-    def _fit(self, X, y):
+    def _select(self, X, y):
         """The actual SHSEL feature selection algorithm."""
         # HFE extension disabled:
         # if self.use_hfe_extension and self.relevance_metric != "Correlation":

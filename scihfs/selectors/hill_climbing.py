@@ -53,9 +53,9 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
         self.alpha = alpha
         # self.dataset_type = dataset_type
 
-    def _fit(self, X, y):
+    def _select(self, X, y):
         """The feature selection algorithm framework which delegates
-        the actual selection to ``_hill_climb``)."""
+        the actual selection to ``_hill_climb``."""
         if sparse.issparse(X):
             X = X.tocsr()
         self.y_ = y

@@ -51,7 +51,7 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
         self.iterate_first_level = iterate_first_level  # TODO: warning for DAG
         self.heuristic_function = heuristic_function
 
-    def _fit(self, X, y):
+    def _select(self, X, y):
         """The actual GTD feature selection algorithm."""
         if issparse(X):
             X = X.tocsr()

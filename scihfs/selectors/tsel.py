@@ -43,7 +43,7 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
         super().__init__(hierarchy)
         self.use_original_implementation = use_original_implementation
 
-    def _fit(self, X, y):
+    def _select(self, X, y):
         """The actual TSEL feature selection algorithm."""
         paths = get_paths(self._hierarchy_graph)
         lift_values = lift(X, y)

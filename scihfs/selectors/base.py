@@ -92,9 +92,10 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
     def _fit_hierarchy(self, columns):
         """Set ``_columns`` and build ``_hierarchy_graph`` from a validated X.
 
-        Split out from ``fit`` so that subclasses performing their own input
-        validation (e.g. ``HierarchicalPreprocessor``, which must read
-        ``feature_names_in_`` before any second ``validate_data`` call would
+        Split out from ``fit`` so that subclasses running their own single
+        validation pass (``HierarchicalPreprocessor`` and
+        ``EagerHierarchicalFeatureSelector``, which must keep
+        ``feature_names_in_`` alive -- a second ``validate_data`` call would
         drop it) can reuse the hierarchy setup without re-validating X.
 
         Assumes ``validate_data`` has already run and set ``n_features_in_``.

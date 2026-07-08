@@ -58,27 +58,19 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
         # self.representatives_ includes all node names for selected nodes.
         # self._columns maps them to the respective column in X.
         self.representatives_ = []
+        self._fit(X, y)
 
         return self
 
-    def transform(self, X):
-        """Reduce X to the selected features.
+    def _fit(self, X, y):
+        """Hook for the subclasses' feature selection algorithms.
 
-        Extends the transform method from SelectorMixin. Only selected
-        columns from X are in the output dataset.
-
-        Parameters
-        ----------
-        X : array of shape (n_samples, n_features)
-            The input samples.
-
-        Returns
-        -------
-        X : array of shape [n_samples, n_selected_features]
-            The input samples with only the selected features.
+        Called by ``fit`` with the validated X and y after the hierarchy
+        setup, and expected to fill ``self.representatives_`` with the
+        names of the selected hierarchy nodes. The base implementation
+        here thus intentionally selects nothing.
         """
-        X = validate_data(self, X, accept_sparse="csr", reset=False)
-        return super().transform(X)
+        pass
 
     def _get_support_mask(self):
         # Implements _get_support_mask method from SelectorMixin to

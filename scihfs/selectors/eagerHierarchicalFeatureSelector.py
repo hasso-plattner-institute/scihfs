@@ -19,6 +19,13 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
     runs after the single input-validation pass and the hierarchy setup
     and fills ``representatives_`` with the names of all hierarchy nodes
     that are left after feature selection.
+
+    A DataFrame passed to ``fit`` together with a named ``nx.DiGraph``
+    hierarchy auto-derives the column->node mapping from the feature
+    names -- in this specific (but encouraged) case the ``columns`` argument
+    can be omitted. Feature names without a matching node raise ``ValueError``
+    (unlike the ``HierarchicalPreprocessor``, a selector cannot extend
+    the hierarchy).
     """
 
     def __init__(self, hierarchy: np.ndarray = None):

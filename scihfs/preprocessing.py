@@ -84,19 +84,17 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         """
         self.hierarchy = hierarchy
 
-    def _resolve_columns(self, columns):
-        """Auto-derive the columns mapping from DataFrame feature names.
+    def _handle_orphan_features(self, orphan_names):
+        """Tolerate orphaned DataFrame feature names.
 
-        Overrides the base hook: when ``columns`` was not supplied and X
-        was a DataFrame (``feature_names_in_`` has been set automatically
-        in ``validate_data``), the column->node mapping is derived from
-        the captured feature names.
+        Overrides the base hook that would raise in case of
+        orphan columns in the dataset.
+        With this no-op, the orphans stay mapped to ``-1``
+        and ``_extend_dag`` adds a node for each of them under
+        ROOT (with a ``ColumnNotInHierarchyWarning``).
+        This behaviour is strictly limited to the
+        HierarchicalPreprocessor.
         """
-        # Auto-derivation is preprocessor-specific FOR NOW – this behaviour
-        # will likely change in the future.
-        if columns is None and getattr(self, "feature_names_in_", None) is not None:
-            columns = self._auto_derive_columns()
-        return columns
 
     def _fit(self, X, y):
         """Prepares the hierarchy graph and columns mapping for ``transform``.
@@ -119,42 +117,6 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         self._find_missing_columns()
         self._adjust_node_names()
         self._build_ancestor_closure()
-
-    def _auto_derive_columns(self):
-        """Derive the column->node mapping from DataFrame feature names.
-
-        Called from ``_resolve_columns`` when X is a pandas ``DataFrame`` (so
-        ``feature_names_in_`` is set) and ``columns`` was not supplied. Each
-        captured feature name is looked up against the hierarchy's node names;
-        names with no matching node map to ``-1`` (handled downstream by
-        ``_extend_dag``, which adds them under ROOT with a warning).
-
-        Node names are compared as strings because scikit-learn coerces
-        DataFrame column labels to ``str`` in ``feature_names_in_``. This lets
-        a ``DiGraph`` with integer node names still match a DataFrame whose
-        (string) column labels equal those integers.
-
-        Returns
-        -------
-        columns : list of int
-            The derived column->node-position mapping, in feature order.
-
-        Raises
-        ------
-        ValueError
-            If the hierarchy is not a ``DiGraph`` (an adjacency ndarray has no
-            node names to match against).
-        """
-        if not isinstance(self.hierarchy, nx.DiGraph):
-            raise ValueError(
-                "Cannot auto-derive columns from DataFrame feature names "
-                "because hierarchy is an ndarray (no node names). Either pass "
-                "hierarchy as nx.DiGraph with named nodes, or supply columns "
-                "explicitly."
-            )
-        nodes = list(self.hierarchy.nodes)
-        name_to_position = {str(node): i for i, node in enumerate(nodes)}
-        return [name_to_position.get(str(name), -1) for name in self.feature_names_in_]
 
     def transform(self, X):
         """Transforms dataset to fulfill conditions for feature selection.

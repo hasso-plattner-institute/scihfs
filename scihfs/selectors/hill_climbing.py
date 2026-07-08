@@ -3,6 +3,7 @@ Hill Climbing Feature Selectors.
 """
 
 import math
+from abc import abstractmethod
 
 import numpy as np
 from scipy import sparse
@@ -61,17 +62,17 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
         self._num_rows = X.shape[0]
         self.representatives_ = self._hill_climb(X)
 
+    @abstractmethod
     def _hill_climb(self, X):
         """Performs the feature selection.
 
-        This methods needs to be implemented by the subclasses.
+        This method needs to be implemented by the subclasses.
 
         Parameters
         ----------
         X : {array-like, sparse matrix}, shape (n_samples, n_features)
             The training input samples.
         """
-        raise NotImplementedError
 
     def _calculate_scores(self, X):
         """Calculate scores for each value in X.
@@ -105,13 +106,14 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
         #     score_matrix = normalized_matrix
         return score_matrix
 
+    @abstractmethod
     def _compare(
         self,
         sample_i: int,
         sample_j: int,
         feature_set: list[int],
     ):
-        """Compare to samples from the dataset.
+        """Compare two samples from the dataset.
 
         This method needs to be implemented by the subclasses.
         It should return a score that can be used for comparison.
@@ -126,7 +128,6 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
                     A list of nodes that are in the feature set that is
                     currently being evaluated.
         """
-        raise NotImplementedError
 
     def _comparison_matrix(self, feature_set: list[int]):
         """Creates matrix to compare the individual samples from the dataset.
@@ -152,8 +153,12 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
                     distances[row_j, row_i] = distance
         return distances
 
+    @abstractmethod
     def _fitness_function(self, comparison_matrix: np.ndarray) -> float:
-        raise NotImplementedError
+        """Evaluates a comparison matrix into a single fitness score.
+
+        This method needs to be implemented by the subclasses.
+        """
 
 
 class TopDownSelector(HillClimbingSelector):

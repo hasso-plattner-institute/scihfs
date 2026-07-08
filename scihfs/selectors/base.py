@@ -85,19 +85,35 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
             raise TypeError("Hierarchy is None but is required.")
         X = validate_data(self, X, accept_sparse=True)
         check_bool_dtype(X)
-        self._fit_hierarchy(columns)
+        self._fit_hierarchy(self._resolve_columns(columns))
+        self._fit(X, y)
 
         return self
+
+    def _resolve_columns(self, columns):
+        """Hook to resolve the columns mapping before the hierarchy setup.
+
+        Runs after ``validate_data`` (so ``feature_names_in_`` is available
+        when X was a DataFrame) and before ``_fit_hierarchy``. The base
+        implementation returns ``columns`` unchanged;
+        ``HierarchicalPreprocessor`` overrides this to auto-derive the
+        mapping from DataFrame feature names.
+
+        Note: This function might be removed in the future if the auto-derivation is moved to ``_fit_hierarchy`` itself.
+        """
+        return columns
+
+    def _fit(self, X, y):
+        """Hook for the subclass's fitting logic.
+
+        Called by ``fit`` with the validated X and y after the hierarchy
+        setup. The base implementation does nothing.
+        """
 
     def _fit_hierarchy(self, columns):
         """Set ``_columns`` and build ``_hierarchy_graph`` from a validated X.
 
-        Split out from ``fit`` so that subclasses running their own single
-        validation pass (``HierarchicalPreprocessor`` and
-        ``EagerHierarchicalFeatureSelector``, which must keep
-        ``feature_names_in_`` alive -- a second ``validate_data`` call would
-        drop it) can reuse the hierarchy setup without re-validating X.
-
+        Called from the template ``fit`` after its single validation pass.
         Assumes ``validate_data`` has already run and set ``n_features_in_``.
 
         Parameters

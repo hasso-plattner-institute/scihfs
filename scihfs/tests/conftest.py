@@ -206,19 +206,6 @@ def hierarchy3():
 
 
 @pytest.fixture()
-def dataframe():
-    return pd.DataFrame(
-        {
-            4: [4, 4, 4, 4, 4],
-            2: [2, 2, 2, 2, 2],
-            0: [0, 0, 0, 0, 0],
-            1: [1, 1, 1, 1, 1],
-            3: [3, 3, 3, 3, 3],
-        }
-    )
-
-
-@pytest.fixture()
 def result_tsel1():
     result = np.array([[0], [0], [0], [0], [1]])
     support = np.array([True, False, False, False, False])

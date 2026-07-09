@@ -263,39 +263,6 @@ def get_columns_for_numpy_hierarchy(hierarchy: nx.DiGraph, num_columns: int):
     return columns
 
 
-def create_mapping_columns_to_nodes(data, hierarchy: nx.DiGraph):
-    """Creates a mapping from dataset columns to nodes in the hierarchy graph.
-
-    For the estimators the hierarchy and the dataset will both be converted to
-    numpy arrays and the column and node names will be lost. Therefore, a mapping
-    to the corresponding indices is created so that after the transformation
-    the correct nodes in the hierarchy can still be found for each column.
-
-    .. note::
-        This helper is no longer required for the expected preprocessing workflow (DataFrame for data and nx.DiGraph for hierarchy inputs to HierarchicalPreprocessor, which derives the mapping automatically), but remains fully supported for all other use cases, e.g., passing a selector its ``columns`` argument directly.
-
-    Parameters
-    ----------
-    data : DataFrame
-        The dataset. Any object exposing a ``.columns`` sequence of column
-        labels (e.g. a pandas or polars DataFrame) is accepted; no DataFrame
-        library import is required for this.
-    hierarchy : nx.DiGraph
-        The corresponding hierarchy.
-
-    Returns
-    ----------
-    mapping : list
-        A list of ints. The value at index i corresponds to the i'th column
-        of the dataset. The value is the index of the corresponding node in
-        the hierarchy.
-    """
-    columns = list(data.columns)
-    nodes = list(hierarchy.nodes)
-    mapping = [nodes.index(node) if node in nodes else -1 for node in columns]
-    return mapping
-
-
 # Numerical input is currently not supported and previous related code has been commented out throughout this repository.
 # def normalize_score(score, max_value):
 #     """Normalize the given score using logarithmic scaling and a maximum value.

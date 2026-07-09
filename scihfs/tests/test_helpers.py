@@ -9,7 +9,6 @@ from scipy.stats import entropy
 from scihfs.helpers import (
     add_virtual_root_node,
     compute_aggregated_values,
-    create_mapping_columns_to_nodes,
     get_relevance,
     shrink_dag,
 )
@@ -157,23 +156,6 @@ def test_compute_aggregated_values(data, result, request):
     assert np.array_equal(X_transformed, result)
     # The bool input is left untouched (a fresh integer working copy is built).
     assert X.dtype == np.bool_
-
-
-@pytest.mark.parametrize(
-    "hierarchy",
-    [
-        "hierarchy1",
-        "hierarchy1_2",
-        "hierarchy2",
-        "hierarchy3",
-    ],
-)
-def test_create_mapping_columns_to_nodes(hierarchy, dataframe, request):
-    hierarchy = request.getfixturevalue(hierarchy)
-    mapping = create_mapping_columns_to_nodes(dataframe, hierarchy)
-    nodes = list(hierarchy.nodes)
-    for index, node in enumerate(dataframe.columns):
-        assert nodes[mapping[index]] == node
 
 
 # ---------------------------------------------------------------------------

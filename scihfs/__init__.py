@@ -3,10 +3,7 @@ Estimators for feature selection on hierarchical data.
 """
 
 from scihfs._version import __version__
-from scihfs.helpers import (
-    create_mapping_columns_to_nodes,
-    get_columns_for_numpy_hierarchy,
-)
+from scihfs.helpers import get_columns_for_numpy_hierarchy
 from scihfs.preprocessing import HierarchicalPreprocessor
 from scihfs.selectors import (
     HIP,
@@ -50,6 +47,5 @@ __all__ = [
     "RNB",
     "TAN",
     "get_columns_for_numpy_hierarchy",
-    "create_mapping_columns_to_nodes",
     "__version__",
 ]

@@ -6,10 +6,7 @@ import pandas as pd
 import pytest
 import scipy.sparse as sp
 
-from scihfs.helpers import (
-    create_mapping_columns_to_nodes,
-    get_columns_for_numpy_hierarchy,
-)
+from scihfs.helpers import get_columns_for_numpy_hierarchy
 from scihfs.preprocessing import ColumnNotInHierarchyWarning, HierarchicalPreprocessor
 
 
@@ -135,7 +132,8 @@ def _canonical_setup():
             ("fish", "trout"),
         ]
     )
-    columns = create_mapping_columns_to_nodes(df, graph)
+    nodes = list(graph.nodes)
+    columns = [nodes.index(name) for name in df.columns]
     X = df.to_numpy().astype(bool)
     hierarchy = nx.to_numpy_array(graph)
     return X, hierarchy, columns

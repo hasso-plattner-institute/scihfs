@@ -27,14 +27,6 @@ HierarchicalEstimator
    HNBs
    MR
    RNB
-
-TAN
-======================
-
-.. autosummary::
-   :toctree: generated/
-   :template: class.rst
-
    TAN
 
 
@@ -46,4 +38,3 @@ Helper methods
    :template: function.rst
 
    get_columns_for_numpy_hierarchy
-   create_mapping_columns_to_nodes

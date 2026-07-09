@@ -85,7 +85,7 @@ graph = nx.DiGraph(
     ]
 )
 
-# One call: no nx.to_numpy_array, no create_mapping_columns_to_nodes, no columns=.
+# One call: no nx.to_numpy_array, no manual column mapping, no columns=.
 preprocessor = HierarchicalPreprocessor(graph)
 
 # Opt into DataFrame output to keep the hierarchy node names on the columns.

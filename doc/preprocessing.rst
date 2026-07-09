@@ -56,6 +56,14 @@ To use the **HierarchicalPreprocessor**, initialize it with the hierarchy (as an
    # Transform the dataset
    X_transformed = preprocessor.transform(X)
 
+.. note::
+   When ``X`` is a pandas ``DataFrame`` and the hierarchy is a named
+   ``networkx.DiGraph``, the column-to-node mapping is derived automatically
+   from the column names, so the ``columns`` argument of ``fit`` can be
+   omitted. Columns without a matching node are added to the hierarchy under
+   the virtual root (with a warning). See the eager learning example for an
+   end-to-end DataFrame workflow.
+
 
 Preprocessing Function
 ---------------------------

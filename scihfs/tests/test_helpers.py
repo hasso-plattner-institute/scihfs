@@ -4,10 +4,12 @@ from fractions import Fraction
 import networkx as nx
 import numpy as np
 import pytest
+from scipy import sparse
 from scipy.stats import entropy
 
 from scihfs.helpers import (
     add_virtual_root_node,
+    check_data,
     compute_aggregated_values,
     get_relevance,
     shrink_dag,
@@ -134,6 +136,32 @@ def test_gain_ratio(data2):
     # cross-check. The two implementations agree only to floating-point noise.
     gr_expected = [_reference_information_gain_ratio(X[:, i], y) for i in range(len(X))]
     assert gr == pytest.approx(gr_expected)
+
+
+def test_check_data_raises_on_propagation_violation():
+    # Edge (0, 1) requires that whenever the child (column 1) is 1, the parent
+    # (column 0) is 1 too. Instance 0 has parent 0 but child 1, violating it.
+    dag = nx.DiGraph()
+    dag.add_edge(0, 1)
+    x_data = np.array([[0, 1]])
+    y_data = np.array([0])
+    with pytest.raises(ValueError, match="0-1-propagation"):
+        check_data(dag, x_data, y_data)
+
+
+def test_information_gain_skips_empty_sparse_column():
+    # Column 0 is all zeros: its information gain is reported as 0 without a
+    # dense conversion of the empty column.
+    X = sparse.csc_matrix(np.array([[0, 1], [0, 0], [0, 1]]))
+    y = np.array([0, 1, 0])
+    assert information_gain(X, y)[0] == 0
+
+
+def test_gain_ratio_skips_empty_sparse_column():
+    # Same all-zero column, exercised through gain_ratio's sparse branch.
+    X = sparse.csc_matrix(np.array([[0, 1], [0, 0], [0, 1]]))
+    y = np.array([0, 1, 0])
+    assert gain_ratio(X, y)[0] == 0
 
 
 @pytest.mark.parametrize(

@@ -228,3 +228,28 @@ def test_SHSEL_autoderives_columns_from_dataframe(data, result, request):
     assert selector.get_columns() == list(columns)
     assert np.array_equal(selector.transform(df), expected)
     assert np.array_equal(selector.get_support(), support)
+
+
+def test_SHSEL_dataframe_output(data1, result_shsel1):
+    """End-to-end DataFrame workflow: fit(df, y) plus set_output('pandas').
+
+    get_feature_names_out returns the selected input feature names and
+    transform returns a DataFrame labelled with them (both inherited from
+    SelectorMixin, operating on the feature_names_in_ captured during fit).
+    """
+    X, y, hierarchy, columns = data1
+    expected, support = result_shsel1
+    graph = nx.from_numpy_array(hierarchy, create_using=nx.DiGraph)
+    names = [str(node) for node in columns]
+    df = pd.DataFrame(X, columns=names)
+
+    selector = SHSELSelector(graph)
+    selector.set_output(transform="pandas")
+    selector.fit(df, y)
+    out = selector.transform(df)
+
+    selected_names = [name for name, keep in zip(names, support) if keep]
+    assert list(selector.get_feature_names_out()) == selected_names
+    assert isinstance(out, pd.DataFrame)
+    assert list(out.columns) == selected_names
+    assert np.array_equal(out.to_numpy(), expected)

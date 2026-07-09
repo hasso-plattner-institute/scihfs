@@ -26,6 +26,12 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
     can be omitted. Feature names without a matching node raise ``ValueError``
     (unlike the ``HierarchicalPreprocessor``, a selector cannot extend
     the hierarchy).
+
+    Eager selectors also support scikit-learn's output API (inherited from
+    ``SelectorMixin``): ``get_feature_names_out`` returns the names of the
+    selected features (the captured DataFrame column names, or ``x0``-style
+    fallbacks for unnamed input), and ``set_output(transform="pandas")``
+    makes ``transform`` return a DataFrame labelled with them.
     """
 
     def __init__(self, hierarchy: np.ndarray = None):

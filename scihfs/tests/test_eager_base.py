@@ -109,3 +109,51 @@ def test_duplicate_dataframe_column_names_raise():
     selector = _MinimalEagerSelector(nx.DiGraph([("A", "B")]))
     with pytest.raises(ValueError, match="Duplicate|unique column names"):
         selector.fit(df, np.array([1, 0]))
+
+
+# --- DataFrame output tests (get_feature_names_out / set_output) -------------------
+
+
+class _SelectNodesACSelector(EagerHierarchicalFeatureSelector):
+    """Concrete stub whose _select always keeps hierarchy nodes A (0) and C (2)."""
+
+    def _select(self, X, y):
+        self.representatives_ = [0, 2]
+
+
+def test_get_feature_names_out_from_dataframe():
+    """Output of get_feature_names_out are the selected DataFrame
+    column names, in column order.
+
+    SelectorMixin's default filters ``feature_names_in_`` by the support
+    mask; the shuffled frame proves the names follow the DataFrame's column
+    order (C, A), not the hierarchy's node order (A, C).
+    """
+    selector = _SelectNodesACSelector(_named_graph())
+    selector.fit(_named_dataframe(), _y)
+    assert list(selector.get_feature_names_out()) == ["C", "A"]
+
+
+def test_get_feature_names_out_from_ndarray():
+    """Without input feature names the x<position> fallback names are used."""
+    selector = _SelectNodesACSelector(_named_graph())
+    selector.fit(_named_dataframe().to_numpy(), _y)
+    assert list(selector.get_feature_names_out()) == ["x0", "x2"]
+
+
+def test_set_output_pandas_on_selector():
+    """set_output('pandas') makes a selector's transform return a DataFrame."""
+    df = _named_dataframe()
+    selector = _SelectNodesACSelector(_named_graph())
+    selector.set_output(transform="pandas")
+    selector.fit(df, _y)
+    out = selector.transform(df)
+
+    assert isinstance(out, pd.DataFrame)
+    assert list(out.columns) == ["C", "A"]
+    assert list(out.index) == list(df.index)
+    assert np.array_equal(out.to_numpy(), df[["C", "A"]].to_numpy())
+
+    # fit_transform runs through the same output wrapping.
+    refit = _SelectNodesACSelector(_named_graph()).set_output(transform="pandas")
+    pd.testing.assert_frame_equal(refit.fit_transform(df, _y), out)

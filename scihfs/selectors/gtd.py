@@ -2,9 +2,9 @@
 Greedy Top Down Feature Selector.
 """
 
+import networkx as nx
 import numpy as np
-from networkx import ancestors, descendants
-from scipy.sparse import issparse
+import scipy.sparse as sp
 
 from scihfs.metrics import gain_ratio, information_gain
 from scihfs.selectors import EagerHierarchicalFeatureSelector
@@ -24,7 +24,7 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
 
     def __init__(
         self,
-        hierarchy: np.ndarray = None,
+        hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None,
         iterate_first_level: bool = True,
         heuristic_function: str = "GR",
     ):
@@ -33,9 +33,8 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
         Parameters
         ----------
         hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    The hierarchy graph. See ``HierarchicalEstimator.__init__``
+                    for the accepted formats.
         iterate_first_level : bool
                             The feature selection algorithm proposed by Lu et
                             al. assumes that the hierarchy has a tree
@@ -53,7 +52,7 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
 
     def _select(self, X, y):
         """The actual GTD feature selection algorithm."""
-        if issparse(X):
+        if sp.issparse(X):
             X = X.tocsr()
         self.calculate_heuristic_function(X, y)
 
@@ -64,7 +63,7 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
             top_level_nodes = ["ROOT"]
 
         for node in top_level_nodes:
-            branch_nodes = list(descendants(self._hierarchy_graph, node))
+            branch_nodes = list(nx.descendants(self._hierarchy_graph, node))
             if node != "ROOT":
                 branch_nodes.append(node)
 
@@ -78,8 +77,8 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
             while branch_nodes:
                 selected = branch_nodes.pop(0)
                 self.representatives_.append(selected)
-                remove_nodes = list(descendants(self._hierarchy_graph, selected))
-                ancestor_nodes = list(ancestors(self._hierarchy_graph, selected))
+                remove_nodes = list(nx.descendants(self._hierarchy_graph, selected))
+                ancestor_nodes = list(nx.ancestors(self._hierarchy_graph, selected))
                 remove_nodes.extend(ancestor_nodes)
                 if "ROOT" in remove_nodes:
                     remove_nodes.remove("ROOT")

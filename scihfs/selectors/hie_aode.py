@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+import scipy.sparse as sp
 from sklearn.naive_bayes import BernoulliNB
 
 from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
@@ -10,16 +11,19 @@ class HieAODE(LazyHierarchicalFeatureSelector):
     Select non-redundant features following the algorithm proposed by Wan and Freitas.
     """
 
-    def __init__(self, hierarchy=None):
+    def __init__(
+        self, hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None
+    ):
         """Initializes a HieAODE-Selector.
 
         Parameters
         ----------
-        hierarchy : np.ndarray
-            The hierarchy graph as an adjacency matrix.
+        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
+            The hierarchy graph. See ``HierarchicalEstimator.__init__``
+            for the accepted formats.
         """
+        super().__init__(hierarchy)
         self.cpts = dict()
-        super(HieAODE, self).__init__(hierarchy)
 
     def fit_selector(self, X_train, y_train, X_test, columns=None):
         """

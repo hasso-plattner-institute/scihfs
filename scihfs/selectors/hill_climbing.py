@@ -5,8 +5,9 @@ Hill Climbing Feature Selectors.
 import math
 from abc import abstractmethod
 
+import networkx as nx
 import numpy as np
-from scipy import sparse
+import scipy.sparse as sp
 
 # Numerical input is not supported and previous related code commented out throughout this file, such as the 'dataset_type' variable with "binary" and "numerical" branches.
 # Restore the `normalize_score` import here when reintroducing.
@@ -24,7 +25,7 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
 
     def __init__(
         self,
-        hierarchy: np.ndarray = None,
+        hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None,
         alpha: float = 0.99,
         # dataset_type: str = "binary",
     ):
@@ -33,9 +34,8 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
         Parameters
         ----------
         hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    The hierarchy graph. See ``HierarchicalEstimator.__init__``
+                    for the accepted formats.
         alpha: float
                 A hyperparameter needed for the hill climbing methods.
                 The default value is 0.99.
@@ -56,7 +56,7 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
     def _select(self, X, y):
         """The feature selection algorithm framework which delegates
         the actual selection to ``_hill_climb``."""
-        if sparse.issparse(X):
+        if sp.issparse(X):
             X = X.tocsr()
         self.y_ = y
         self._num_rows = X.shape[0]
@@ -277,7 +277,7 @@ class BottomUpSelector(HillClimbingSelector):
 
     def __init__(
         self,
-        hierarchy: np.ndarray = None,
+        hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None,
         alpha: float = 0.01,
         k: int = 5,
         # dataset_type: str = "binary",
@@ -287,9 +287,8 @@ class BottomUpSelector(HillClimbingSelector):
         Parameters
         ----------
         hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    The hierarchy graph. See ``HierarchicalEstimator.__init__``
+                    for the accepted formats.
                     For this feature selection method to work as
                     intended the graph needs to be a tree.
         alpha: float

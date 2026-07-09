@@ -4,8 +4,9 @@ SHSEL Feature Selector.
 
 import statistics
 
+import networkx as nx
 import numpy as np
-from scipy import sparse
+import scipy.sparse as sp
 
 # The HFE extension from Oudah and Henschel (2018) is commented out below, as it requires numerical features in the input (currently only bool supported).
 # When it is restored, also restore the `compute_aggregated_values` and `get_leaves` imports.
@@ -31,7 +32,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
 
     def __init__(
         self,
-        hierarchy: np.ndarray = None,
+        hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None,
         relevance_metric: str = "IG",
         similarity_threshold=None,
         pruning: bool = True,
@@ -45,9 +46,8 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         Parameters
         ----------
         hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    The hierarchy graph. See ``HierarchicalEstimator.__init__``
+                    for the accepted formats.
         relevance_metric : str
                     The relevance metric to use in the initial selection
                     stage of the algorithm. The options ore "IG" for
@@ -111,7 +111,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         #     raise ValueError(
         #         "When using the HFE extension the relevance_metric should be 'Correlation'."
         #     )
-        if sparse.issparse(X):
+        if sp.issparse(X):
             X = X.tocsc()
         self._calculate_ig_relevance(X, y)
         # HFE extension disabled:

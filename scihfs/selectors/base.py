@@ -31,7 +31,9 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
     for numeric features could be a future enhancement.
     """
 
-    def __init__(self, hierarchy=None):
+    def __init__(
+        self, hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None
+    ):
         """Initializes a HierarchicalEstimator.
 
         Parameters

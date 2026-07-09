@@ -2,14 +2,13 @@
 TSEL Feature Selector.
 """
 
+import networkx as nx
 import numpy as np
-from networkx.algorithms.dag import descendants
+import scipy.sparse as sp
 
 from scihfs.helpers import get_paths
 from scihfs.metrics import lift
-from scihfs.selectors.eagerHierarchicalFeatureSelector import (
-    EagerHierarchicalFeatureSelector,
-)
+from scihfs.selectors import EagerHierarchicalFeatureSelector
 
 
 class TSELSelector(EagerHierarchicalFeatureSelector):
@@ -22,16 +21,17 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
     """
 
     def __init__(
-        self, hierarchy: np.ndarray = None, use_original_implementation: bool = True
+        self,
+        hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None,
+        use_original_implementation: bool = True,
     ):
         """Initializes a TSELSelector.
 
         Parameters
         ----------
         hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    The hierarchy graph. See ``HierarchicalEstimator.__init__``
+                    for the accepted formats.
                     The feature selection method is intended for a
                     hierarchy graph that has a tree structure.
         use_original_implementation: bool
@@ -145,7 +145,7 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
         for node in representatives:
             selected_decendents = [
                 descendent
-                for descendent in descendants(self._hierarchy_graph, node)
+                for descendent in nx.descendants(self._hierarchy_graph, node)
                 if descendent in representatives
             ]
             if not selected_decendents:

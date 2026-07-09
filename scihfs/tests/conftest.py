@@ -102,6 +102,30 @@ def data2_2():
 
 
 @pytest.fixture()
+def data_gtd_heuristic():
+    # A 2-node chain (parent 0 -> child 1) on which gain ratio and information
+    # gain rank the two nodes oppositely, so GTD's heuristic_function switch
+    # yields different selections. The child column is a subset of the parent's
+    # (a valid hierarchy). GR favours the low-entropy child (small intrinsic
+    # value); IG favours the parent (higher absolute mutual information).
+    X = np.array(
+        [
+            [0, 0],
+            [0, 0],
+            [1, 0],
+            [1, 0],
+            [1, 1],
+        ],
+    ).astype(bool)
+    edges = [(0, 1)]
+    hierarchy = nx.DiGraph(edges)
+    columns = get_columns_for_numpy_hierarchy(hierarchy, X.shape[1])
+    hierarchy = nx.to_numpy_array(hierarchy)
+    y = np.array([0, 0, 0, 1, 1])
+    return (X, y, hierarchy, columns)
+
+
+@pytest.fixture()
 def data3(hierarchy3):
     X = np.array(
         [
@@ -312,6 +336,106 @@ def result_shsel_selection():
 
 
 @pytest.fixture()
+def data_shsel_normalization():
+    # Parent (node 0) subsumes child (node 1); the child is the more relevant
+    # feature (IG 0.45 vs 0.22 nats). At threshold 0.7, un-normalized nats
+    # relevance judges the two "similar" (1 - |0.45 - 0.22| = 0.77 >= 0.7) and
+    # merges the more specific child away, leaving the less relevant parent.
+    # Normalizing the relevance to [0, 1] (paper-faithful) makes them dissimilar
+    # (1 - |1.0 - 0.49| = 0.49 < 0.7), so the child survives and is selected.
+    X = np.array(
+        [
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [1, 0],
+            [1, 1],
+        ],
+    ).astype(bool)
+    graph = nx.DiGraph([(0, 1)])
+    columns = get_columns_for_numpy_hierarchy(graph, X.shape[1])
+    hierarchy = nx.to_numpy_array(graph)
+    y = np.array([0, 0, 0, 0, 0, 1])
+    return (X, y, hierarchy, columns)
+
+
+@pytest.fixture()
+def result_shsel_normalization():
+    # Normalized (paper-faithful) SHSEL keeps the more relevant child (node 1).
+    result = np.array(
+        [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [1],
+        ],
+    )
+    support = np.array([False, True])
+    return (result, support)
+
+
+@pytest.fixture()
+def data_shsel_ig_average():
+    # Pruning-average discriminator (hierarchy 0->1->2 and 0->3). Nodes 2 and 3
+    # are removed in the initial selection. Whether their (higher) information
+    # gain is counted in node 0's per-path averages decides node 0's fate:
+    # "full_path" counts them and drops node 0; "survivors_only" ignores them
+    # (node 0's 0->3 path collapses to a stub) and keeps it.
+    X = np.array(
+        [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [1, 0, 0, 1],
+            [1, 1, 1, 0],
+        ],
+    ).astype(bool)
+    graph = nx.DiGraph([(0, 1), (1, 2), (0, 3)])
+    columns = get_columns_for_numpy_hierarchy(graph, X.shape[1])
+    hierarchy = nx.to_numpy_array(graph)
+    y = np.array([0, 0, 0, 1, 0, 1])
+    return (X, y, hierarchy, columns)
+
+
+@pytest.fixture()
+def result_shsel_ig_average_full_path():
+    # "full_path" (default): node 0 is below its full-path average, only node 1 survives.
+    result = np.array(
+        [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [1],
+        ],
+    )
+    support = np.array([False, True, False, False])
+    return (result, support)
+
+
+@pytest.fixture()
+def result_shsel_ig_average_survivors():
+    # "survivors_only": node 0's average ignores the removed nodes, so it survives too.
+    result = np.array(
+        [
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [1, 0],
+            [1, 1],
+        ],
+    )
+    support = np.array([True, True, False, False])
+    return (result, support)
+
+
+@pytest.fixture()
 def result_gtd_selection2():
     result = np.array(
         [
@@ -343,16 +467,53 @@ def result_gtd_selection2_1():
 
 @pytest.fixture()
 def result_gtd_selection2_2():
+    # DAG data2_2 (edge 4->3): under the paper's gain ratio, node 3 outranks its
+    # ancestor 4 (which is penalised for higher entropy), so 4 is pruned and both
+    # traversal modes select {2, 3}.
     result = np.array(
         [
-            [0, 1],
+            [0, 0],
+            [1, 1],
             [1, 0],
-            [1, 0],
-            [0, 1],
+            [0, 0],
             [0, 0],
         ],
     )
-    support = np.array([False, False, True, False, True])
+    support = np.array([False, False, True, True, False])
+    return (result, support)
+
+
+@pytest.fixture()
+def result_gtd_heuristic_gr():
+    # heuristic_function="GR" on data_gtd_heuristic: GR ranks the child (node 1)
+    # above its parent, so the leaf is selected and its ancestor pruned.
+    result = np.array(
+        [
+            [0],
+            [0],
+            [0],
+            [0],
+            [1],
+        ],
+    )
+    support = np.array([False, True])
+    return (result, support)
+
+
+@pytest.fixture()
+def result_gtd_heuristic_ig():
+    # heuristic_function="IG" on data_gtd_heuristic: IG ranks the parent (node 0)
+    # above its child, so the parent is selected and its descendant pruned.
+    result = np.array(
+        [
+            [0],
+            [0],
+            [1],
+            [1],
+            [1],
+        ],
+    )
+    support = np.array([True, False])
     return (result, support)
 
 

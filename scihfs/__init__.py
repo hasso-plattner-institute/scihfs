@@ -3,8 +3,10 @@ Estimators for feature selection on hierarchical data.
 """
 
 from scihfs._version import __version__
-from scihfs.data_utils import create_mapping_columns_to_nodes
-from scihfs.helpers import get_columns_for_numpy_hierarchy
+from scihfs.helpers import (
+    create_mapping_columns_to_nodes,
+    get_columns_for_numpy_hierarchy,
+)
 from scihfs.preprocessing import HierarchicalPreprocessor
 from scihfs.selectors import (
     HIP,

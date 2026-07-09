@@ -7,7 +7,7 @@ from networkx import ancestors, descendants
 from scipy.sparse import issparse
 from sklearn.utils.validation import validate_data
 
-from scihfs.metrics import gain_ratio
+from scihfs.metrics import gain_ratio, information_gain
 from scihfs.selectors import EagerHierarchicalFeatureSelector
 
 
@@ -16,12 +16,19 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
 
     The features are selected choosing nodes from the hierarchy that
     score in the heuristic function and aren't an ancestor or descendant
-    of a node with a higher score.
+    of a node with a higher score. The heuristic function ranking the
+    nodes is a relevance metric, and GTD can use both gain ratio (``"GR"``)
+    and information gain (``"IG"``) as metric.
     This feature selection method is intended for hierarchical data.
     Therefore, it inherits from the EagerHierarchicalFeatureSelector.
     """
 
-    def __init__(self, hierarchy: np.ndarray = None, iterate_first_level: bool = True):
+    def __init__(
+        self,
+        hierarchy: np.ndarray = None,
+        iterate_first_level: bool = True,
+        heuristic_function: str = "GR",
+    ):
         """Initializes a GreedyTopDownSelector.
 
         Parameters
@@ -35,17 +42,23 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
                             al. assumes that the hierarchy has a tree
                             structure. If it is a DAG this parameter can be set
                             to False to achieve similiar behaviour than in the
-                            original algorithm."""
+                            original algorithm.
+        heuristic_function : str
+                            The relevance metric used as the heuristic function
+                            to rank the nodes. GTD accepts both "GR" (gain
+                            ratio) and "IG" (information gain). Default is "GR".
+        """
         super().__init__(hierarchy)
         self.iterate_first_level = iterate_first_level  # TODO: warning for DAG
+        self.heuristic_function = heuristic_function
 
     def fit(self, X, y, columns=None):
-        """Fitting function that sets self.representatives\_.
+        """Fitting function that sets ``self.representatives_``.
 
         The number of columns in X and the number of nodes in the hierarchy
         are expected to be the same and each column should be mapped to
         exactly one node in the hierarchy with the columns parameter.
-        After fitting self.representatives\_ includes the names of all
+        After fitting ``self.representatives_`` includes the names of all
         nodes from the hierarchy that are left after feature selection.
         The features are selected choosing nodes from the hierarchy that
         score in the heuristic function and aren't an ancestor or
@@ -82,8 +95,16 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
         return self
 
     def calculate_heuristic_function(self, X, y):
-        gr_values = gain_ratio(X, y)
-        self.heuristic_function_values_ = dict(zip(self._columns, gr_values))
+        if self.heuristic_function == "GR":
+            relevance_values = gain_ratio(X, y)
+        elif self.heuristic_function == "IG":
+            relevance_values = information_gain(X, y)
+        else:
+            raise ValueError(
+                f"Unknown heuristic_function {self.heuristic_function!r}; "
+                'expected "GR" (gain ratio) or "IG" (information gain).'
+            )
+        self.heuristic_function_values_ = dict(zip(self._columns, relevance_values))
 
     def _fit(self):
         self.representatives_ = []

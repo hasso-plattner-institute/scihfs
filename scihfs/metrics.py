@@ -3,11 +3,37 @@ Different metric functions.
 """
 
 import numpy as np
-from info_gain.info_gain import info_gain, info_gain_ratio
 from numpy.linalg import norm
 from scipy import sparse
+from sklearn.metrics import mutual_info_score
 
-from scihfs.pyitlib import information_mutual_conditional as imc
+
+def _information_gain(feature: np.ndarray, target: np.ndarray) -> float:
+    """Information gain (IG) of a ``feature`` (with respect to the ``target``), equivalent to the 'mutual information' (MI) and 'information measure' (IM).
+
+    Def.: ``IG(feature; target) = H(target) - H(target | feature)``
+
+    H(x) [H(x | y)] is the (conditional) entropy of x (given y).
+    The terms "feature" / "attribute", and "target" / "class" are used interchangeably.
+    """
+    return mutual_info_score(feature, target)
+
+
+def _gain_ratio(feature: np.ndarray, target: np.ndarray) -> float:
+    """Gain ratio (GR) of a ``feature`` (with respect to the ``target``).
+
+    Def.: ``GR(feature) = IG(feature; target) / H(feature)``
+
+    H(x) is the entropy of x, equivalent to IG(x; x). IG is the information gain.
+    The terms "feature" / "attribute", and "target" / "class" are used interchangeably.
+
+    A constant feature carries no information and cannot be split
+    (``H(feature) == 0``), so its gain ratio is defined as ``0``.
+    """
+    feature_entropy = mutual_info_score(feature, feature)
+    if feature_entropy == 0:
+        return 0.0
+    return _information_gain(feature, target) / feature_entropy
 
 
 def lift(data, labels):
@@ -71,6 +97,10 @@ def information_gain(data, labels):
     ig_values : list, length n_features
                 The information gain values for all features.
                 List of floats.
+
+    Notes
+    -----
+    For the information gain definition, see :func:`_information_gain`.
     """
     ig_values = []
     if sparse.issparse(data):
@@ -86,13 +116,50 @@ def information_gain(data, labels):
             column = column.toarray().ravel()
         else:
             column = data[:, column_index]
-        ig = round(info_gain(column, labels), 6)
+        ig = round(_information_gain(column, labels), 6)
         ig_values.append(ig)
     return ig_values
 
 
+# ---------------------------------------------------------------------------
+# The two functions below replace the pyitlib module (removed
+# to keep dependency list short and because of lack of maintenance).
+# The following code has been LLM-generated; it mirrors the estimation
+# approach of pyitlib's information_mutual_conditional and was verified
+# to be numerically equivalent to it before the module's removal.
+# Corresponding unit tests were added to test_metrics.py with the dit library
+# as an oracle to verify the correctness of this implementation.
+
+# Original implementation: pyitlib, Copyright (c) 2016 Peter Foster under MIT
+# License, https://github.com/pafoster/pyitlib
+
+
+def _joint_entropy(variables) -> float:
+    """Joint Shannon entropy (in bits) of one or more discrete variables.
+
+    Parameters
+    ----------
+    variables : sequence of array-like, each shape (n_samples,)
+        Aligned realisations of the discrete random variables.
+
+    Returns
+    ----------
+    float : The joint entropy in bits.
+    """
+    observations = np.stack(variables)
+    _, counts = np.unique(observations, axis=1, return_counts=True)
+    probabilities = counts / observations.shape[-1]
+    return float(-np.sum(probabilities * np.log2(probabilities)))
+
+
 def conditional_mutual_information(node1, node2, y):
-    """Calculates conditional mutual information for two features using the dit library.
+    """Calculates conditional mutual information for two features given the target.
+
+    Def.: ``I(X; Y | Z) = H(X, Z) + H(Y, Z) - H(X, Y, Z) - H(Z)``
+
+    H(...) is the joint entropy (base 2). Estimated via maximum
+    likelihood from the observed frequencies; all inputs must be fully
+    observed (there is no missing-data placeholder handling).
 
     Parameters
     ----------
@@ -107,7 +174,15 @@ def conditional_mutual_information(node1, node2, y):
     ----------
     float : The conditional mutual information value.
     """
-    return imc(node1, node2, y)
+    return (
+        _joint_entropy((node1, y))
+        + _joint_entropy((node2, y))
+        - _joint_entropy((node1, node2, y))
+        - _joint_entropy((y,))
+    )
+
+
+# ---------------------------------------------------------------------------
 
 
 def cosine_similarity(i: np.ndarray, j: np.ndarray):
@@ -147,6 +222,10 @@ def gain_ratio(data, labels):
     gr_values : list, length n_features
                 A list of floats containing the information gain
                 values for each feature in the dataset.
+
+    Notes
+    -----
+    For the gain ratio definition, see :func:`_gain_ratio`.
     """
     gr_values = []
     if sparse.issparse(data):
@@ -162,7 +241,7 @@ def gain_ratio(data, labels):
             column = column.toarray().ravel()
         else:
             column = data[:, column_index]
-        gr = info_gain_ratio(column, labels)
+        gr = _gain_ratio(column, labels)
         gr_values.append(gr)
     return gr_values
 

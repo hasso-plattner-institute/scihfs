@@ -2,15 +2,13 @@
 TSEL Feature Selector.
 """
 
+import networkx as nx
 import numpy as np
-from networkx.algorithms.dag import descendants
-from sklearn.utils.validation import validate_data
+import scipy.sparse as sp
 
 from scihfs.helpers import get_paths
 from scihfs.metrics import lift
-from scihfs.selectors.eagerHierarchicalFeatureSelector import (
-    EagerHierarchicalFeatureSelector,
-)
+from scihfs.selectors import EagerHierarchicalFeatureSelector
 
 
 class TSELSelector(EagerHierarchicalFeatureSelector):
@@ -23,16 +21,17 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
     """
 
     def __init__(
-        self, hierarchy: np.ndarray = None, use_original_implementation: bool = True
+        self,
+        hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None,
+        use_original_implementation: bool = True,
     ):
         """Initializes a TSELSelector.
 
         Parameters
         ----------
         hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    The hierarchy graph. See ``HierarchicalEstimator.__init__``
+                    for the accepted formats.
                     The feature selection method is intended for a
                     hierarchy graph that has a tree structure.
         use_original_implementation: bool
@@ -44,40 +43,8 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
         super().__init__(hierarchy)
         self.use_original_implementation = use_original_implementation
 
-    def fit(self, X, y, columns=None):
-        """Fitting function that sets ``self.representatives_``.
-
-        The number of columns in X and the number of nodes in the hierarchy
-        are expected to be the same and each column should be mapped to
-        exactly one node in the hierarchy with the columns parameter.
-        After fitting ``self.representatives_`` includes the names of all
-        nodes from the hierarchy that are left after feature selection.
-        The features are selected by choosing the most
-        representative nodes from each path and filtering these nodes further
-        by removing parents with children that were also selected.
-
-        Parameters
-        ----------
-        X : {array-like, sparse matrix}, shape (n_samples, n_features)
-            The training input samples.
-        y : array-like, shape (n_samples,)
-            The target values. An array of int.
-        columns: list or None, length n_features
-            The mapping from the hierarchy graph's nodes to the columns in X.
-            A list of ints. If this parameter is None the columns in X and
-            the corresponding nodes in the hierarchy are expected to be in the
-            same order.
-
-        Returns
-        -------
-        self : object
-            Returns self.
-        """
-        X, y = validate_data(self, X, y, accept_sparse=True)
-
-        super().fit(X, y, columns)
-
-        # Feature Selection Algorithm
+    def _select(self, X, y):
+        """The actual TSEL feature selection algorithm."""
         paths = get_paths(self._hierarchy_graph)
         lift_values = lift(X, y)
         self._node_to_lift = {
@@ -85,9 +52,6 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
             for index, column_name in enumerate(self._columns)
         }
         self.representatives_ = self._find_representatives(paths)
-
-        self.is_fitted_ = True
-        return self
 
     def _find_representatives(self, paths):
         """ "Finds a representative node for each path.
@@ -181,7 +145,7 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
         for node in representatives:
             selected_decendents = [
                 descendent
-                for descendent in descendants(self._hierarchy_graph, node)
+                for descendent in nx.descendants(self._hierarchy_graph, node)
                 if descendent in representatives
             ]
             if not selected_decendents:

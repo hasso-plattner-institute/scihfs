@@ -3,82 +3,63 @@ Base class for estimators for eager hierarchical feature selection.
 """
 
 import warnings
+from abc import abstractmethod
 
 import numpy as np
 from sklearn.feature_selection import SelectorMixin
-from sklearn.utils.validation import validate_data
 
 from scihfs.selectors import HierarchicalEstimator
 
 
 class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
-    """Base class for eager feature selectors using hierarchical data."""
+    """Abstract base class for eager feature selectors using hierarchical data.
 
-    def __init__(self, hierarchy: np.ndarray = None):
-        """Initializes an EagerHierarchicalFeatureSelector.
+    Eager selectors are supervised: ``fit`` requires a target ``y``.
+    Subclasses implement their selection algorithm in ``_select``, which
+    runs after the single input-validation pass and the hierarchy setup
+    and fills ``representatives_`` with the names of all hierarchy nodes
+    that are left after feature selection.
 
-        Parameters
-        ----------
-        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X)."""
-        super().__init__(hierarchy)
+    A DataFrame passed to ``fit`` together with a named ``nx.DiGraph``
+    hierarchy auto-derives the column->node mapping from the feature
+    names -- in this specific (but encouraged) case the ``columns`` argument
+    can be omitted. Feature names without a matching node raise ``ValueError``
+    (unlike the ``HierarchicalPreprocessor``, a selector cannot extend
+    the hierarchy).
 
-    def fit(self, X, y=None, columns=None):
-        """Fitting function that sets representatives.
+    Eager selectors also support scikit-learn's output API (inherited from
+    ``SelectorMixin``): ``get_feature_names_out`` returns the names of the
+    selected features (the captured DataFrame column names, or ``x0``-style
+    fallbacks for unnamed input), and ``set_output(transform="pandas")``
+    makes ``transform`` return a DataFrame labelled with them.
+    """
 
-        After fitting representatives should include the names of all
-        nodes from the hierarchy that are left after feature selection.
-        The number of columns in X and the number of nodes in the hierarchy
-        are expected to be the same and each column should be mapped to
-        exactly one node in the hierarchy with the columns parameter.
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.target_tags.required = True
+        return tags
 
-        Parameters
-        ----------
-        X : {array-like, sparse matrix}, shape (n_samples, n_features)
-            The training input samples.
-        y : array-like, shape (n_samples,)
-            The target values. An array of int. Not needed for all estimators.
-        columns: list or None, length n_features
-            The mapping from the hierarchy graph's nodes to the columns in X.
-            A list of ints. If this parameter is None the columns in X and
-            the corresponding nodes in the hierarchy are expected to be in the
-            same order.
+    def _fit(self, X, y):
+        """Runs the eager feature selection on the validated X and y.
 
-        Returns
-        -------
-        self : object
-            Returns self.
+        Checks the hierarchy against X, resets ``representatives_`` and
+        delegates to the subclasses' ``_select``.
         """
-
-        super().fit(X, y, columns)
         self._check_hierarchy_X()
 
         # self.representatives_ includes all node names for selected nodes.
         # self._columns maps them to the respective column in X.
         self.representatives_ = []
+        self._select(X, y)
 
-        return self
+    @abstractmethod
+    def _select(self, X, y):
+        """The subclass's feature selection algorithm.
 
-    def transform(self, X):
-        """Reduce X to the selected features.
-
-        Extends the transform method from SelectorMixin. Only selected
-        columns from X are in the output dataset.
-
-        Parameters
-        ----------
-        X : array of shape (n_samples, n_features)
-            The input samples.
-
-        Returns
-        -------
-        X : array of shape [n_samples, n_selected_features]
-            The input samples with only the selected features.
+        Called with the validated X and y after the hierarchy setup, and
+        expected to fill ``self.representatives_`` with the names of the
+        selected hierarchy nodes.
         """
-        X = validate_data(self, X, accept_sparse="csr", reset=False)
-        return super().transform(X)
 
     def _get_support_mask(self):
         # Implements _get_support_mask method from SelectorMixin to

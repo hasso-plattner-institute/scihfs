@@ -2,10 +2,9 @@
 Greedy Top Down Feature Selector.
 """
 
+import networkx as nx
 import numpy as np
-from networkx import ancestors, descendants
-from scipy.sparse import issparse
-from sklearn.utils.validation import validate_data
+import scipy.sparse as sp
 
 from scihfs.metrics import gain_ratio, information_gain
 from scihfs.selectors import EagerHierarchicalFeatureSelector
@@ -25,7 +24,7 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
 
     def __init__(
         self,
-        hierarchy: np.ndarray = None,
+        hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None,
         iterate_first_level: bool = True,
         heuristic_function: str = "GR",
     ):
@@ -34,9 +33,8 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
         Parameters
         ----------
         hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    The hierarchy graph. See ``HierarchicalEstimator.__init__``
+                    for the accepted formats.
         iterate_first_level : bool
                             The feature selection algorithm proposed by Lu et
                             al. assumes that the hierarchy has a tree
@@ -52,62 +50,11 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
         self.iterate_first_level = iterate_first_level  # TODO: warning for DAG
         self.heuristic_function = heuristic_function
 
-    def fit(self, X, y, columns=None):
-        """Fitting function that sets ``self.representatives_``.
-
-        The number of columns in X and the number of nodes in the hierarchy
-        are expected to be the same and each column should be mapped to
-        exactly one node in the hierarchy with the columns parameter.
-        After fitting ``self.representatives_`` includes the names of all
-        nodes from the hierarchy that are left after feature selection.
-        The features are selected choosing nodes from the hierarchy that
-        score in the heuristic function and aren't an ancestor or
-        descendant of a node with a higher score.
-
-        Parameters
-        ----------
-        X : {array-like, sparse matrix}, shape (n_samples, n_features)
-            The training input samples.
-        y : array-like, shape (n_samples,)
-            The target values. An array of int.
-        columns: list or None, length n_features
-            The mapping from the hierarchy graph's nodes to the columns in X.
-            A list of ints. If this parameter is None the columns in X and
-            the corresponding nodes in the hierarchy are expected to be in the
-            same order.
-
-        Returns
-        -------
-        self : object
-            Returns self.
-        """
-        # Input validation
-        X, y = validate_data(self, X, y, accept_sparse=True)
-        if issparse(X):
+    def _select(self, X, y):
+        """The actual GTD feature selection algorithm."""
+        if sp.issparse(X):
             X = X.tocsr()
-        super().fit(X, y, columns)
-
-        # Feature Selection Algorithm
         self.calculate_heuristic_function(X, y)
-        self._fit()
-
-        self.is_fitted_ = True
-        return self
-
-    def calculate_heuristic_function(self, X, y):
-        if self.heuristic_function == "GR":
-            relevance_values = gain_ratio(X, y)
-        elif self.heuristic_function == "IG":
-            relevance_values = information_gain(X, y)
-        else:
-            raise ValueError(
-                f"Unknown heuristic_function {self.heuristic_function!r}; "
-                'expected "GR" (gain ratio) or "IG" (information gain).'
-            )
-        self.heuristic_function_values_ = dict(zip(self._columns, relevance_values))
-
-    def _fit(self):
-        self.representatives_ = []
 
         # either start from ROOT or the nodes on the first level.
         if self.iterate_first_level:
@@ -116,7 +63,7 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
             top_level_nodes = ["ROOT"]
 
         for node in top_level_nodes:
-            branch_nodes = list(descendants(self._hierarchy_graph, node))
+            branch_nodes = list(nx.descendants(self._hierarchy_graph, node))
             if node != "ROOT":
                 branch_nodes.append(node)
 
@@ -130,9 +77,21 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
             while branch_nodes:
                 selected = branch_nodes.pop(0)
                 self.representatives_.append(selected)
-                remove_nodes = list(descendants(self._hierarchy_graph, selected))
-                ancestor_nodes = list(ancestors(self._hierarchy_graph, selected))
+                remove_nodes = list(nx.descendants(self._hierarchy_graph, selected))
+                ancestor_nodes = list(nx.ancestors(self._hierarchy_graph, selected))
                 remove_nodes.extend(ancestor_nodes)
                 if "ROOT" in remove_nodes:
                     remove_nodes.remove("ROOT")
                 branch_nodes = [node for node in branch_nodes if node not in remove_nodes]
+
+    def calculate_heuristic_function(self, X, y):
+        if self.heuristic_function == "GR":
+            relevance_values = gain_ratio(X, y)
+        elif self.heuristic_function == "IG":
+            relevance_values = information_gain(X, y)
+        else:
+            raise ValueError(
+                f"Unknown heuristic_function {self.heuristic_function!r}; "
+                'expected "GR" (gain ratio) or "IG" (information gain).'
+            )
+        self.heuristic_function_values_ = dict(zip(self._columns, relevance_values))

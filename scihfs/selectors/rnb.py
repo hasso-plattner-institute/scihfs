@@ -1,6 +1,8 @@
 "RNB feature selection"
 
+import networkx as nx
 import numpy as np
+import scipy.sparse as sp
 from sklearn.naive_bayes import BernoulliNB
 
 from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
@@ -12,19 +14,22 @@ class RNB(LazyHierarchicalFeatureSelector):
 
     """
 
-    def __init__(self, hierarchy=None, k=0):
+    def __init__(
+        self,
+        hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None,
+        k=0,
+    ):
         """Initializes a RNB-Selector.
 
         Parameters
         ----------
         hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-            The hierarchy graph, given either as a dense adjacency
-            matrix (``np.ndarray``), a sparse adjacency matrix
-            (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+            The hierarchy graph. See ``HierarchicalEstimator.__init__``
+            for the accepted formats.
         k : int
             The numbers of features to select.
         """
-        super(RNB, self).__init__(hierarchy)
+        super().__init__(hierarchy)
         self.k = k
 
     def select_and_predict(

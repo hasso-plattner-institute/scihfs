@@ -6,10 +6,7 @@ import pandas as pd
 import pytest
 import scipy.sparse as sp
 
-from scihfs.helpers import (
-    create_mapping_columns_to_nodes,
-    get_columns_for_numpy_hierarchy,
-)
+from scihfs.helpers import get_columns_for_numpy_hierarchy
 from scihfs.preprocessing import ColumnNotInHierarchyWarning, HierarchicalPreprocessor
 
 
@@ -135,7 +132,8 @@ def _canonical_setup():
             ("fish", "trout"),
         ]
     )
-    columns = create_mapping_columns_to_nodes(df, graph)
+    nodes = list(graph.nodes)
+    columns = [nodes.index(name) for name in df.columns]
     X = df.to_numpy().astype(bool)
     hierarchy = nx.to_numpy_array(graph)
     return X, hierarchy, columns
@@ -911,11 +909,7 @@ def test_cyclic_hierarchy_raises_value_error():
 
 
 def test_none_hierarchy_raises_type_error_in_fit():
-    """hierarchy=None reaches _set_hierarchy via the preprocessor and raises.
-
-    The preprocessor calls _fit_hierarchy directly (bypassing the base fit's
-    own None guard), so the None check inside _set_hierarchy is what fires.
-    """
+    """hierarchy=None raises TypeError in the template fit's None guard."""
     X = np.zeros((2, 2), dtype=bool)
     pre = HierarchicalPreprocessor(None)
     with pytest.raises(TypeError, match="Hierarchy is None but is required"):

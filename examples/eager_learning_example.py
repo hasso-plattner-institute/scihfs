@@ -85,7 +85,7 @@ graph = nx.DiGraph(
     ]
 )
 
-# One call: no nx.to_numpy_array, no create_mapping_columns_to_nodes, no columns=.
+# One call: no nx.to_numpy_array, no manual column mapping, no columns=.
 preprocessor = HierarchicalPreprocessor(graph)
 
 # Opt into DataFrame output to keep the hierarchy node names on the columns.
@@ -94,3 +94,19 @@ preprocessor.fit(df)
 df_transformed = preprocessor.transform(df)
 
 print(df_transformed)
+
+# %%
+# DataFrame end-to-end: eager selection without a columns mapping
+# ----------------------------------------------------------------
+# The eager selectors accept the same DataFrame + named-DiGraph input, so the
+# preprocessed frame can be fed straight into a selector -- again with no
+# dedicated ``columns`` argument. With ``set_output(transform="pandas")`` (or
+# any other supported dataframe library) the selected features keep their
+# hierarchy node names.
+
+selector = SHSELSelector(graph)
+selector.set_output(transform="pandas")
+selector.fit(df_transformed, y)
+
+print(selector.get_feature_names_out())
+print(selector.transform(df_transformed))

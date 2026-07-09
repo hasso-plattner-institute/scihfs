@@ -4,9 +4,9 @@ SHSEL Feature Selector.
 
 import statistics
 
+import networkx as nx
 import numpy as np
-from scipy import sparse
-from sklearn.utils.validation import validate_data
+import scipy.sparse as sp
 
 # The HFE extension from Oudah and Henschel (2018) is commented out below, as it requires numerical features in the input (currently only bool supported).
 # When it is restored, also restore the `compute_aggregated_values` and `get_leaves` imports.
@@ -32,7 +32,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
 
     def __init__(
         self,
-        hierarchy: np.ndarray = None,
+        hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None,
         relevance_metric: str = "IG",
         similarity_threshold=None,
         pruning: bool = True,
@@ -46,9 +46,8 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         Parameters
         ----------
         hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    The hierarchy graph. See ``HierarchicalEstimator.__init__``
+                    for the accepted formats.
         relevance_metric : str
                     The relevance metric to use in the initial selection
                     stage of the algorithm. The options ore "IG" for
@@ -105,57 +104,16 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         # self.use_hfe_extension = use_hfe_extension
         # self.preprocess_numerical_data = preprocess_numerical_data
 
-    def fit(self, X, y, columns=None):
-        """Fitting function that sets ``self.representatives_``.
-
-        The number of columns in X and the number of nodes in the hierarchy
-        are expected to be the same and each column should be mapped to
-        exactly one node in the hierarchy with the columns parameter.
-        After fitting ``self.representatives_`` includes the names of all
-        nodes from the hierarchy that are left after feature selection.
-        The features are selected by removing features with
-        parents that have a similar relevance and removing features with
-        lower than average information gain for each path from leaf to
-        root.
-
-        Parameters
-        ----------
-        X : {array-like, sparse matrix}, shape (n_samples, n_features)
-            The training input samples.
-        y : array-like, shape (n_samples,)
-            The target values. An array of int.
-        columns: list or None, length n_features
-            The mapping from the hierarchy graph's nodes to the columns in X.
-            A list of ints. If this parameter is None the columns in X and
-            the corresponding nodes in the hierarchy are expected to be in the
-            same order.
-
-        Returns
-        -------
-        self : object
-            Returns self.
-        """
-        # Input validation
+    def _select(self, X, y):
+        """The actual SHSEL feature selection algorithm."""
         # HFE extension disabled:
         # if self.use_hfe_extension and self.relevance_metric != "Correlation":
         #     raise ValueError(
         #         "When using the HFE extension the relevance_metric should be 'Correlation'."
         #     )
-        X, y = validate_data(self, X, y, accept_sparse=True)
-        if sparse.issparse(X):
+        if sp.issparse(X):
             X = X.tocsc()
-
-        super().fit(X, y, columns)
-
-        # Feature Selection Algorithm
         self._calculate_ig_relevance(X, y)
-        self._fit(X)
-
-        self.is_fitted_ = True
-        return self
-
-    def _fit(self, X):
-        """The feature selection algorithm."""
         # HFE extension disabled:
         # if self.preprocess_numerical_data:
         #     X = self._preprocess(X)

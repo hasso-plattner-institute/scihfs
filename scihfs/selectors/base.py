@@ -31,7 +31,9 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
     for numeric features could be a future enhancement.
     """
 
-    def __init__(self, hierarchy=None):
+    def __init__(
+        self, hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None
+    ):
         """Initializes a HierarchicalEstimator.
 
         Parameters
@@ -52,29 +54,40 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         return tags
 
     def fit(self, X, y=None, columns=None):
-        """Fitting function that prepares the hierarchy and _columns parameter.
+        """Template fitting function shared by all estimators of this family.
 
-        The hierarchy is transformed to a nx.DiGraph with a virtual root node
-        named "ROOT" that connects all parts of the graph to one component.
+        X (and y, when given) are validated exactly once on this path, so
+        ``feature_names_in_`` captured from a DataFrame input survives
+        fitting. The hierarchy is then transformed to a nx.DiGraph with a
+        virtual root node named "ROOT" that connects all parts of the graph
+        to one component, and the subclass's ``_fit`` hook is run.
 
         Parameters
         ----------
         X : {array-like, sparse matrix}, shape (n_samples, n_features)
             The training input samples.
         y : array-like, shape (n_samples,) or None
-            The target values. Only necessary for some estimators.
+            The target values. Required by the supervised subclasses (the
+            eager selectors); ignored by the purely structural transformers.
         columns: list or None
             The mapping from the hierarchy graph's nodes to the columns in X.
             A list of ints. If this parameter is None the columns in X and
-            the corresponding nodes in the hierarchy are expected to be in the
-            same order.
+            the corresponding nodes in the hierarchy are expected to be in
+            the same order -- unless X was passed as a DataFrame and the
+            hierarchy is a named ``nx.DiGraph``; then the mapping is
+            auto-derived from the feature names (see
+            ``_auto_derive_columns``).
 
         Raises
         ------
         TypeError
             If the passed hierarchy is None.
         ValueError
-            If X is not bool-dtype. Numerical inputs may be supported in the future.
+            If X is not bool-dtype (numerical inputs may be supported in the
+            future); if y is None on a supervised subclass (selectors); or if the
+            column->node mapping cannot be auto-derived for a DataFrame X
+            (adjacency-matrix hierarchy without node names, or feature names
+            with no matching node -- see ``_handle_orphan_features``).
 
         Returns
         -------
@@ -83,28 +96,43 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
         """
         if self.hierarchy is None:
             raise TypeError("Hierarchy is None but is required.")
-        X = validate_data(self, X, accept_sparse=True)
+        if y is None:
+            # validate_data raises here for supervised subclasses
+            # (target_tags.required) and validates X alone otherwise.
+            X = validate_data(self, X, y, accept_sparse=True)
+        else:
+            X, y = validate_data(self, X, y, accept_sparse=True)
         check_bool_dtype(X)
         self._fit_hierarchy(columns)
+        self._fit(X, y)
 
+        self.is_fitted_ = True
         return self
+
+    def _fit(self, X, y):
+        """Hook for the subclass's fitting logic.
+
+        Called by ``fit`` with the validated X and y after the hierarchy
+        setup. The base implementation does nothing.
+        """
 
     def _fit_hierarchy(self, columns):
         """Set ``_columns`` and build ``_hierarchy_graph`` from a validated X.
 
-        Split out from ``fit`` so that subclasses performing their own input
-        validation (e.g. ``HierarchicalPreprocessor``, which must read
-        ``feature_names_in_`` before any second ``validate_data`` call would
-        drop it) can reuse the hierarchy setup without re-validating X.
-
-        Assumes ``validate_data`` has already run and set ``n_features_in_``.
+        Called from the template ``fit`` after its single validation pass.
+        Assumes ``validate_data`` has already run and set ``n_features_in_``
+        (and ``feature_names_in_`` when X was a DataFrame).
 
         Parameters
         ----------
         columns : list or None
             The mapping from the hierarchy graph's nodes to the columns in X.
-            If None, positional 1:1 ordering is assumed.
+            If None, the mapping is auto-derived from the feature names when
+            X was a DataFrame (see ``_auto_derive_columns``); otherwise
+            positional 1:1 ordering is assumed.
         """
+        if columns is None and getattr(self, "feature_names_in_", None) is not None:
+            columns = self._auto_derive_columns()
         if columns:
             self._columns = columns
         else:
@@ -116,6 +144,77 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
 
         self._set_hierarchy()
         self._check_dag()
+
+    def _auto_derive_columns(self):
+        """Derive the column->node mapping from DataFrame feature names.
+
+        Called from ``_fit_hierarchy`` when X was passed to ``fit`` as a
+        ``DataFrame`` (so ``feature_names_in_`` is set) and ``columns``
+        was not supplied. Each captured feature name is looked up against the
+        hierarchy's node names; names with no matching node map to ``-1`` and
+        are handed to the ``_handle_orphan_features`` hook, which decides the
+        subclass's orphan policy (the base raises, only the HierarchicalPreprocessor
+        subclass does not).
+
+        Node names are compared as strings because scikit-learn coerces
+        DataFrame column labels to ``str`` in ``feature_names_in_``. This lets
+        a ``DiGraph`` with integer node names still match a DataFrame whose
+        (string) column labels equal those integers.
+
+        Returns
+        -------
+        columns : list of int
+            The derived column->node-position mapping, in feature order.
+
+        Raises
+        ------
+        ValueError
+            If the hierarchy is not a ``DiGraph`` – an adjacency matrix, given
+            as np.ndarray or scipy.sparse, has no node names to match
+            against).
+        """
+        if not isinstance(self.hierarchy, nx.DiGraph):
+            raise ValueError(
+                "Cannot auto-derive columns from DataFrame feature names "
+                "because the hierarchy is an adjacency matrix (np.ndarray or "
+                "scipy.sparse) without node names. Either pass hierarchy as "
+                "nx.DiGraph with named nodes, or supply columns explicitly."
+            )
+        nodes = list(self.hierarchy.nodes)
+        name_to_position = {str(node): i for i, node in enumerate(nodes)}
+        columns = [name_to_position.get(str(name), -1) for name in self.feature_names_in_]
+        orphan_names = [
+            str(name) for name, node in zip(self.feature_names_in_, columns) if node == -1
+        ]
+        if orphan_names:
+            self._handle_orphan_features(orphan_names)
+        return columns
+
+    def _handle_orphan_features(self, orphan_names):
+        """Hook deciding the policy for orphaned DataFrame feature names.
+
+        Called from ``_auto_derive_columns`` when at least one feature name has
+        no matching node in the hierarchy (mapped to ``-1``). The base
+        implementation raises because the estimators cannot handle unmapped
+        columns; ``HierarchicalPreprocessor`` overrides this to tolerate them
+        (its ``_extend_dag`` later adds the orphans under ROOT).
+
+        Parameters
+        ----------
+        orphan_names : list of str
+            The DataFrame feature names without a matching hierarchy node.
+
+        Raises
+        ------
+        ValueError
+            Always (in the base implementation).
+        """
+        raise ValueError(
+            f"The following DataFrame columns have no matching node in the "
+            f"hierarchy: {orphan_names}. Use the HierarchicalPreprocessor to "
+            "add them to the hierarchy, or supply the columns mapping "
+            "explicitly."
+        )
 
     def transform(self, X):
         """Reduce X to the selected features.

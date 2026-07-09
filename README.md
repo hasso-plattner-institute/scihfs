@@ -37,11 +37,13 @@ Here is a simple example of how to use one of the hierarchical feature selection
 
     from scihfs import SHSELSelector
 
-    # Initialize selector
+    # hierarchy: a networkx.DiGraph whose node names match the columns of the
+    # DataFrame X. (Adjacency matrices and plain arrays are supported too --
+    # then pass an explicit columns= mapping to fit.)
     selector = SHSELSelector(hierarchy)
 
     # Fit selector and transform data
-    selector.fit(X, y, columns=columns)
+    selector.fit(X, y)
     X_transformed = selector.transform(X)
 
 Documentation

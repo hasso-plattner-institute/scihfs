@@ -3,10 +3,11 @@ Hill Climbing Feature Selectors.
 """
 
 import math
+from abc import abstractmethod
 
+import networkx as nx
 import numpy as np
-from scipy import sparse
-from sklearn.utils.validation import validate_data
+import scipy.sparse as sp
 
 # Numerical input is not supported and previous related code commented out throughout this file, such as the 'dataset_type' variable with "binary" and "numerical" branches.
 # Restore the `normalize_score` import here when reintroducing.
@@ -24,7 +25,7 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
 
     def __init__(
         self,
-        hierarchy: np.ndarray = None,
+        hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None,
         alpha: float = 0.99,
         # dataset_type: str = "binary",
     ):
@@ -33,9 +34,8 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
         Parameters
         ----------
         hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    The hierarchy graph. See ``HierarchicalEstimator.__init__``
+                    for the accepted formats.
         alpha: float
                 A hyperparameter needed for the hill climbing methods.
                 The default value is 0.99.
@@ -53,60 +53,26 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
         self.alpha = alpha
         # self.dataset_type = dataset_type
 
-    def fit(self, X, y, columns=None):
-        """Fitting function that sets ``self.representatives_``.
-
-        Calls the function performing feature selection algorithm.
-        The number of columns in X and the number of nodes in the hierarchy
-        are expected to be the same and each column should be mapped to
-        exactly one node in the hierarchy with the columns parameter.
-        After fitting ``self.representatives_`` includes the names of all
-        nodes from the hierarchy that are left after feature selection.
-        The features are selected comparing different sets of features
-        with a fitness function.
-
-        Parameters
-        ----------
-        X : {array-like, sparse matrix}, shape (n_samples, n_features)
-            The training input samples.
-        y : array-like, shape (n_samples,)
-            The target values. An array of int.
-        columns: list or None, length n_features
-            The mapping from the hierarchy graph's nodes to the columns in X.
-            A list of ints. If this parameter is None the columns in X and
-            the corresponding nodes in the hierarchy are expected to be in the
-            same order.
-
-        Returns
-        -------
-        self : object
-            Returns self.
-        """
-        # Input validation
-        X, y = validate_data(self, X, y, accept_sparse=True)
-
-        super().fit(X, y, columns)
-        if sparse.issparse(X):
+    def _select(self, X, y):
+        """The feature selection algorithm framework which delegates
+        the actual selection to ``_hill_climb``."""
+        if sp.issparse(X):
             X = X.tocsr()
-
-        # Feature Selection Algorithm
         self.y_ = y
         self._num_rows = X.shape[0]
         self.representatives_ = self._hill_climb(X)
 
-        return self
-
+    @abstractmethod
     def _hill_climb(self, X):
         """Performs the feature selection.
 
-        This methods needs to be implemented by the subclasses.
+        This method needs to be implemented by the subclasses.
 
         Parameters
         ----------
         X : {array-like, sparse matrix}, shape (n_samples, n_features)
             The training input samples.
         """
-        raise NotImplementedError
 
     def _calculate_scores(self, X):
         """Calculate scores for each value in X.
@@ -140,13 +106,14 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
         #     score_matrix = normalized_matrix
         return score_matrix
 
+    @abstractmethod
     def _compare(
         self,
         sample_i: int,
         sample_j: int,
         feature_set: list[int],
     ):
-        """Compare to samples from the dataset.
+        """Compare two samples from the dataset.
 
         This method needs to be implemented by the subclasses.
         It should return a score that can be used for comparison.
@@ -161,7 +128,6 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
                     A list of nodes that are in the feature set that is
                     currently being evaluated.
         """
-        raise NotImplementedError
 
     def _comparison_matrix(self, feature_set: list[int]):
         """Creates matrix to compare the individual samples from the dataset.
@@ -187,8 +153,12 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
                     distances[row_j, row_i] = distance
         return distances
 
+    @abstractmethod
     def _fitness_function(self, comparison_matrix: np.ndarray) -> float:
-        raise NotImplementedError
+        """Evaluates a comparison matrix into a single fitness score.
+
+        This method needs to be implemented by the subclasses.
+        """
 
 
 class TopDownSelector(HillClimbingSelector):
@@ -201,68 +171,6 @@ class TopDownSelector(HillClimbingSelector):
     The method is intended for hierarchical data. Therefore, it inherits
     from the EagerHierarchicalFeatureSelector.
     """
-
-    def __init__(
-        self,
-        hierarchy: np.ndarray = None,
-        alpha: float = 0.99,
-        # dataset_type: str = "binary",
-    ):
-        """Initializes a TopDownSelector.
-
-        Parameters
-        ----------
-        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
-        alpha: float
-                A hyperparameter needed for the hill climbing methods.
-                The default value is 0.99.
-
-        Notes
-        -----
-        Numerical input is currently not supported. Corresponding code is retained (but inactive) for future reintroduction.
-        This also applies to the `dataset_type` parameter.
-
-        dataset_type: string, either "binary" or "numerical"
-                A value indicating if the input dataset contains binary or
-                numerical data. Default is "binary".
-        """
-        # dataset_type disabled:
-        super().__init__(hierarchy, alpha=alpha)
-
-    def fit(self, X, y, columns=None):
-        """Fitting function that sets ``self.representatives_``.
-
-        Calls the function performing feature selection algorithm.
-        The number of columns in X and the number of nodes in the hierarchy
-        are expected to be the same and each column should be mapped to
-        exactly one node in the hierarchy with the columns parameter.
-        After fitting ``self.representatives_`` includes the names of all
-        nodes from the hierarchy that are left after feature selection.
-        The features are selected by going through the feature graph from
-        top to bottom, replacing parent nodes with their children and
-        evaluating the resulting feature set with a fitness function.
-
-        Parameters
-        ----------
-        X : {array-like, sparse matrix}, shape (n_samples, n_features)
-            The training input samples.
-        y : array-like, shape (n_samples,)
-            The target values. An array of int.
-        columns: list or None, length n_features
-            The mapping from the hierarchy graph's nodes to the columns in X.
-            A list of ints. If this parameter is None the columns in X and
-            the corresponding nodes in the hierarchy are expected to be in the
-            same order.
-
-        Returns
-        -------
-        self : object
-            Returns self.
-        """
-        return super().fit(X, y, columns)
 
     def _hill_climb(self, X) -> list[int]:
         """Performs the feature selection.
@@ -369,7 +277,7 @@ class BottomUpSelector(HillClimbingSelector):
 
     def __init__(
         self,
-        hierarchy: np.ndarray = None,
+        hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None,
         alpha: float = 0.01,
         k: int = 5,
         # dataset_type: str = "binary",
@@ -379,9 +287,8 @@ class BottomUpSelector(HillClimbingSelector):
         Parameters
         ----------
         hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
+                    The hierarchy graph. See ``HierarchicalEstimator.__init__``
+                    for the accepted formats.
                     For this feature selection method to work as
                     intended the graph needs to be a tree.
         alpha: float
@@ -405,38 +312,6 @@ class BottomUpSelector(HillClimbingSelector):
         # dataset_type disabled:
         super().__init__(hierarchy, alpha=alpha)
         self.k = k
-
-    def fit(self, X, y, columns=None):
-        """Fitting function that sets ``self.representatives_``.
-
-        Calls the function performing feature selection algorithm.
-        The number of columns in X and the number of nodes in the hierarchy
-        are expected to be the same and each column should be mapped to
-        exactly one node in the hierarchy with the columns parameter.
-        After fitting ``self.representatives_`` includes the names of all
-        nodes from the hierarchy that are left after feature selection.
-        The features are selected by going through the feature graph from
-        bottom to top, replacing child nodes with their parent node and
-        evaluating the resulting feature set with a fitness function.
-
-        Parameters
-        ----------
-        X : {array-like, sparse matrix}, shape (n_samples, n_features)
-            The training input samples.
-        y : array-like, shape (n_samples,)
-            The target values. An array of int.
-        columns: list or None, length n_features
-            The mapping from the hierarchy graph's nodes to the columns in X.
-            A list of ints. If this parameter is None the columns in X and
-            the corresponding nodes in the hierarchy are expected to be in the
-            same order.
-
-        Returns
-        -------
-        self : object
-            Returns self.
-        """
-        return super().fit(X, y, columns)
 
     def _hill_climb(self, X) -> list[int]:
         """Performs the feature selection.

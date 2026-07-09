@@ -62,28 +62,6 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
     for numeric features is planned as a future enhancement.
     """
 
-    def __init__(self, hierarchy=None):
-        """Initializes a HierarchicalPreprocessor.
-
-        Parameters
-        ----------
-        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
-                    Any ``scipy.sparse`` format (``csr_array``, ``csr_matrix``,
-                    ``coo_array``, ...) is accepted and converted internally.
-                    Note: ``None`` is accepted for scikit-learn ``clone()`` compatibility but raises ``TypeError`` in ``fit``.
-
-        .. note::
-            When the hierarchy is a named ``DiGraph`` and X is passed
-            to ``fit`` as a pandas ``DataFrame``, the column-to-node
-            mapping is derived automatically from the feature names,
-            so the ``columns`` argument of ``fit`` can be omitted.
-
-        """
-        self.hierarchy = hierarchy
-
     def _handle_orphan_features(self, orphan_names):
         """Tolerate orphaned DataFrame feature names.
 

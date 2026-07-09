@@ -16,20 +16,15 @@ class LazyHierarchicalFeatureSelector(ABC, HierarchicalEstimator):
     Abstract class used for all lazy hierarchical feature selection methods.
 
     Every method should implement the method select_and_predict.
+
+    Lazy selectors are arrays-only: unlike the ``HierarchicalPreprocessor``
+    and the eager selectors, they neither auto-derive the column->node
+    mapping from DataFrame feature names nor support the output API
+    (``get_feature_names_out`` / ``set_output``). Pass plain arrays to
+    ``fit_selector`` (with an explicit ``columns`` mapping when column
+    and node order differ); a DataFrame-aware lazy API is left to a
+    future redesign of the lazy interface.
     """
-
-    def __init__(self, hierarchy: np.ndarray = None):  # todo G = None
-        """
-        Initialize a LazyHierarchicalFeatureSelector with the required data.
-
-        Parameters
-        ----------
-        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-            The hierarchy graph, given either as a dense adjacency
-            matrix (``np.ndarray``), a sparse adjacency matrix
-            (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
-        """
-        self.hierarchy = hierarchy
 
     def fit(self, X, y=None):
         """

@@ -172,36 +172,6 @@ class TopDownSelector(HillClimbingSelector):
     from the EagerHierarchicalFeatureSelector.
     """
 
-    def __init__(
-        self,
-        hierarchy: np.ndarray = None,
-        alpha: float = 0.99,
-        # dataset_type: str = "binary",
-    ):
-        """Initializes a TopDownSelector.
-
-        Parameters
-        ----------
-        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
-        alpha: float
-                A hyperparameter needed for the hill climbing methods.
-                The default value is 0.99.
-
-        Notes
-        -----
-        Numerical input is currently not supported. Corresponding code is retained (but inactive) for future reintroduction.
-        This also applies to the `dataset_type` parameter.
-
-        dataset_type: string, either "binary" or "numerical"
-                A value indicating if the input dataset contains binary or
-                numerical data. Default is "binary".
-        """
-        # dataset_type disabled:
-        super().__init__(hierarchy, alpha=alpha)
-
     def _hill_climb(self, X) -> list[int]:
         """Performs the feature selection.
 

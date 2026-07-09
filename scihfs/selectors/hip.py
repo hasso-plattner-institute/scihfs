@@ -9,18 +9,6 @@ class HIP(LazyHierarchicalFeatureSelector):
     Select non-redundant features with the highest relevance following the algorithm proposed by Wan and Freitas.
     """
 
-    def __init__(self, hierarchy=None):
-        """Initializes a HIP-Selector.
-
-        Parameters
-        ----------
-        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
-        """
-        super(HIP, self).__init__(hierarchy)
-
     def select_and_predict(
         self, predict=True, saveFeatures=False, estimator=BernoulliNB()
     ):

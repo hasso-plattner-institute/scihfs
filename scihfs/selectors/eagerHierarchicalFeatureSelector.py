@@ -34,18 +34,6 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
     makes ``transform`` return a DataFrame labelled with them.
     """
 
-    def __init__(self, hierarchy: np.ndarray = None):
-        """Initializes an EagerHierarchicalFeatureSelector.
-
-        Parameters
-        ----------
-        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-                    The hierarchy graph, given either as a dense adjacency
-                    matrix (``np.ndarray``), a sparse adjacency matrix
-                    (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
-        """
-        super().__init__(hierarchy)
-
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
         tags.target_tags.required = True

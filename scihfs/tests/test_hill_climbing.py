@@ -119,6 +119,19 @@ def test_calculate_fitness_function_bu(
     assert np.array_equal(fitness, fitness_expected)
 
 
+def test_calculate_similarity_rejects_root(data1):
+    # feature_set reaching _calculate_similarity is contractually ROOT-free
+    # (see select_and_return_features). If "ROOT" ever slipped in regardless,
+    # fancy-indexing a numpy array with a mixed str/int list must fail loudly
+    # rather than silently falling back to `arr[i, None]` semantics.
+    X, y, hierarchy, columns = data1
+    selector = BottomUpSelector(hierarchy, k=3)
+    selector.fit(X, y, columns)
+
+    with pytest.raises(IndexError):
+        selector._calculate_similarity(0, 1, ["ROOT", columns[0]])
+
+
 def test_calculate_fitness_function_td(
     data1, result_comparison_matrix_td1, result_fitness_funtion_td1
 ):

@@ -383,8 +383,6 @@ class BottomUpSelector(HillClimbingSelector):
         return self._calculate_similarity(sample_i, sample_j, feature_set)
 
     def _calculate_similarity(self, sample_i: int, sample_j: int, feature_set: list[int]):
-        if "ROOT" in feature_set:
-            feature_set = feature_set.remove("ROOT")
         row_i = self._score_matrix[sample_i, feature_set]
         row_j = self._score_matrix[sample_j, feature_set]
         return cosine_similarity(row_i.flatten(), row_j.flatten())

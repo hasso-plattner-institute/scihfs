@@ -19,22 +19,42 @@ from scihfs.helpers import (
 ORIGINAL_NODE_IDENTIFIER = "_scihfs_original_node_identifier"
 
 
-class HierarchicalEstimator(TransformerMixin, BaseEstimator):
-    """Base class for estimators using hierarchical data.
+class HierarchyMixin:
+    """Hierarchy-core mixin for handling the ``hierarchy`` parameter.
 
-    The HierarchicalEstimator implements scikit-learn's BaseEstimator and
-    TransformerMixin interfaces. It can be used as a base class for feature
-    selection classes or data preprocessors that use hierarchical data.
+    Holds everything needed to turn the ``hierarchy`` constructor argument into
+    a validated ``_hierarchy_graph`` plus the column->node mapping, *without*
+    committing to any scikit-learn fit/transform/predict contract. It carries
+    no ``TransformerMixin``/``ClassifierMixin`` surface and defines no ``fit``.
 
-    ..note:: This estimator currently supports only bool-dtype input.
-    Non-binary (numeric) inputs raise ``ValueError``. Sum-propagation
-    for numeric features could be a future enhancement.
+    Estimators combine it with ``BaseEstimator`` and the mixin matching their
+    role:
+
+    - ``HierarchicalEstimator(TransformerMixin, HierarchyMixin, BaseEstimator)``
+      -- the transformer fit-template used by the preprocessor and the eager
+      selectors.
+    - The lazy selectors pair it with a classifier surface directly.
+
+    Two things share the word "validation", and only one lives here.
+    *Hierarchy* validation is this mixin's job: format dispatch
+    (``_set_hierarchy``), acyclicity (``_check_dag``), and the unique/orphan
+    column->node mapping (``_auto_derive_columns`` /
+    ``_handle_orphan_features``). X *data* validation (dtype, finiteness,
+    shape) is deliberately not: it is the host estimator's boundary
+    responsibility, performed once per public method via ``validate_data``.
+    That split is intentional -- data validation is role-specific (whether
+    ``y`` is required and whether sparse is accepted come from the host's
+    tags) and fires again at ``transform`` / ``predict`` time, neither of
+    which this mixin sees. These methods here therefore consume only the
+    *products* of that validation: ``self.n_features_in_`` (and, for DataFrame
+    input, ``self.feature_names_in_``), set by the host before
+    ``_fit_hierarchy`` runs.
     """
 
     def __init__(
         self, hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None
     ):
-        """Initializes a HierarchicalEstimator.
+        """Initializes a HierarchyMixin.
 
         Parameters
         ----------
@@ -47,74 +67,6 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
                     Note: ``None`` is accepted for scikit-learn ``clone()``
                     compatibility but raises ``TypeError`` in ``fit``."""
         self.hierarchy = hierarchy
-
-    def __sklearn_tags__(self):
-        tags = super().__sklearn_tags__()
-        tags.input_tags.sparse = True
-        return tags
-
-    def fit(self, X, y=None, columns=None):
-        """Template fitting function shared by all estimators of this family.
-
-        X (and y, when given) are validated exactly once on this path, so
-        ``feature_names_in_`` captured from a DataFrame input survives
-        fitting. The hierarchy is then transformed to a nx.DiGraph with a
-        virtual root node named "ROOT" that connects all parts of the graph
-        to one component, and the subclass's ``_fit`` hook is run.
-
-        Parameters
-        ----------
-        X : {array-like, sparse matrix}, shape (n_samples, n_features)
-            The training input samples.
-        y : array-like, shape (n_samples,) or None
-            The target values. Required by the supervised subclasses (the
-            eager selectors); ignored by the purely structural transformers.
-        columns: list or None
-            The mapping from the hierarchy graph's nodes to the columns in X.
-            A list of ints. If this parameter is None the columns in X and
-            the corresponding nodes in the hierarchy are expected to be in
-            the same order -- unless X was passed as a DataFrame and the
-            hierarchy is a named ``nx.DiGraph``; then the mapping is
-            auto-derived from the feature names (see
-            ``_auto_derive_columns``).
-
-        Raises
-        ------
-        TypeError
-            If the passed hierarchy is None.
-        ValueError
-            If X is not bool-dtype (numerical inputs may be supported in the
-            future); if y is None on a supervised subclass (selectors); or if the
-            column->node mapping cannot be auto-derived for a DataFrame X
-            (adjacency-matrix hierarchy without node names, or feature names
-            with no matching node -- see ``_handle_orphan_features``).
-
-        Returns
-        -------
-        self : object
-            Returns self.
-        """
-        if self.hierarchy is None:
-            raise TypeError("Hierarchy is None but is required.")
-        if y is None:
-            # validate_data raises here for supervised subclasses
-            # (target_tags.required) and validates X alone otherwise.
-            X = validate_data(self, X, y, accept_sparse=True)
-        else:
-            X, y = validate_data(self, X, y, accept_sparse=True)
-        check_bool_dtype(X)
-        self._fit_hierarchy(columns)
-        self._fit(X, y)
-
-        self.is_fitted_ = True
-        return self
-
-    def _fit(self, X, y):
-        """Hook for the subclass's fitting logic.
-
-        Called by ``fit`` with the validated X and y after the hierarchy
-        setup. The base implementation does nothing.
-        """
 
     def _fit_hierarchy(self, columns):
         """Set ``_columns`` and build ``_hierarchy_graph`` from a validated X.
@@ -216,26 +168,6 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
             "explicitly."
         )
 
-    def transform(self, X):
-        """Reduce X to the selected features.
-
-        Extend this methods to actually transform the dataset.
-
-        Parameters
-        ----------
-        X : array of shape (n_samples, n_features)
-            The input samples.
-
-        Returns
-        -------
-        X : array of shape (n_samples, n_selected_features)
-            The input samples with only the selected features.
-        """
-        check_is_fitted(self)
-        X = validate_data(self, X, accept_sparse="csr", reset=False)
-
-        return X
-
     def get_columns(self):
         """Get mapping from the dataset's columns to the hierarchy's nodes.
 
@@ -334,3 +266,106 @@ class HierarchicalEstimator(TransformerMixin, BaseEstimator):
     def _column_index(self, node):
         # Get the corresponding column index for a node in the hierarchy.
         return self._columns.index(node)
+
+
+class HierarchicalEstimator(TransformerMixin, HierarchyMixin, BaseEstimator):
+    """Base class for estimators using hierarchical data.
+
+    The HierarchicalEstimator combines scikit-learn's ``TransformerMixin`` and
+    ``BaseEstimator`` with :class:`HierarchyMixin` from scihfs (the hierarchy core).
+    It is the transformer fit-template for the data preprocessor and the eager
+    feature selectors, with single input-validation pass, the hierarchy setup,
+    and a ``_fit`` hook.
+
+    ..note:: This estimator currently supports only bool-dtype input.
+    Non-binary (numeric) inputs raise ``ValueError``. Sum-propagation
+    for numeric features could be a future enhancement.
+    """
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.input_tags.sparse = True
+        return tags
+
+    def fit(self, X, y=None, columns=None):
+        """Template fitting function shared by all estimators of this family.
+
+        X (and y, when given) are validated exactly once on this path, so
+        ``feature_names_in_`` captured from a DataFrame input survives
+        fitting. The hierarchy is then transformed to a nx.DiGraph with a
+        virtual root node named "ROOT" that connects all parts of the graph
+        to one component, and the subclass's ``_fit`` hook is run.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix}, shape (n_samples, n_features)
+            The training input samples.
+        y : array-like, shape (n_samples,) or None
+            The target values. Required by the supervised subclasses (the
+            eager selectors); ignored by the purely structural transformers.
+        columns: list or None
+            The mapping from the hierarchy graph's nodes to the columns in X.
+            A list of ints. If this parameter is None the columns in X and
+            the corresponding nodes in the hierarchy are expected to be in
+            the same order -- unless X was passed as a DataFrame and the
+            hierarchy is a named ``nx.DiGraph``; then the mapping is
+            auto-derived from the feature names (see
+            ``_auto_derive_columns``).
+
+        Raises
+        ------
+        TypeError
+            If the passed hierarchy is None.
+        ValueError
+            If X is not bool-dtype (numerical inputs may be supported in the
+            future); if y is None on a supervised subclass (selectors); or if the
+            column->node mapping cannot be auto-derived for a DataFrame X
+            (adjacency-matrix hierarchy without node names, or feature names
+            with no matching node -- see ``_handle_orphan_features``).
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
+        if self.hierarchy is None:
+            raise TypeError("Hierarchy is None but is required.")
+        if y is None:
+            # validate_data raises here for supervised subclasses
+            # (target_tags.required) and validates X alone otherwise.
+            X = validate_data(self, X, y, accept_sparse=True)
+        else:
+            X, y = validate_data(self, X, y, accept_sparse=True)
+        check_bool_dtype(X)
+        self._fit_hierarchy(columns)
+        self._fit(X, y)
+
+        self.is_fitted_ = True
+        return self
+
+    def _fit(self, X, y):
+        """Hook for the subclass's fitting logic.
+
+        Called by ``fit`` with the validated X and y after the hierarchy
+        setup. The base implementation does nothing.
+        """
+
+    def transform(self, X):
+        """Reduce X to the selected features.
+
+        Extend this methods to actually transform the dataset.
+
+        Parameters
+        ----------
+        X : array of shape (n_samples, n_features)
+            The input samples.
+
+        Returns
+        -------
+        X : array of shape (n_samples, n_selected_features)
+            The input samples with only the selected features.
+        """
+        check_is_fitted(self)
+        X = validate_data(self, X, accept_sparse="csr", reset=False)
+
+        return X

@@ -92,40 +92,6 @@ def _check_unique_column_mappings(columns):
         )
 
 
-def check_data(dag, x_data, y_data):
-    """Checks whether the given dataset satisfies the 0-1-propagation on the DAG.
-
-    The 0-1-propagation property states that if there is a directed edge (u, v)
-    in the DAG, then whenever node u has a value of 1 in the dataset, node v
-    must have a value of 1 for the same instance.
-
-    Parameters
-    ----------
-    dag : networkx.DiGraph
-        The Directed Acyclic Graph representing the hierarchy structure.
-    x_data : numpy.ndarray
-            An array containing the input features of the dataset.
-    y_data : numpy.ndarray
-            An array containing the corresponding output labels of the dataset.
-
-    Raises
-    ----------
-    ValueError: If the dataset violates the 0-1-propagation property
-    on any of the edges in the DAG.
-
-    """
-    data = np.column_stack((x_data, y_data))
-    edges = list(nx.edge_dfs(dag, source=0, orientation="original"))
-    for edge in edges:
-        for idx in range(len(data)):
-            if data[idx, edge[0]] == 0 and data[idx, edge[1]] == 1:
-                raise ValueError(
-                    f"Test instance {idx} violates 0-1-propagation \
-                    on edge ({edge[0]}, {edge[1]})"
-                    f"{data[idx]}"
-                )
-
-
 def get_leaves(graph: nx.DiGraph):
     """Get the leaf nodes from the given directed acyclic graph (DAG).
 

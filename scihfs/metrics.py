@@ -5,7 +5,7 @@ Different metric functions.
 import numpy as np
 from numpy.linalg import norm
 from scipy import sparse
-from sklearn.metrics import mutual_info_score
+from sklearn.metrics import mutual_info_score, recall_score
 
 
 def _information_gain(feature: np.ndarray, target: np.ndarray) -> float:
@@ -244,6 +244,45 @@ def gain_ratio(data, labels):
         gr = _gain_ratio(column, labels)
         gr_values.append(gr)
     return gr_values
+
+
+def sensitivity_specificity_product(y_true, y_pred):
+    """Product of sensitivity and specificity for a binary {0, 1} target.
+
+    Common metric in the lazy hierarchical classifiers literature; ``score`` on
+    the (lazy) classifiers only gives plain accuracy.
+
+    Parameters
+    ----------
+    y_true : array-like of shape (n_samples,)
+        The ground-truth labels (0/1).
+    y_pred : array-like of shape (n_samples,)
+        The predicted labels (0/1).
+
+    Returns
+    ----------
+    float : sensitivity * specificity.
+    """
+    sensitivity = recall_score(y_true, y_pred, pos_label=1, zero_division=0)
+    specificity = recall_score(y_true, y_pred, pos_label=0, zero_division=0)
+    return float(sensitivity) * float(specificity)
+
+
+def mean_selected_fraction(masks):
+    """Mean fraction of features selected per instance ("compression").
+
+    Parameters
+    ----------
+    masks : array-like of shape (n_samples, n_features), dtype bool
+        The per-instance selection masks, as returned by a lazy selector's
+        ``select`` method.
+
+    Returns
+    ----------
+    float : The mean fraction of selected features per instance, in [0, 1].
+    """
+    masks = np.asarray(masks, dtype=bool)
+    return float(masks.mean())
 
 
 def pearson_correlation(i: np.ndarray, j: np.ndarray):

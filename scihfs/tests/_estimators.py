@@ -4,16 +4,13 @@ In order to route the estimators to the correct tests, they are sorted based on
 their properties.
 
 - ``ALL_ESTIMATORS`` - they expose the full sklearn estimator surface, and can
-    be run through the sklearn conformance test suite. (Union of the eager and
-    lazy selectors, plus the base classes and the preprocessor. The abstract
-    eager base is represented by the minimal concrete stub
-    ``_MinimalEagerSelector``.)
-- ``EAGER_SELECTORS`` - single pass fit().
-- ``LAZY_SELECTORS`` - fit_selector() with both X_train and X_test to fit per
-    test instance.
+    be run through the sklearn conformance test suite. (The eager transformers
+    plus the lazy classifiers, plus the base classes and the preprocessor. The
+    abstract eager base is represented by the minimal concrete stub
+    ``_MinimalEagerSelector``.
 
-Future work: Divide by filter/wrapper/embedded feature selection methods when
-the embedded methods also inherit from ClassifierMixin.
+- ``EAGER_SELECTORS`` - transformers with a single-pass ``fit`` + ``transform``.
+- ``LAZY_SELECTORS`` - per-instance classifiers (``fit`` then ``predict``), all ``ClassifierMixin`` subclasses.
 """
 
 from scihfs import (
@@ -62,6 +59,7 @@ ALL_ESTIMATORS = [
     RNB,
     MR,
     HIP,
+    TAN,
     BottomUpSelector,
     GreedyTopDownSelector,
 ]

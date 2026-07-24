@@ -11,6 +11,7 @@ from sklearn.utils.validation import check_is_fitted, validate_data
 from scihfs.helpers import (
     _check_unique_column_mappings,
     add_virtual_root_node,
+    check_binary_target,
     check_bool_dtype,
 )
 
@@ -336,6 +337,7 @@ class HierarchicalEstimator(TransformerMixin, HierarchyMixin, BaseEstimator):
             X = validate_data(self, X, y, accept_sparse=True)
         else:
             X, y = validate_data(self, X, y, accept_sparse=True)
+            check_binary_target(y)
         check_bool_dtype(X)
         self._fit_hierarchy(columns)
         self._fit(X, y)

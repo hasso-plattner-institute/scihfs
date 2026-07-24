@@ -10,6 +10,7 @@ import networkx as nx
 import numpy as np
 import scipy.sparse as sp
 from networkx.algorithms.simple_paths import all_simple_paths
+from sklearn.utils.multiclass import type_of_target
 
 
 def get_relevance(xdata, ydata, node):
@@ -65,6 +66,25 @@ def check_bool_dtype(X):
             f"If your data is binary, convert with X.astype(bool). "
             f"Non-binary (numeric) inputs are not yet supported - "
             f"see the sum-propagation roadmap for HFE workflows."
+        )
+
+
+def check_binary_target(y):
+    """Raise ValueError unless ``y`` has a binary target encoding drawing
+    from ``{0, 1}` (can also be encoded as boolean ``False`` and ``True``).
+    """
+    y_type = type_of_target(y, input_name="y")
+    if y_type != "binary":
+        raise ValueError(
+            f"Only binary classification is supported. scihfs estimators "
+            f"require a binary target; got y_type={y_type!r}."
+        )
+    labels = set(np.unique(y).tolist())
+    if not labels <= {0, 1}:
+        raise ValueError(
+            f"scihfs estimators require the binary target to be labelled 0 and "
+            f"1 (boolean False and True, respectively); got"
+            f"classes={sorted(labels)!r}. Relabel the encodings before fitting."
         )
 
 

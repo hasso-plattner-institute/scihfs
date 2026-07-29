@@ -1,46 +1,33 @@
-import numpy as np
-from sklearn.naive_bayes import BernoulliNB
-
 from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
 
 class HIP(LazyHierarchicalFeatureSelector):
-    """
-    Select non-redundant features with the highest relevance following the algorithm proposed by Wan and Freitas.
+    """HIP (Hierarchical Information-Preserving): Lazy classifier from Wan et al., 2015, Algorithm 1.
+
+    Essentially a compression which keeps for each path only the most detailed
+    positive or the most abstract negative feature -- for the subset of
+    per-instance features.
     """
 
-    def select_and_predict(
-        self, predict=True, saveFeatures=False, estimator=BernoulliNB()
-    ):
-        """
-        Select features lazy for each test instance amd optionally predict target value of test instances.
-        The features are selected, so that for each testing instance in each path only the deepest positive
-        or the highest negative feature is preserved.
+    def _select_features_per_instance(self, x_row):
+        """Keep, per path, the deepest positive or highest negative feature.
 
         Parameters
         ----------
-        predict : bool
-            true if predictions shall be obtained.
-        saveFeatures : bool
-            true if features selected for each test instance shall be saved.
-        estimator : sklearn-compatible estimator
-            Estimator to use for predictions.
-
+        x_row : numpy array of shape (n_features,)
+            One test instance.
 
         Returns
         -------
-        predictions for test input samples, if predict = false, returns empty array.
+        instance_status : dict
+            The node->0/1 selection mask.
         """
-        predictions = np.array([])
-        for idx in range(len(self._xtest)):
-            self._get_nonredundant_features(idx)
-            if predict:
-                predictions = np.append(predictions, self._predict(idx, estimator)[0])
-            if saveFeatures:
-                self._features[idx] = np.array(list(self._instance_status.values()))
-            self._feature_length[idx] = len(
-                [nodes for nodes, status in self._instance_status.items() if status]
-            )
-            for node in self._hierarchy_graph:
-                self._instance_status[node] = 1
-        return predictions
+        instance_status = {node: 1 for node in self._hierarchy_graph}
+        for node in self._hierarchy_graph:
+            if x_row[node] == 1:
+                for anc in self._hierarchy_graph.predecessors(node):
+                    instance_status[anc] = 0
+            else:
+                for desc in self._hierarchy_graph.successors(node):
+                    instance_status[desc] = 0
+        return instance_status

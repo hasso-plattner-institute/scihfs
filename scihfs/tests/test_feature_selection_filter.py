@@ -11,6 +11,7 @@ import copy
 
 import networkx as nx
 import numpy as np
+import pandas as pd
 import pytest
 import scipy.sparse as sp
 from sklearn.exceptions import NotFittedError
@@ -145,6 +146,84 @@ def test_lazy_selectors_accept_sparse_like_dense(lazy_data2, factory, sparse_typ
 
     assert np.array_equal(sparse_fit.predict(sparse_type(X_test)), dense.predict(X_test))
     assert np.array_equal(sparse_fit.select(sparse_type(X_test)), dense.select(X_test))
+
+
+# ---------------------------------------------------------------------------
+# DataFrame input: the column->node mapping is auto-derived from feature names.
+#
+# The lazy classifiers inherit HierarchyMixin's auto-derive plumbing: a
+# DataFrame X + a named DiGraph + columns=None maps each feature name to its
+# node (see _auto_derive_columns), so passing a DataFrame is exactly equivalent
+# to passing the same array with the derived columns= mapping. The frame below
+# lists its columns in shuffled order so a positional mapping would be wrong.
+# ---------------------------------------------------------------------------
+
+
+def _named_graph():
+    return nx.DiGraph([("A", "B"), ("B", "C"), ("A", "D")])
+
+
+def _named_dataframe():
+    return pd.DataFrame(
+        {
+            "C": [1, 0, 0, 1],
+            "A": [1, 1, 0, 1],
+            "D": [0, 1, 0, 0],
+            "B": [1, 0, 0, 1],
+        }
+    ).astype(bool)
+
+
+_DF_Y = np.array([1, 0, 0, 1])
+
+
+def test_lazy_autoderives_columns_from_dataframe():
+    # Nodes A=0, B=1, C=2, D=3; frame columns C, A, D, B -> mapping [2, 0, 3, 1].
+    selector = HIP(_named_graph()).fit(_named_dataframe(), _DF_Y)
+    assert selector.get_columns() == [2, 0, 3, 1]
+
+
+def test_lazy_ndarray_keeps_positional_mapping():
+    # A plain ndarray has no feature names, so the mapping stays positional.
+    X = _named_dataframe().to_numpy()
+    selector = HIP(_named_graph()).fit(X, _DF_Y)
+    assert not hasattr(selector, "feature_names_in_")
+    assert selector.get_columns() == [0, 1, 2, 3]
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [case[0] for case in _LAZY_DATA2_CASES],
+    ids=["HIP", "HNB", "HNBs", "RNB", "MR", "TAN"],
+)
+def test_lazy_dataframe_matches_explicit_columns(factory):
+    # DataFrame input must be identical to the same array fed with the
+    # auto-derived columns= mapping -- predict, select and the mapping itself.
+    df = _named_dataframe()
+    derived = [2, 0, 3, 1]
+
+    df_fit = factory(_named_graph()).fit(df, _DF_Y)
+    col_fit = factory(_named_graph()).fit(df.to_numpy(), _DF_Y, columns=derived)
+
+    assert df_fit.get_columns() == derived
+    assert np.array_equal(df_fit.predict(df), col_fit.predict(df.to_numpy()))
+    assert np.array_equal(df_fit.select(df), col_fit.select(df.to_numpy()))
+
+
+def test_lazy_orphan_dataframe_column_raises():
+    # A DataFrame column with no matching node is rejected (selectors cannot
+    # extend the hierarchy, unlike the HierarchicalPreprocessor).
+    df = _named_dataframe()
+    df["unicorn"] = [False, True, False, False]
+    with pytest.raises(ValueError, match="no matching node"):
+        HIP(_named_graph()).fit(df, _DF_Y)
+
+
+def test_lazy_dataframe_with_adjacency_hierarchy_raises():
+    # An adjacency-matrix hierarchy has no node names to match feature names.
+    hierarchy = nx.to_numpy_array(_named_graph())
+    with pytest.raises(ValueError, match="Cannot auto-derive columns"):
+        HIP(hierarchy).fit(_named_dataframe(), _DF_Y)
 
 
 # ---------------------------------------------------------------------------

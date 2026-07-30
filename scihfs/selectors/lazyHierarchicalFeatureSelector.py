@@ -69,12 +69,12 @@ class LazyHierarchicalFeatureSelector(
     per training set, while ``predict`` does the actual per-instance (selection and)
     prediction.
 
-    Lazy selectors are arrays-only: unlike the ``HierarchicalPreprocessor`` and
-    the eager selectors they neither auto-derive the column->node mapping from
-    DataFrame feature names nor support the transformer output API. Pass plain
-    arrays (with an explicit ``columns`` mapping when column and node order
-    differ); DataFrame-aware lazy input is left to a future redesign of the lazy
-    interface.
+    Input can be a plain ndarray, a ``scipy.sparse`` (CSR) matrix, or a pandas
+    ``DataFrame``.
+    Note that a ``DataFrame`` X together with a named ``nx.DiGraph`` hierarchy
+    auto-derives the column->node mapping from the feature names; otherwise an
+    explicit ``columns`` mapping needs to be provided (fallback is the positional 1:1
+    default).
     """
 
     def __init__(
@@ -115,7 +115,11 @@ class LazyHierarchicalFeatureSelector(
             The target values.
         columns : list or None
             The mapping from the hierarchy graph's nodes to the columns in X.
-            A list of ints; ``None`` assumes positional 1:1 ordering.
+            A list of ints. If ``None`` the columns in X and the hierarchy nodes
+            are assumed to be in the same order -- with the only exception that
+            when X is passed as a ``DataFrame`` and the hierarchy is a named
+            ``nx.DiGraph``, the mapping is auto-derived from the feature names (see
+            ``_auto_derive_columns``).
 
         Returns
         -------

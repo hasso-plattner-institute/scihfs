@@ -92,6 +92,9 @@ _COMMON_BOOL_XFAILS = (
     "check_dict_unchanged",
     "check_dont_overwrite_parameters",
     "check_dtype_object",
+    "check_estimator_sparse_array",
+    "check_estimator_sparse_matrix",
+    "check_estimator_sparse_tag",
     "check_estimators_dtypes",
     "check_estimators_fit_returns_self",
     "check_estimators_nan_inf",
@@ -115,9 +118,6 @@ _COMMON_BOOL_XFAILS = (
 
 
 _TRANSFORMER_BOOL_XFAILS = (
-    "check_estimator_sparse_array",
-    "check_estimator_sparse_matrix",
-    "check_estimator_sparse_tag",
     "check_transformer_data_not_an_array",
     "check_transformer_general",
     "check_transformer_preserve_dtypes",
@@ -633,13 +633,14 @@ _SECTION_A_CHECKS = [
 def _check_estimator_sparse_container(name, estimator_orig, sparse_type):
     """Mirror sklearn's sparse-container check on bool data.
 
-    The eager transformers declare input_tags.sparse=True and validate with
-    accept_sparse, so fitting sparse *bool* input must succeed (sklearn's check
-    feeds sparse float, which the contract rejects -- see
-    check_estimator_sparse_array in _EXPECTED_FAILED_CHECKS).
-    Currently, the lazy classifiers are dense-only (sparse tag False); their
-    sparse handling is covered by check_estimator_sparse_tag instead,
-    so they are skipped here.
+    Both the eager transformers and the lazy classifiers declare
+    input_tags.sparse=True and validate with accept_sparse, so fitting sparse
+    *bool* input must succeed -- the eager path keeps it sparse, the lazy path
+    densifies internally (for now, might change in the future).
+    (sklearn's own check feeds sparse *float*, which the bool-dtype contract
+    rejects -- see check_estimator_sparse_array in the expected-failure sets.)
+    The early return keeps the branch faithful to sklearn for any hypothetical
+    sparse=False estimator, though no scihfs estimator declares that.
     """
     if not get_tags(estimator_orig).input_tags.sparse:
         return

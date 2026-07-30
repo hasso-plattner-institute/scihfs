@@ -94,6 +94,7 @@ class LazyHierarchicalFeatureSelector(
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
         tags.classifier_tags.multi_class = False
+        tags.input_tags.sparse = True
         return tags
 
     def fit(self, X, y, columns=None):
@@ -107,8 +108,9 @@ class LazyHierarchicalFeatureSelector(
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
-            The training input samples. Must be bool-dtype.
+        X : array-like or scipy.sparse (CSR) of shape (n_samples, n_features)
+            The training input samples. Must be bool-dtype. Sparse input is
+            densified internally (for now).
         y : array-like of shape (n_samples,)
             The target values.
         columns : list or None
@@ -120,8 +122,10 @@ class LazyHierarchicalFeatureSelector(
         self : object
             Fitted estimator.
         """
-        X, y = validate_data(self, X, y)
+        X, y = validate_data(self, X, y, accept_sparse="csr")
         check_binary_target(y)
+        if sp.issparse(X):
+            X = X.toarray()
         check_bool_dtype(X)
         self.classes_ = np.unique(y)
         self.n_classes_ = self.classes_.shape[0]
@@ -176,13 +180,19 @@ class LazyHierarchicalFeatureSelector(
     def _check_and_validate(self, X):
         """Shared function for input validation.
 
+        Sparse input (CSR) is accepted and densified: the per-instance selection
+        algorithms index single rows as dense, so the classifiers accept sparse
+        at the boundary but work on a dense copy internally.
+
         Returns
         -------
         X : numpy array
-            The validated test input.
+            The validated (and densified) test input.
         """
         check_is_fitted(self)
-        X = validate_data(self, X, reset=False)
+        X = validate_data(self, X, accept_sparse="csr", reset=False)
+        if sp.issparse(X):
+            X = X.toarray()
         check_bool_dtype(X)
         return X
 

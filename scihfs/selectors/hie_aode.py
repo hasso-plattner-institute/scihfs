@@ -1,8 +1,5 @@
 import networkx as nx
 import numpy as np
-from sklearn.utils.validation import check_is_fitted, validate_data
-
-from scihfs.helpers import check_bool_dtype
 
 from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
@@ -35,9 +32,7 @@ class HieAODE(LazyHierarchicalFeatureSelector):
 
     def predict(self, X):
         """Predict the target value for each instance in X using HieAODE."""
-        check_is_fitted(self)
-        X = validate_data(self, X, reset=False)
-        check_bool_dtype(X)
+        X = self._check_and_validate(X)
         n_samples = X.shape[0]
         sample_sum = np.zeros((n_samples, self.n_classes_))
         for sample_idx in range(n_samples):

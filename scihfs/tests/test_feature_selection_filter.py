@@ -12,6 +12,7 @@ import copy
 import networkx as nx
 import numpy as np
 import pytest
+import scipy.sparse as sp
 from sklearn.exceptions import NotFittedError
 from sklearn.naive_bayes import BernoulliNB
 
@@ -116,6 +117,34 @@ def test_lazy_selectors_honour_non_identity_columns(lazy_data2, factory):
     assert np.array_equal(permuted.predict(X_test[:, perm]), base.predict(X_test))
     # masks follow the same permutation of the feature axis.
     assert np.array_equal(permuted.select(X_test[:, perm]), base.select(X_test)[:, perm])
+
+
+# ---------------------------------------------------------------------------
+# Sparse (CSR-bool) input must match dense input exactly.
+#
+# The lazy classifiers accept scipy.sparse at the validate_data boundary and
+# densify internally, so fitting and predicting on a CSR-bool copy of the data
+# must reproduce the dense predict / select exactly (same fit, same per-instance
+# selection, same scoring). Both CSR containers (array and matrix) are covered.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "sparse_type", [sp.csr_array, sp.csr_matrix], ids=["csr_array", "csr_matrix"]
+)
+@pytest.mark.parametrize(
+    "factory",
+    [case[0] for case in _LAZY_DATA2_CASES],
+    ids=["HIP", "HNB", "HNBs", "RNB", "MR", "TAN"],
+)
+def test_lazy_selectors_accept_sparse_like_dense(lazy_data2, factory, sparse_type):
+    small_DAG, X_train, y_train, X_test, _ = lazy_data2
+
+    dense = factory(small_DAG).fit(X_train, y_train)
+    sparse_fit = factory(small_DAG).fit(sparse_type(X_train), y_train)
+
+    assert np.array_equal(sparse_fit.predict(sparse_type(X_test)), dense.predict(X_test))
+    assert np.array_equal(sparse_fit.select(sparse_type(X_test)), dense.select(X_test))
 
 
 # ---------------------------------------------------------------------------

@@ -227,6 +227,31 @@ def test_lazy_dataframe_with_adjacency_hierarchy_raises():
 
 
 # ---------------------------------------------------------------------------
+# The hierarchy nodes and the data columns must be in bijection.
+#
+# The lazy classifiers work on a column-keyed graph (each node is a data
+# column), so a hierarchy node with no column -- or a column with no node --
+# is rejected up front rather than silently mis-indexed. (The preprocessor is
+# the one estimator that tolerates and fixes such a mismatch instead.)
+# ---------------------------------------------------------------------------
+
+
+def test_lazy_selector_rejects_hierarchy_column_mismatch():
+    X = np.array([[1, 1, 0, 1], [1, 0, 0, 0]], dtype=bool)  # 4 columns
+    y = np.array([0, 1])
+
+    # More nodes than columns: node 4 has no data column.
+    too_many_nodes = nx.to_numpy_array(nx.DiGraph([(0, 1), (1, 2), (2, 3), (3, 4)]))
+    with pytest.raises(ValueError, match="not aligned"):
+        HIP(too_many_nodes).fit(X, y)
+
+    # More columns than nodes: column 3 has no hierarchy node.
+    too_few_nodes = nx.to_numpy_array(nx.DiGraph([(0, 1), (1, 2)]))
+    with pytest.raises(ValueError, match="not aligned"):
+        HIP(too_few_nodes).fit(X, y)
+
+
+# ---------------------------------------------------------------------------
 # Estimator contract: fitted-gating and prediction purity.
 # ---------------------------------------------------------------------------
 

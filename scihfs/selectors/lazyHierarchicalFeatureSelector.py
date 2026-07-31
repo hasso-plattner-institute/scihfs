@@ -135,11 +135,7 @@ class LazyHierarchicalFeatureSelector(
         self.n_classes_ = self.classes_.shape[0]
 
         self._fit_hierarchy(columns)
-        self._hierarchy_graph.remove_node("ROOT")
-        node_to_column = {
-            position: column for column, position in enumerate(self._columns)
-        }
-        self._hierarchy_graph = nx.relabel_nodes(self._hierarchy_graph, node_to_column)
+        self._relabel_hierarchy_to_columns()
 
         self._xtrain = X
         self._ytrain = y

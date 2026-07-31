@@ -268,6 +268,60 @@ class HierarchyMixin:
         # Get the corresponding column index for a node in the hierarchy.
         return self._columns.index(node)
 
+    def _reject_column_node_mismatch(self):
+        """Raise if the hierarchy nodes and data columns are not in bijection.
+
+        Necessary for all HFS methods (eager and lazy), but not for the preprocessor
+        (which aligns them automatically).
+
+        Raises
+        ------
+        ValueError
+            If any hierarchy node has no data column, or any data column has no
+            hierarchy node.
+        """
+        nodes = set(self._hierarchy_graph.nodes()) - {"ROOT"}
+        mapped = set(self._columns)
+        nodes_without_column = nodes - mapped
+        columns_without_node = mapped - nodes
+        if not nodes_without_column and not columns_without_node:
+            return
+        node_names = [
+            self._hierarchy_graph.nodes[node].get(ORIGINAL_NODE_IDENTIFIER, node)
+            for node in sorted(nodes_without_column)
+        ]
+        orphan_columns = sorted(
+            column
+            for column, node in enumerate(self._columns)
+            if node in columns_without_node
+        )
+        raise ValueError(
+            "Hierarchy and data columns are not aligned: "
+            f"hierarchy node(s) with no data column: {node_names}; "
+            f"data column(s) with no hierarchy node: {orphan_columns}. Every "
+            "node must map to exactly one column and vice versa. Use the "
+            "HierarchicalPreprocessor to align them, or pass a matching "
+            "``columns`` mapping."
+        )
+
+    def _relabel_hierarchy_to_columns(self):
+        """Relabel ``_hierarchy_graph`` from node positions to column indices.
+
+        The output from this method is a copy of the hierarchy graph with the
+        nodes relabelled to the corresponding column indices in the dataset.
+
+        Running this method is a prerequisite for the lazy HFS methods, which
+        index ``x_row[node]`` directly (= without ``_column_index`` lookup).
+        (The eager HFS methods translate node -> column on demand via
+        ``_column_index``.)
+        """
+        self._reject_column_node_mismatch()
+        self._hierarchy_graph.remove_node("ROOT")
+        node_to_column = {
+            position: column for column, position in enumerate(self._columns)
+        }
+        self._hierarchy_graph = nx.relabel_nodes(self._hierarchy_graph, node_to_column)
+
 
 class HierarchicalEstimator(TransformerMixin, HierarchyMixin, BaseEstimator):
     """Base class for estimators using hierarchical data.

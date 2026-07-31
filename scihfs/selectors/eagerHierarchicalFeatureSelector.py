@@ -2,7 +2,6 @@
 Base class for estimators for eager hierarchical feature selection.
 """
 
-import warnings
 from abc import abstractmethod
 
 import numpy as np
@@ -42,10 +41,10 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
     def _fit(self, X, y):
         """Runs the eager feature selection on the validated X and y.
 
-        Checks the hierarchy against X, resets ``representatives_`` and
+        Rejects a hierarchy/column mismatch, resets ``representatives_`` and
         delegates to the subclasses' ``_select``.
         """
-        self._check_hierarchy_X()
+        self._reject_column_node_mismatch()
 
         # self.representatives_ includes all node names for selected nodes.
         # self._columns maps them to the respective column in X.
@@ -73,26 +72,3 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
                 for index in range(self.n_features_in_)
             ]
         )
-
-    def _check_hierarchy_X(self):
-        not_in_hierarchy = [
-            feature_index
-            for feature_index in range(self.n_features_in_)
-            if feature_index not in self._columns
-        ]
-        if not_in_hierarchy:
-            warning_missing_nodes = """All columns in X need to be mapped
-             to a node in the hierarchy. If columns=None the corresponding
-             node's name is the same as the column's index in the dataset.
-             Otherwise, it is indicated by the value in self._columns at
-             the columns' index."""
-            warnings.warn(warning_missing_nodes)
-
-        nodes = list(self._hierarchy_graph.nodes())
-        nodes.remove("ROOT")
-        not_in_dataset = [node for node in nodes if node not in self._columns]
-        if not_in_dataset:
-            warning_missing_columns = """The hierarchy should not include any
-             nodes that are not mapped to a column in the dataset by the
-             columns parameter"""
-            warnings.warn(warning_missing_columns)

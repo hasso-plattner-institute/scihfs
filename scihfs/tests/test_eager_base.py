@@ -18,20 +18,20 @@ def test_abstract_bases_cannot_be_instantiated(abstract_class):
         abstract_class()
 
 
+@pytest.mark.filterwarnings("ignore:Hierarchy consists of multiple")
 @pytest.mark.parametrize(
-    "data, expected_warning",
-    [
-        # X has a column without a corresponding node in the hierarchy.
-        ("wrong_hierarchy_X", "columns in X need to be mapped"),
-        # The hierarchy has nodes without a corresponding column in X.
-        ("wrong_hierarchy_X1", "hierarchy should not include any"),
-    ],
+    "data",
+    ["wrong_hierarchy_X", "wrong_hierarchy_X1"],
+    ids=["column-without-node", "node-without-column"],
 )
-def test_check_hierarchy_X_warns(data, expected_warning, request):
+def test_check_hierarchy_X_raises_on_mismatch(data, request):
+    # A column<->node mismatch is now rejected rather than warned: the eager
+    # (like the lazy) HFS methods are strict consumers of aligned input (only
+    # the HierarchicalPreprocessor tolerates -- and fixes -- a mismatch).
     X, hierarchy, columns = request.getfixturevalue(data)
     y = np.zeros(X.shape[0], dtype=int)
     selector = _MinimalEagerSelector(hierarchy)
-    with pytest.warns(UserWarning, match=expected_warning):
+    with pytest.raises(ValueError, match="not aligned"):
         selector.fit(X, y, columns=columns)
 
 

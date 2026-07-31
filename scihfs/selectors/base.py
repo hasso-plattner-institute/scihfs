@@ -283,22 +283,23 @@ class HierarchyMixin:
         nodes = set(self._hierarchy_graph.nodes()) - {"ROOT"}
         mapped = set(self._columns)
         nodes_without_column = nodes - mapped
-        columns_without_node = mapped - nodes
+        # A data column is unmapped if it has no entry in _columns or its entry
+        # points at a node absent from the hierarchy graph.
+        columns_without_node = [
+            column
+            for column in range(self.n_features_in_)
+            if column >= len(self._columns) or self._columns[column] not in nodes
+        ]
         if not nodes_without_column and not columns_without_node:
             return
         node_names = [
             self._hierarchy_graph.nodes[node].get(ORIGINAL_NODE_IDENTIFIER, node)
             for node in sorted(nodes_without_column)
         ]
-        orphan_columns = sorted(
-            column
-            for column, node in enumerate(self._columns)
-            if node in columns_without_node
-        )
         raise ValueError(
             "Hierarchy and data columns are not aligned: "
             f"hierarchy node(s) with no data column: {node_names}; "
-            f"data column(s) with no hierarchy node: {orphan_columns}. Every "
+            f"data column(s) with no hierarchy node: {columns_without_node}. Every "
             "node must map to exactly one column and vice versa. Use the "
             "HierarchicalPreprocessor to align them, or pass a matching "
             "``columns`` mapping."

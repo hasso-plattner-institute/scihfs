@@ -35,7 +35,10 @@ class TAN(LazyHierarchicalFeatureSelector):
                 self._cmi[node1][node2] = conditional_mutual_information(
                     self._xtrain[:, node1], self._xtrain[:, node2], self._ytrain
                 )
-        sorted_indices = np.argsort(self._cmi, axis=None)
+        # The resolution of tied CMI values is architecture-dependent
+        # (difference between x86 and arm64 observed). A stable sort
+        # yields deterministic behavior.
+        sorted_indices = np.argsort(self._cmi, axis=None, kind="stable")
         for index in sorted_indices:
             coordinates = divmod(index, self.n_features_in_)
             if coordinates[0] < coordinates[1]:

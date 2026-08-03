@@ -71,7 +71,11 @@ def test_TAN_data3(lazy_data3):
     hierarchy, X_train_ones, _, y_train, X_test, _, _ = lazy_data3
     selector = TAN(nx.to_numpy_array(hierarchy)).fit(X_train_ones, y_train)
 
-    exp_masks = [[1, 1, 0, 1, 1, 0]] * 2
+    # X_train_ones is constant, so every pairwise CMI is exactly 0 and MST
+    # edge order is decided entirely by tie-breaking. _build_mst() now sorts
+    # with kind="stable", so ties resolve by flat (node1, node2) index on
+    # every platform; these golden masks were captured under that rule.
+    exp_masks = [[1, 1, 1, 1, 0, 1], [1, 1, 0, 1, 1, 0]]
     assert np.array_equal(selector.select(X_test).astype(int), np.array(exp_masks))
     assert np.array_equal(selector.predict(X_test), np.array([0, 0]))
 

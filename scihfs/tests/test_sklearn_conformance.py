@@ -180,12 +180,20 @@ _N_FEATURES = _HIERARCHY.shape[0]
 def _binary_Xy(n_samples, random_state=0):
     """Bool X (width-matched to the hierarchy) and a binary y.
 
-    The bool/width-matched stand-in for the float data sklearn's checks
+    The bool/float-matched stand-in for the float data sklearn's checks
     generate: same role, but contract-compliant and shaped to the hierarchy.
     """
     rng = np.random.RandomState(random_state)
     X = rng.randint(0, 2, size=(n_samples, _N_FEATURES)).astype(bool)
     y = rng.randint(0, 2, size=n_samples)
+    if y[0] != 0:
+        # sklearn's _enforce_estimator_tags_y (called below on this y) relabels
+        # non-binary-tolerant classifiers' y to exactly two classes. Before
+        # sklearn 1.7 it kept whatever value sits at y[0] and remapped the rest
+        # to y[0] + 1; from 1.7 it keys off y.min() instead. Forcing y[0] == 0
+        # (already the min, since y is drawn from {0, 1}) makes both versions
+        # agree and leaves y as {0, 1}, per scihfs's binary-target contract.
+        y = 1 - y
     return X, y
 
 

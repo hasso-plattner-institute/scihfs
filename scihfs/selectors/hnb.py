@@ -3,14 +3,15 @@
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp
-from sklearn.naive_bayes import BernoulliNB
 
 from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
 
 class HNB(LazyHierarchicalFeatureSelector):
-    """
-    Select the k non-redundant features with the highest relevance following the algorithm proposed by Wan and Freitas.
+    """HNB (Hierarchy Based Redundant Attribute Removal Naive Bayes) classifier from Wan & Freitas, 2013.
+
+    Selects the top-k non-redundant features in descending order of their
+    relevance, with redundancy removed along each path.
     """
 
     def __init__(
@@ -31,39 +32,9 @@ class HNB(LazyHierarchicalFeatureSelector):
         super().__init__(hierarchy)
         self.k = k
 
-    def select_and_predict(
-        self, predict=True, saveFeatures=False, estimator=BernoulliNB()
-    ):
-        """
-        Select features lazy for each test instance amd optionally predict target value of test instances.
-        It selects the top-k-ranked features, such that redundancy along each path is removed,
-        in descending order of their individual predictive power measured by their relevance defined in helpers.py.
+    def _fit(self, X, y):
+        self._compute_relevance(X, y)
+        self._sort_relevance()
 
-        Parameters
-        ----------
-        predict : bool
-            true if predictions shall be obtained.
-        saveFeatures : bool
-            true if features selected for each test instance shall be saved.
-        estimator : sklearn-compatible estimator
-            Estimator to use for predictions.
-
-
-        Returns
-        -------
-        predictions for test input samples, if predict = false, returns empty array.
-        """
-        predictions = np.array([])
-        for idx in range(len(self._xtest)):
-            self._get_nonredundant_features_relevance(idx)
-            self._get_top_k()
-            if predict:
-                predictions = np.append(predictions, self._predict(idx, estimator)[0])
-            if saveFeatures:
-                self._features[idx] = np.array(list(self._instance_status.values()))
-            self._feature_length[idx] = len(
-                [nodes for nodes, status in self._instance_status.items() if status]
-            )
-            for node in self._hierarchy_graph:
-                self._instance_status[node] = 1
-        return predictions
+    def _select_features_per_instance(self, x_row):
+        return self._get_top_k(self._get_nonredundant_features_relevance(x_row))

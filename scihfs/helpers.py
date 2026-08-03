@@ -10,6 +10,7 @@ import networkx as nx
 import numpy as np
 import scipy.sparse as sp
 from networkx.algorithms.simple_paths import all_simple_paths
+from sklearn.utils.multiclass import type_of_target
 
 
 def get_relevance(xdata, ydata, node):
@@ -68,6 +69,25 @@ def check_bool_dtype(X):
         )
 
 
+def check_binary_target(y):
+    """Raise ValueError unless ``y`` has a binary target encoding drawing
+    from ``{0, 1}` (can also be encoded as boolean ``False`` and ``True``).
+    """
+    y_type = type_of_target(y, input_name="y")
+    if y_type != "binary":
+        raise ValueError(
+            f"Only binary classification is supported. scihfs estimators "
+            f"require a binary target; got y_type={y_type!r}."
+        )
+    labels = set(np.unique(y).tolist())
+    if not labels <= {0, 1}:
+        raise ValueError(
+            f"scihfs estimators require the binary target to be labelled 0 and "
+            f"1 (boolean False and True, respectively); got"
+            f"classes={sorted(labels)!r}. Relabel the encodings before fitting."
+        )
+
+
 def _check_unique_column_mappings(columns):
     """Raise ValueError if any non-(-1) value appears more than once in columns.
 
@@ -90,40 +110,6 @@ def _check_unique_column_mappings(columns):
             f"df.columns[df.columns.duplicated()]. "
             f"prior to feeding the dataset to the Estimator."
         )
-
-
-def check_data(dag, x_data, y_data):
-    """Checks whether the given dataset satisfies the 0-1-propagation on the DAG.
-
-    The 0-1-propagation property states that if there is a directed edge (u, v)
-    in the DAG, then whenever node u has a value of 1 in the dataset, node v
-    must have a value of 1 for the same instance.
-
-    Parameters
-    ----------
-    dag : networkx.DiGraph
-        The Directed Acyclic Graph representing the hierarchy structure.
-    x_data : numpy.ndarray
-            An array containing the input features of the dataset.
-    y_data : numpy.ndarray
-            An array containing the corresponding output labels of the dataset.
-
-    Raises
-    ----------
-    ValueError: If the dataset violates the 0-1-propagation property
-    on any of the edges in the DAG.
-
-    """
-    data = np.column_stack((x_data, y_data))
-    edges = list(nx.edge_dfs(dag, source=0, orientation="original"))
-    for edge in edges:
-        for idx in range(len(data)):
-            if data[idx, edge[0]] == 0 and data[idx, edge[1]] == 1:
-                raise ValueError(
-                    f"Test instance {idx} violates 0-1-propagation \
-                    on edge ({edge[0]}, {edge[1]})"
-                    f"{data[idx]}"
-                )
 
 
 def get_leaves(graph: nx.DiGraph):

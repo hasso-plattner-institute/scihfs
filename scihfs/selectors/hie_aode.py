@@ -1,43 +1,17 @@
 import networkx as nx
 import numpy as np
-import scipy.sparse as sp
-from sklearn.naive_bayes import BernoulliNB
 
 from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
 
 class HieAODE(LazyHierarchicalFeatureSelector):
+    """Lazy HieAODE classifier (Wan & Freitas).
+
+    Placeholder implementation.
     """
-    Select non-redundant features following the algorithm proposed by Wan and Freitas.
-    """
 
-    def __init__(
-        self, hierarchy: np.ndarray | sp.sparray | sp.spmatrix | nx.DiGraph | None = None
-    ):
-        """Initializes a HieAODE-Selector.
-
-        Parameters
-        ----------
-        hierarchy : np.ndarray, scipy.sparse array/matrix or nx.DiGraph
-            The hierarchy graph. See ``HierarchicalEstimator.__init__``
-            for the accepted formats.
-        """
-        super().__init__(hierarchy)
-        self.cpts = dict()
-
-    def fit_selector(self, X_train, y_train, X_test, columns=None):
-        """
-        P (y, x_i )
-        class_prior
-
-        self.n_ancestors = self._n_descendants = self.n_features
-        P (x_k|y)
-        ancestors_class_cpt = (self.n_ancestors, self.n_classes, self.n_features_in, n_values)
-
-        P (x_j|y, x_i)
-        feature_descendants_class_cpt = (self.n_features_in, self._n_descendants, self.n_classes_, n_values)
-        """
-        super(HieAODE, self).fit_selector(X_train, y_train, X_test, columns)
+    def _fit(self, X, y):
+        """Allocate the conditional-probability tables from the fitted shapes."""
         self.cpts = dict(
             prior=np.full((self.n_features_in_, self.n_classes_, 2), -1),
             # (x_j (descendent), x_i (current feature), class, value)  # P(y, x_i )
@@ -47,31 +21,22 @@ class HieAODE(LazyHierarchicalFeatureSelector):
             ancestors=np.full((self.n_features_in_, self.n_classes_, 2), -1),  # P(x_k|y)
         )
 
-    def select_and_predict(
-        self, predict=True, saveFeatures=False, estimator=BernoulliNB()
-    ):
-        """
-        Select features lazy for each test instance and optionally predict target value of test instances
-        using the HieAODE algorithm by Wan and Freitas
+    def _select_features_per_instance(self, x_row):
+        # HieAODE overrides predict wholesale and does not use per-instance
+        # subset selection; this placeholder keeps the abstract base satisfied.
+        return {node: 1 for node in self._hierarchy_graph}
 
-        Parameters
-        ----------
-        predict : bool
-            true if predictions shall be obtained.
-        saveFeatures : bool
-            true if features selected for each test instance shall be saved.
-        estimator : sklearn-compatible estimator
-            Estimator to use for predictions.
+    def predict_proba(self, X):
+        """Placeholder implementation."""
+        raise AttributeError("HieAODE does not support predict_proba.")
 
-
-        Returns
-        -------
-        predictions for test input samples, if predict = false, returns empty array.
-        """
-        n_samples = self._xtest.shape[0]
+    def predict(self, X):
+        """Predict the target value for each instance in X using HieAODE."""
+        X = self._check_and_validate(X)
+        n_samples = X.shape[0]
         sample_sum = np.zeros((n_samples, self.n_classes_))
         for sample_idx in range(n_samples):
-            sample = self._xtest[sample_idx]
+            sample = X[sample_idx]
 
             descendant_product = np.ones(self.n_classes_)
             ancestor_product = np.ones(self.n_classes_)
@@ -121,8 +86,7 @@ class HieAODE(LazyHierarchicalFeatureSelector):
 
                 sample_sum[sample_idx] = np.add(sample_sum[sample_idx], feature_product)
 
-        y = np.argmax(sample_sum, axis=1)
-        return y if predict else np.array([])
+        return np.argmax(sample_sum, axis=1)
 
     def calculate_class_prior(self, sample, feature_idx, value):
         for c in range(self.n_classes_):

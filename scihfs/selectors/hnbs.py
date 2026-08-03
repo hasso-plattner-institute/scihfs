@@ -1,45 +1,15 @@
-"HNB-select feature selection"
-
-import numpy as np
-from sklearn.naive_bayes import BernoulliNB
-
 from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
 
 class HNBs(LazyHierarchicalFeatureSelector):
+    """HNB-s (Hierarchy Based Redundant Attribute Removal Naive Bayes without Selection Step) classifier proposed by Wan & Freitas, 2013.
+
+    Selects the non-redundant features such that redundancy along each path is
+    removed, using the per-node relevance.
     """
-    Select non-redundant features following the algorithm proposed by Wan and Freitas.
-    """
 
-    def select_and_predict(
-        self, predict=True, saveFeatures=False, estimator=BernoulliNB()
-    ):
-        """
-        Select features lazily for each test instance and optionally predict the target value of test instances.
-        It selects the features such that redundancy along each path is removed.
+    def _fit(self, X, y):
+        self._compute_relevance(X, y)
 
-        Parameters
-        ----------
-        predict : bool, default=True
-            Whether predictions should be obtained.
-        saveFeatures : bool, default=False
-            Whether features selected for each test instance should be saved.
-        estimator : sklearn-compatible estimator, default=BernoulliNB()
-            The estimator to use for predictions.
-
-        Returns
-        -------
-        np.ndarray
-            Predictions for test input samples. If `predict` is False, returns an empty array.
-        """
-        predictions = np.array([])
-        for idx in range(len(self._xtest)):
-            self._get_nonredundant_features_relevance(idx)
-            if predict:
-                predictions = np.append(predictions, self._predict(idx, estimator)[0])
-            if saveFeatures:
-                self._features[idx] = np.array(list(self._instance_status.values()))
-            self._feature_length[idx] = len(
-                [nodes for nodes, status in self._instance_status.items() if status]
-            )
-        return predictions
+    def _select_features_per_instance(self, x_row):
+        return self._get_nonredundant_features_relevance(x_row)

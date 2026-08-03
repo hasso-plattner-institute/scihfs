@@ -43,7 +43,7 @@ import networkx as nx
 import numpy as np
 import pytest
 import scipy.sparse as sparse
-from sklearn.base import clone
+from sklearn.base import clone, is_classifier
 from sklearn.exceptions import NotFittedError
 from sklearn.model_selection import ShuffleSplit
 from sklearn.pipeline import make_pipeline
@@ -81,54 +81,71 @@ _BOOL_DTYPE_XFAIL_REASON = (
 
 # The exact set of check_estimator checks that fail because scihfs enforces
 # bool-dtype input. Declaring them here (instead of strict-xfailing the whole
-# row) lets the ~17 dtype-independent conformance checks actually run and pass,
+# row) lets the dtype-independent conformance checks actually run and pass,
 # while these are recorded as expected failures. With on_fail='raise' (the
 # default), any NEW failure outside this set fails the test as a real regression.
 #
-# All estimators in ALL_ESTIMATORS share this identical set.
-_EXPECTED_FAILED_CHECKS = {
-    name: _BOOL_DTYPE_XFAIL_REASON
-    for name in (
-        "check_dict_unchanged",
-        "check_dont_overwrite_parameters",
-        "check_dtype_object",
-        "check_estimator_sparse_array",
-        "check_estimator_sparse_matrix",
-        "check_estimator_sparse_tag",
-        "check_estimators_dtypes",
-        "check_estimators_fit_returns_self",
-        "check_estimators_nan_inf",
-        "check_estimators_overwrite_params",
-        "check_estimators_pickle",
-        "check_f_contiguous_array_estimator",
-        "check_fit2d_1feature",
-        "check_fit2d_1sample",
-        "check_fit2d_predict1d",
-        "check_fit_check_is_fitted",
-        "check_fit_idempotent",
-        "check_fit_score_takes_y",
-        "check_methods_sample_order_invariance",
-        "check_methods_subset_invariance",
-        "check_n_features_in",
-        "check_n_features_in_after_fitting",
-        "check_pipeline_consistency",
-        "check_positive_only_tag_during_fit",
-        "check_readonly_memmap_input",
-        "check_transformer_data_not_an_array",
-        "check_transformer_general",
-        "check_transformer_preserve_dtypes",
+# sklearn runs a role-specific subset of checks, so the expected failures are
+# split accordingly: a shared core, plus the transformer-only checks (eager
+# selectors + preprocessor) or the classifier-only checks (lazy selectors).
+_COMMON_BOOL_XFAILS = (
+    "check_dict_unchanged",
+    "check_dont_overwrite_parameters",
+    "check_dtype_object",
+    "check_estimator_sparse_array",
+    "check_estimator_sparse_matrix",
+    "check_estimator_sparse_tag",
+    "check_estimators_dtypes",
+    "check_estimators_fit_returns_self",
+    "check_estimators_nan_inf",
+    "check_estimators_overwrite_params",
+    "check_estimators_pickle",
+    "check_f_contiguous_array_estimator",
+    "check_fit2d_1feature",
+    "check_fit2d_1sample",
+    "check_fit2d_predict1d",
+    "check_fit_check_is_fitted",
+    "check_fit_idempotent",
+    "check_fit_score_takes_y",
+    "check_methods_sample_order_invariance",
+    "check_methods_subset_invariance",
+    "check_n_features_in",
+    "check_n_features_in_after_fitting",
+    "check_pipeline_consistency",
+    "check_positive_only_tag_during_fit",
+    "check_readonly_memmap_input",
+)
+
+
+_TRANSFORMER_BOOL_XFAILS = (
+    "check_transformer_data_not_an_array",
+    "check_transformer_general",
+    "check_transformer_preserve_dtypes",
+)
+
+
+_CLASSIFIER_BOOL_XFAILS = (
+    "check_classifier_data_not_an_array",
+    "check_classifiers_classes",
+    "check_classifiers_one_label",
+    "check_classifiers_train",
+    "check_supervised_y_2d",
+)
+
+
+def _expected_failed_checks(estimator):
+    role_xfails = (
+        _CLASSIFIER_BOOL_XFAILS if is_classifier(estimator) else _TRANSFORMER_BOOL_XFAILS
     )
-}
+    return {name: _BOOL_DTYPE_XFAIL_REASON for name in _COMMON_BOOL_XFAILS + role_xfails}
 
 
 @pytest.mark.parametrize("estimator", ALL_ESTIMATORS)
 def test_all_estimators(estimator):
     hierarchy_graph = nx.DiGraph()
     adj_matrix = nx.to_numpy_array(hierarchy_graph)
-    check_estimator(
-        estimator(adj_matrix),
-        expected_failed_checks=_EXPECTED_FAILED_CHECKS,
-    )
+    est = estimator(adj_matrix)
+    check_estimator(est, expected_failed_checks=_expected_failed_checks(est))
 
 
 # ---------------------------------------------------------------------------
@@ -163,12 +180,20 @@ _N_FEATURES = _HIERARCHY.shape[0]
 def _binary_Xy(n_samples, random_state=0):
     """Bool X (width-matched to the hierarchy) and a binary y.
 
-    The bool/width-matched stand-in for the float data sklearn's checks
+    The bool/float-matched stand-in for the float data sklearn's checks
     generate: same role, but contract-compliant and shaped to the hierarchy.
     """
     rng = np.random.RandomState(random_state)
     X = rng.randint(0, 2, size=(n_samples, _N_FEATURES)).astype(bool)
     y = rng.randint(0, 2, size=n_samples)
+    if y[0] != 0:
+        # sklearn's _enforce_estimator_tags_y (called below on this y) relabels
+        # non-binary-tolerant classifiers' y to exactly two classes. Before
+        # sklearn 1.7 it kept whatever value sits at y[0] and remapped the rest
+        # to y[0] + 1; from 1.7 it keys off y.min() instead. Forcing y[0] == 0
+        # (already the min, since y is drawn from {0, 1}) makes both versions
+        # agree and leaves y as {0, 1}, per scihfs's binary-target contract.
+        y = 1 - y
     return X, y
 
 
@@ -555,7 +580,9 @@ def check_pipeline_consistency(name, estimator_orig):
 
 def check_transformer_data_not_an_array(name, transformer_orig):
     # The transformer behaves the same when X is not an ndarray (a _NotAnArray
-    # wrapper, or a plain list).
+    # wrapper, or a plain list). Classifier-only estimators have no transform.
+    if not hasattr(transformer_orig, "transform"):
+        return
     X, y = _binary_Xy(n_samples=30)
     X = _enforce_estimator_tags_X(transformer_orig, X)
     _check_transformer_binary(
@@ -614,11 +641,17 @@ _SECTION_A_CHECKS = [
 def _check_estimator_sparse_container(name, estimator_orig, sparse_type):
     """Mirror sklearn's sparse-container check on bool data.
 
-    scihfs declares input_tags.sparse=True and validates with accept_sparse,
-    so fitting sparse *bool* input must succeed (sklearn's check feeds sparse
-    float, which the contract rejects -- see check_estimator_sparse_array in
-    _EXPECTED_FAILED_CHECKS).
+    Both the eager transformers and the lazy classifiers declare
+    input_tags.sparse=True and validate with accept_sparse, so fitting sparse
+    *bool* input must succeed -- the eager path keeps it sparse, the lazy path
+    densifies internally (for now, might change in the future).
+    (sklearn's own check feeds sparse *float*, which the bool-dtype contract
+    rejects -- see check_estimator_sparse_array in the expected-failure sets.)
+    The early return keeps the branch faithful to sklearn for any hypothetical
+    sparse=False estimator, though no scihfs estimator declares that.
     """
+    if not get_tags(estimator_orig).input_tags.sparse:
+        return
     X, y = _binary_Xy(n_samples=40)
     X = _enforce_estimator_tags_X(estimator_orig, X)
     X = sparse_type(X)
@@ -711,6 +744,8 @@ def check_f_contiguous_array_estimator(name, estimator_orig):
 
 
 def check_transformer_general(name, transformer_orig):
+    if not hasattr(transformer_orig, "transform"):
+        return
     X, y = _binary_Xy(n_samples=30)
     X = _enforce_estimator_tags_X(transformer_orig, X)
     _check_transformer_binary(name, transformer_orig, X, y)
@@ -800,7 +835,9 @@ def check_transformer_preserve_dtypes(name, transformer_orig):
     # Check that dtype is preserved: bool in -> bool out. scihfs accepts only
     # bool, so bool is the single supported dtype to preserve (sklearn iterates
     # transformer_tags.preserves_dtype, which lists float dtypes the contract
-    # rejects).
+    # rejects). Classifier-only estimators have no transform.
+    if not hasattr(transformer_orig, "transform"):
+        return
     transformer = clone(transformer_orig)
     X, y = _binary_Xy(n_samples=30)
     X = _enforce_estimator_tags_X(transformer_orig, X)

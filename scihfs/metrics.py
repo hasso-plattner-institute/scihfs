@@ -299,4 +299,10 @@ def pearson_correlation(i: np.ndarray, j: np.ndarray):
     ----------
     float : The pearson correlation between the input vectors.
     """
+    # Since np.corrcoef has no sparse support, densify the two (n_samples,)
+    # columns at their time of comparison (and not the full feature matrix).
+    if sparse.issparse(i):
+        i = i.toarray().ravel()
+    if sparse.issparse(j):
+        j = j.toarray().ravel()
     return np.corrcoef(i, j)[0, 1]

@@ -13,7 +13,12 @@ from scihfs.helpers import (
     get_relevance,
     shrink_dag,
 )
-from scihfs.metrics import conditional_mutual_information, gain_ratio, information_gain
+from scihfs.metrics import (
+    conditional_mutual_information,
+    gain_ratio,
+    information_gain,
+    pearson_correlation,
+)
 
 # ---------------------------------------------------------------------------
 # Independent reference oracles for the information-gain and gain ratio metrics, reproducing the
@@ -150,6 +155,18 @@ def test_gain_ratio_skips_empty_sparse_column():
     X = sparse.csc_matrix(np.array([[0, 1], [0, 0], [0, 1]]))
     y = np.array([0, 1, 0])
     assert gain_ratio(X, y)[0] == 0
+
+
+def test_pearson_correlation_accepts_sparse_columns():
+    # A selector (SHSEL's Correlation relevance_metric) passes sparse column
+    # slices directly; np.corrcoef itself has no sparse support, so
+    # pearson_correlation must densify just the two compared columns.
+    X_dense = np.array([[1, 1], [1, 0], [0, 0], [1, 1], [0, 1]], dtype=bool)
+    X_sparse = sparse.csc_matrix(X_dense)
+
+    dense_value = pearson_correlation(X_dense[:, 0], X_dense[:, 1])
+    sparse_value = pearson_correlation(X_sparse[:, 0], X_sparse[:, 1])
+    assert sparse_value == pytest.approx(dense_value)
 
 
 @pytest.mark.parametrize(

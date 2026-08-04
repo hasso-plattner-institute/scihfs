@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pytest
+from scipy import sparse
 
 from scihfs.helpers import get_columns_for_numpy_hierarchy
 from scihfs.selectors import SHSELSelector
@@ -199,6 +200,32 @@ def test_SHSEL_selection_correlation_on_bool():
         [[1, 1, 0], [1, 0, 1], [0, 0, 1], [1, 0, 0], [0, 0, 0]], dtype=bool
     )
     assert np.array_equal(X_transformed, expected)
+
+
+@pytest.mark.parametrize(
+    "sparse_type", [sparse.csr_array, sparse.csr_matrix], ids=["csr_array", "csr_matrix"]
+)
+def test_SHSEL_selection_correlation_accepts_sparse_like_dense(sparse_type):
+    """The Correlation relevance_metric must not densify X to work: it slices
+    individual columns and previously crashed under np.corrcoef when those
+    slices were sparse (fixed in pearson_correlation)."""
+    edges = [(0, 1), (1, 2), (0, 3)]
+    hierarchy = nx.to_numpy_array(nx.DiGraph(edges))
+    columns = get_columns_for_numpy_hierarchy(nx.DiGraph(edges), 4)
+    X = np.array(
+        [[1, 1, 1, 0], [1, 1, 0, 1], [1, 0, 0, 1], [1, 1, 0, 0], [0, 0, 0, 0]],
+        dtype=bool,
+    )
+    y = np.array([1, 0, 0, 1, 0])
+
+    dense = SHSELSelector(
+        hierarchy, relevance_metric="Correlation", similarity_threshold=0.8
+    ).fit(X, y, columns)
+    sparse_fit = SHSELSelector(
+        hierarchy, relevance_metric="Correlation", similarity_threshold=0.8
+    ).fit(sparse_type(X), y, columns)
+
+    assert np.array_equal(sparse_fit.get_support(), dense.get_support())
 
 
 @pytest.mark.parametrize(

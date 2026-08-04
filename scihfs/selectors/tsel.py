@@ -51,7 +51,7 @@ class TSELSelector(EagerHierarchicalFeatureSelector):
             column_name: lift_values[index]
             for index, column_name in enumerate(self._columns)
         }
-        self.representatives_ = self._find_representatives(paths)
+        self.selected_features_ = self._find_representatives(paths)
 
     def _find_representatives(self, paths):
         """ "Finds a representative node for each path.

@@ -76,7 +76,7 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
             # all their descendants and ancestors
             while branch_nodes:
                 selected = branch_nodes.pop(0)
-                self.representatives_.append(selected)
+                self.selected_features_.append(selected)
                 remove_nodes = list(nx.descendants(self._hierarchy_graph, selected))
                 ancestor_nodes = list(nx.ancestors(self._hierarchy_graph, selected))
                 remove_nodes.extend(ancestor_nodes)

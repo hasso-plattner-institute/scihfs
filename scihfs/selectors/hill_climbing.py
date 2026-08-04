@@ -60,7 +60,7 @@ class HillClimbingSelector(EagerHierarchicalFeatureSelector):
             X = X.tocsr()
         self.y_ = y
         self._num_rows = X.shape[0]
-        self.representatives_ = self._hill_climb(X)
+        self.selected_features_ = self._hill_climb(X)
 
     @abstractmethod
     def _hill_climb(self, X):

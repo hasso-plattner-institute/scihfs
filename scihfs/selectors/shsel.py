@@ -151,7 +151,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                 if similarity >= self._effective_threshold:
                     nodes_to_remove.add(node)
 
-        self.representatives_ = [
+        self.selected_features_ = [
             feature for feature in self._columns if feature not in nodes_to_remove
         ]
 
@@ -162,21 +162,21 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                 f"Unknown ig_average {self.ig_average!r}; "
                 'expected "full_path" or "survivors_only".'
             )
-        updated_representatives = []
+        updated_selected_features = []
 
         for path in paths:
             path.remove("ROOT")
             if self.ig_average == "full_path":
                 average_nodes = path
             else:
-                average_nodes = [node for node in path if node in self.representatives_]
+                average_nodes = [node for node in path if node in self.selected_features_]
             average_relevance = statistics.mean(
                 [self._relevance_values[node] for node in average_nodes]
             )
             average_relevance = round(average_relevance, 6)
             for node in path:
                 if (
-                    node in self.representatives_
+                    node in self.selected_features_
                     and self._relevance_values[node] >= average_relevance
                 ):
                     # HFE extension disabled:
@@ -184,9 +184,11 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                     #     self.use_hfe_extension is False
                     #     or self._relevance_values[node] > 0.0
                     # ):
-                    updated_representatives.append(node)
+                    updated_selected_features.append(node)
 
-        self.representatives_ = list(set(updated_representatives))  # remove duplicates
+        self.selected_features_ = list(
+            set(updated_selected_features)
+        )  # remove duplicates
 
     def _calculate_ig_relevance(self, X, y):
         values = information_gain(X, y)
@@ -212,12 +214,12 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
     #     )
     #
     # def _leaf_filtering(self):
-    #     """Filtering representatives by removing leaves with low relevance.
+    #     """Filtering selected features by removing leaves with low relevance.
     #
     #     This is part of the HFE extension proposed by Oudah and Henschel.
     #     """
     #     average_ig = statistics.mean(
-    #         [self._relevance_values[node] for node in self.representatives_]
+    #         [self._relevance_values[node] for node in self.selected_features_]
     #     )
     #
     #     leaves = self._get_leaves_in_incomplete_paths()
@@ -228,17 +230,17 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
     #         if self._relevance_values[leaf] < average_ig
     #         or self._relevance_values[leaf] == 0
     #     ]
-    #     updated_representatives = [
-    #         node for node in self.representatives_ if node not in nodes_to_remove
+    #     updated_selected_features = [
+    #         node for node in self.selected_features_ if node not in nodes_to_remove
     #     ]
-    #     self.representatives_ = updated_representatives
+    #     self.selected_features_ = updated_selected_features
     #
     # def _get_leaves_in_incomplete_paths(self):
     #     """Select leaves of incomplete paths (part of HFE extension)"""
     #     leaves = [
     #         leaf
     #         for leaf in get_leaves(self._hierarchy_graph)
-    #         if leaf in self.representatives_
+    #         if leaf in self.selected_features_
     #     ]
     #
     #     paths = get_paths(self._hierarchy_graph)

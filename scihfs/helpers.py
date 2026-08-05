@@ -15,38 +15,44 @@ from sklearn.utils.multiclass import type_of_target
 
 def get_relevance(xdata, ydata, node):
     """
-    Gather relevance for a given node.
+    Calculate the relevance for a single node.
+
+    Based on the column counts for feature present/absent,
+    and how often presence/absence correlates with positive/negative
+    target labels. Sparse is densified only per single column.
 
     Parameters
     ----------
-    node : int
-        Node for which the relevance should be obtained.
     xdata : {array-like, sparse matrix}, shape (n_samples, n_features)
             The training input samples.
     ydata : array-like, shape (n_samples,)
             The target values. An array of int.
-    """
-    p1 = (
-        Fraction(
-            xdata[(xdata[:, node] == 1) & (ydata == 1)].shape[0],
-            xdata[(xdata[:, node] == 1)].shape[0],
-        )
-        if xdata[(xdata[:, node] == 1)].shape[0] != 0
-        else 0
-    )
-    p2 = (
-        Fraction(
-            xdata[(xdata[:, node] == 0) & (ydata == 1)].shape[0],
-            xdata[(xdata[:, node] == 0)].shape[0],
-        )
-        if xdata[(xdata[:, node] == 0)].shape[0] != 0
-        else 0
-    )
-    p3 = 1 - p1
-    p4 = 1 - p2
+    node : int
+        Node for which the relevance should be obtained.
 
-    rel = (p1 - p2) ** 2 + (p3 - p4) ** 2
-    return rel
+    Returns
+    ----------
+    relevance : Fraction or int
+        The relevance score of the node.
+    """
+    # List index slice covers ndarray, sparse matrices and sparse arrays
+    # with a single function.
+    column = xdata[:, [node]].toarray().ravel() if sp.issparse(xdata) else xdata[:, node]
+    present = column == 1
+    positive_target = np.asarray(ydata) == 1
+
+    n_present = int(np.count_nonzero(present))
+    n_absent = column.shape[0] - n_present
+    n_present_positive = int(np.count_nonzero(present & positive_target))
+    n_absent_positive = int(np.count_nonzero(positive_target)) - n_present_positive
+
+    # Renamed the variables to match contingency table notation.
+    # Cf. pX notation from the paper in the inline comments.
+    ppv = Fraction(n_present_positive, n_present) if n_present else 0  # p1 = 1 - p3
+    fomr = Fraction(n_absent_positive, n_absent) if n_absent else 0  # p2 = 1 - p4
+
+    relevance = 2 * (ppv - fomr) ** 2
+    return relevance
 
 
 def check_bool_dtype(X):

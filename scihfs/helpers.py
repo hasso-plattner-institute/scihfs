@@ -270,12 +270,16 @@ def get_columns_for_numpy_hierarchy(hierarchy: nx.DiGraph, num_columns: int):
 
 
 def compute_aggregated_values(X, hierarchy: nx.DiGraph, columns: list[int], node="ROOT"):
-    """Recursively aggregate features in X by summing up their children's values.
+    """Aggregate features in X by summing up their children's values/number
+    of occurrences.
 
     The method traverses the given Directed Acyclic Graph (DAG) hierarchy
     starting from the specified node, and recursively aggregates the values
     from its children nodes up to the specified root node. To caculate all
     values start form "ROOT".
+
+    Dispatcher-only: Sparse and dense input need different computation strategies.
+    Those are implemented in the ``_compute_aggregated_values_{dense,sparse}`` functions.
 
     Parameters
     ----------
@@ -294,29 +298,91 @@ def compute_aggregated_values(X, hierarchy: nx.DiGraph, columns: list[int], node
 
     Returns
     ----------
-    X : numpy.ndarray
+    X : numpy.ndarray or scipy.sparse.csc_array
         The input array `X` with the aggregated values based on the provided
-        hierarchy.
+        hierarchy. Sparse input yields a sparse (csc_array) result; dense
+        input yields a numpy.ndarray.
     """
-    # Sparse input is accepted throughout the library, but
-    # currently 'densified' here. To avoid excessive memory
-    # allocation, add a dedicated sparse implementation here in
-    # the future.
     if sp.issparse(X):
-        X = X.toarray()
+        return _compute_aggregated_values_sparse(X, hierarchy, columns, node)
+    return _compute_aggregated_values_dense(X, hierarchy, columns, node)
+
+
+def _compute_aggregated_values_dense(X, hierarchy, columns, node="ROOT"):
     # Note that we deliberately use uint32 (unsigned, min 0, max 4294967295), to keep memory footprint low and because feature counts are always positive integers.
     if X.dtype == np.bool_:
         X = X.astype(np.uint32)
+    # node -> column index, precomputed once so the recursion is O(1).
+    column_of = {n: i for i, n in enumerate(columns)}
+    return _aggregate_dense(X, hierarchy, column_of, node)
+
+
+def _aggregate_dense(X, hierarchy, column_of, node):
+    # Recursive aggregation of node values (occurrences) along the hierarchy,
+    # dense format.
     if hierarchy.out_degree(node) == 0:
         return X
-    children = hierarchy.successors(node)
     aggregated = np.zeros((X.shape[0]), dtype=np.uint32)
-    for child in list(children):
-        X = compute_aggregated_values(X, hierarchy, columns, node=child)
-        aggregated = np.add(aggregated, X[:, columns.index(child)])
+    for child in list(hierarchy.successors(node)):
+        X = _aggregate_dense(X, hierarchy, column_of, child)
+        aggregated = np.add(aggregated, X[:, column_of[child]])
 
     if node != "ROOT":
-        aggregated = np.add(aggregated, X[:, columns.index(node)])
-        column_index = columns.index(node)
-        X[:, column_index] = aggregated
+        aggregated = np.add(aggregated, X[:, column_of[node]])
+        X[:, column_of[node]] = aggregated
     return X
+
+
+def _compute_aggregated_values_sparse(X, hierarchy, columns, node="ROOT"):
+    X = X.tocsc()
+    column_of = {n: i for i, n in enumerate(columns)}
+    cache = {}
+    _aggregate_sparse(X, hierarchy, column_of, node, cache)
+    return _assemble_sparse(X, cache)
+
+
+def _aggregate_sparse(X, hierarchy, column_of, node, cache):
+    # Recursive aggregation of node values (occurrences) along the hierarchy,
+    # sparse format.
+    # Overwriting in-place is not cheap for CSC, so a transient dense vector
+    # is written to 'cache' (internal non-leaf nodes only) before assembling
+    # a sparse matrix once at the end.
+    if hierarchy.out_degree(node) == 0:
+        return
+    aggregated = np.zeros(X.shape[0], dtype=np.uint32)
+    for child in list(hierarchy.successors(node)):
+        _aggregate_sparse(X, hierarchy, column_of, child, cache)
+        aggregated = np.add(aggregated, _sparse_column_uint32(X, column_of, child, cache))
+
+    if node != "ROOT":
+        aggregated = np.add(aggregated, _sparse_column_uint32(X, column_of, node, cache))
+        cache[column_of[node]] = aggregated
+
+
+def _sparse_column_uint32(X, column_of, node, cache):
+    # Returns a column with values converted to uint32 to allow summation
+    # (and the pre-aggregated value if the column had already been visited
+    # in a previous pass).
+    index = column_of[node]
+    if index in cache:
+        return cache[index]
+    column = X[:, index].toarray().ravel()
+    return column.astype(np.uint32) if column.dtype == np.bool_ else column
+
+
+def _assemble_sparse(X, cache):
+    # Reassembles the sparse matrix (with uint32 values) from the cache
+    # and the original (leaf) columns of X.
+    # Added a cache.pop to reduce peak memory usage when appending to the
+    # blocks variable.
+    n_features = X.shape[1]
+    blocks = []
+    for index in range(n_features):
+        if index in cache:  # already aggregated (non-leaf) nodes/features
+            blocks.append(sp.csc_array(cache.pop(index).reshape(-1, 1)))
+        else:  # original (leaf) nodes/features
+            column = X[:, [index]]
+            blocks.append(
+                column.astype(np.uint32) if column.dtype == np.bool_ else column
+            )
+    return sp.hstack(blocks, format="csc")

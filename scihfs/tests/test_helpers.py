@@ -191,6 +191,33 @@ def test_compute_aggregated_values(data, result, request):
     assert X.dtype == np.bool_
 
 
+@pytest.mark.parametrize(
+    "data, result",
+    [
+        ("data1", "result_aggregated1"),
+        ("data2", "result_aggregated2"),
+    ],
+)
+@pytest.mark.parametrize(
+    "sparse_type", [sparse.csr_array, sparse.csr_matrix], ids=["csr_array", "csr_matrix"]
+)
+def test_compute_aggregated_values_accepts_sparse_like_dense(
+    data, result, sparse_type, request
+):
+    # Sparse X must reproduce the exact dense result (and stay sparse: this
+    # was initially densified unconditionally via X.toarray()).
+    data = request.getfixturevalue(data)
+    result = request.getfixturevalue(result)
+    X, _, hierarchy, columns = data
+    hierarchy = add_virtual_root_node(nx.DiGraph(hierarchy))
+
+    X_transformed = compute_aggregated_values(sparse_type(X), hierarchy, columns)
+
+    assert sparse.issparse(X_transformed)
+    assert X_transformed.dtype == np.uint32
+    assert np.array_equal(X_transformed.toarray(), result)
+
+
 # ---------------------------------------------------------------------------
 # External oracle for the implementation of conditional mutual
 # information is the actively maintained ``dit`` package

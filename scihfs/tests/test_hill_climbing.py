@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from scipy import sparse
 
 from scihfs.selectors.hill_climbing import BottomUpSelector, TopDownSelector
 
@@ -34,6 +35,30 @@ def test_bottom_up_selection(data1, result_hill_selection_bu):
 
     support_mask = selector.get_support()
     assert np.array_equal(support_mask, support)
+
+
+@pytest.mark.parametrize(
+    "sparse_type", [sparse.csr_array, sparse.csr_matrix], ids=["csr_array", "csr_matrix"]
+)
+@pytest.mark.parametrize(
+    "Selector, kwargs", [(TopDownSelector, {}), (BottomUpSelector, {"k": 3})]
+)
+def test_hill_climbing_selectors_accept_sparse_like_dense(
+    data1, Selector, kwargs, sparse_type
+):
+    # compute_aggregated_values previously densified X unconditionally; this
+    # pins that a sparse fit reproduces the dense fit's selection exactly.
+    X, y, hierarchy, columns = data1
+
+    dense = Selector(hierarchy, **kwargs).fit(X, y, columns)
+    sparse_fit = Selector(hierarchy, **kwargs).fit(sparse_type(X), y, columns)
+
+    assert np.array_equal(sparse_fit.get_support(), dense.get_support())
+
+    sparse_transformed = sparse_fit.transform(sparse_type(X))
+    if sparse.issparse(sparse_transformed):
+        sparse_transformed = sparse_transformed.toarray()
+    assert np.array_equal(sparse_transformed, dense.transform(X))
 
 
 # Numerical input is currently not supported. Corresponding code is retained (but inactive) for future reintroduction.

@@ -75,6 +75,13 @@ class LazyHierarchicalFeatureSelector(
     auto-derives the column->node mapping from the feature names; otherwise an
     explicit ``columns`` mapping needs to be provided (fallback is the positional 1:1
     default).
+
+    Sparse input stays sparse: the training set is kept in its sparse form
+    for the estimator's lifetime. At predict time only the single instance
+    from the test set currently being classified is densified.
+
+    TEMPORARY: Subclasses whose internals still require a dense matrix densify it
+    themselves (currently only TAN and HieAODE).
     """
 
     def __init__(
@@ -110,7 +117,7 @@ class LazyHierarchicalFeatureSelector(
         ----------
         X : array-like or scipy.sparse (CSR) of shape (n_samples, n_features)
             The training input samples. Must be bool-dtype. Sparse input is
-            densified internally (for now).
+            kept sparse.
         y : array-like of shape (n_samples,)
             The target values.
         columns : list or None
@@ -128,8 +135,6 @@ class LazyHierarchicalFeatureSelector(
         """
         X, y = validate_data(self, X, y, accept_sparse="csr")
         check_binary_target(y)
-        if sp.issparse(X):
-            X = X.toarray()
         check_bool_dtype(X)
         self.classes_ = np.unique(y)
         self.n_classes_ = self.classes_.shape[0]
@@ -159,11 +164,13 @@ class LazyHierarchicalFeatureSelector(
 
         Parameters
         ----------
-        X : numpy array of shape (n_samples, n_features)
+        X : numpy array or scipy.sparse of shape (n_samples, n_features)
             The training input samples.
         y : numpy array of shape (n_samples,)
             The target values.
         """
+        if sp.issparse(X):
+            X = X.tocsc()
         self._relevance = {
             node: get_relevance(X, y, node) for node in self._hierarchy_graph
         }
@@ -180,28 +187,48 @@ class LazyHierarchicalFeatureSelector(
     def _check_and_validate(self, X):
         """Shared function for input validation.
 
-        Sparse input (CSR) is accepted and densified: the per-instance selection
-        algorithms index single rows as dense, so the classifiers accept sparse
-        at the boundary but work on a dense copy internally.
+        Sparse input (CSR) is accepted and kept sparse; the per-instance
+        selection algorithms are fed one densified row at a time (see
+        ``_dense_row``).
 
         Returns
         -------
-        X : numpy array
-            The validated (and densified) test input.
+        X : numpy array or scipy.sparse
+            The validated test input, remains dense/sparse if input was dense/sparse.
         """
         check_is_fitted(self)
         X = validate_data(self, X, accept_sparse="csr", reset=False)
-        if sp.issparse(X):
-            X = X.toarray()
         check_bool_dtype(X)
         return X
+
+    @staticmethod
+    def _dense_row(X, row_index):
+        """Return one instance of X as a dense 1-D array.
+
+        Required for downstream processing per instance.
+
+        Parameters
+        ----------
+        X : numpy array or scipy.sparse of shape (n_samples, n_features)
+            The validated input samples.
+        row_index : int
+            The row to extract.
+
+        Returns
+        -------
+        x_row : numpy array of shape (n_features,)
+            The instance as a dense array.
+        """
+        if sp.issparse(X):
+            return X[[row_index]].toarray().ravel()
+        return X[row_index]
 
     def _select_and_predict_proba(self, X, return_masks):
         """One per-instance sweep of selection + prediction.
 
         Parameters
         ----------
-        X : numpy array of shape (n_samples, n_features)
+        X : numpy array or scipy.sparse of shape (n_samples, n_features)
             The validated test input samples.
         return_masks : bool
             Whether to also build the per-instance selection masks.
@@ -221,8 +248,9 @@ class LazyHierarchicalFeatureSelector(
             else None
         )
         for idx in range(X.shape[0]):
-            status = self._select_features_per_instance(X[idx])
-            proba[idx] = self._predict_proba_per_instance(X[idx], status)
+            x_row = self._dense_row(X, idx)
+            status = self._select_features_per_instance(x_row)
+            proba[idx] = self._predict_proba_per_instance(x_row, status)
             if return_masks:
                 for node, selected in status.items():
                     # Nodes are data-column indices after fit's relabel.
@@ -302,7 +330,8 @@ class LazyHierarchicalFeatureSelector(
         X = self._check_and_validate(X)
         masks = np.zeros((X.shape[0], self.n_features_in_), dtype=bool)
         for idx in range(X.shape[0]):
-            for node, selected in self._select_features_per_instance(X[idx]).items():
+            x_row = self._dense_row(X, idx)
+            for node, selected in self._select_features_per_instance(x_row).items():
                 # Nodes are data-column indices after fit's relabel.
                 if selected:
                     masks[idx, node] = True

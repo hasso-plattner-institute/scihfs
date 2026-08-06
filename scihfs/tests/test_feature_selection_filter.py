@@ -153,7 +153,11 @@ def test_lazy_selectors_accept_sparse_like_dense(lazy_data2, factory, sparse_typ
     sparse_fit = factory(small_DAG).fit(sparse_type(X_train), y_train)
 
     assert np.array_equal(sparse_fit.predict(sparse_type(X_test)), dense.predict(X_test))
-    assert np.array_equal(sparse_fit.select(sparse_type(X_test)), dense.select(X_test))
+    # select mirrors the input format, so sparse input returns a sparse mask;
+    # densify it here to compare the selections themselves.
+    sparse_masks = sparse_fit.select(sparse_type(X_test))
+    assert sp.issparse(sparse_masks)
+    assert np.array_equal(sparse_masks.toarray(), dense.select(X_test))
 
 
 # The selectors that work on sparse X end-to-end. TAN and HieAODE are excluded
@@ -213,6 +217,81 @@ def test_lazy_selectors_select_on_dense_rows_of_sparse_input(lazy_data2, factory
     assert len(seen_rows) == X_test.shape[0]
     assert all(isinstance(row, np.ndarray) for row in seen_rows)
     assert all(row.shape == (X_train.shape[1],) for row in seen_rows)
+
+
+# ---------------------------------------------------------------------------
+# Selection masks mirror the input format.
+#
+# A mask of selected features is inherently sparse -- so on a large sparse
+# problem a dense mask would have equal memory consumption than the data.
+# Sparse X therefore yields a sparse mask, while dense X keeps returning an
+# ndarray so existing callers are unaffected.
+# The format follows the X handed to select/predict (not the one used in fit).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("factory", _SPARSE_NATIVE_FACTORIES, ids=_SPARSE_NATIVE_IDS)
+def test_select_masks_mirror_input_format(lazy_data2, factory):
+    small_DAG, X_train, y_train, X_test, _ = lazy_data2
+    # Deliberately fitted on dense data: the mask format follows the test input.
+    selector = factory(small_DAG).fit(X_train, y_train)
+
+    dense_masks = selector.select(X_test)
+    sparse_masks = selector.select(sp.csr_array(X_test))
+
+    assert isinstance(dense_masks, np.ndarray)
+    assert dense_masks.dtype == bool
+    assert sp.issparse(sparse_masks)
+    assert sparse_masks.dtype == bool
+    assert sparse_masks.shape == dense_masks.shape
+    assert np.array_equal(sparse_masks.toarray(), dense_masks)
+
+
+@pytest.mark.parametrize("factory", _SPARSE_NATIVE_FACTORIES, ids=_SPARSE_NATIVE_IDS)
+def test_predict_return_masks_mirror_input_format(lazy_data2, factory):
+    # predict(return_masks=True) builds the masks in the same sweep as the
+    # predictions, so it must follow the same rule as select().
+    small_DAG, X_train, y_train, X_test, _ = lazy_data2
+    selector = factory(small_DAG).fit(sp.csr_array(X_train), y_train)
+
+    _, sparse_masks = selector.predict(sp.csr_array(X_test), return_masks=True)
+    _, dense_masks = selector.predict(X_test, return_masks=True)
+
+    assert sp.issparse(sparse_masks)
+    assert isinstance(dense_masks, np.ndarray)
+    assert np.array_equal(sparse_masks.toarray(), dense_masks)
+    # ... and both still agree with the standalone select().
+    assert np.array_equal(dense_masks, selector.select(X_test))
+
+
+def test_build_masks_handles_empty_selection(lazy_data2):
+    # Nothing selected for any instance: the sparse branch then builds from
+    # empty coordinate lists, which must still give a correctly shaped
+    # all-False mask rather than a degenerate or 0x0 one.
+    small_DAG, X_train, y_train, X_test, _ = lazy_data2
+    selector = HNB(hierarchy=small_DAG, k=2).fit(X_train, y_train)
+    n_samples = X_test.shape[0]
+    expected_shape = (n_samples, X_train.shape[1])
+
+    dense_masks = selector._build_masks([], [], n_samples, as_sparse=False)
+    sparse_masks = selector._build_masks([], [], n_samples, as_sparse=True)
+
+    assert dense_masks.shape == expected_shape
+    assert not dense_masks.any()
+    assert sparse_masks.shape == expected_shape
+    assert sparse_masks.count_nonzero() == 0
+
+
+def test_mean_selected_fraction_matches_across_mask_formats(lazy_data2):
+    # The metric is the main consumer of the masks and previously raised
+    # ValueError on sparse input (np.asarray on a sparse matrix).
+    small_DAG, X_train, y_train, X_test, _ = lazy_data2
+    selector = HNB(hierarchy=small_DAG, k=2).fit(X_train, y_train)
+
+    dense_fraction = mean_selected_fraction(selector.select(X_test))
+    sparse_fraction = mean_selected_fraction(selector.select(sp.csr_array(X_test)))
+
+    assert dense_fraction == sparse_fraction == 0.5
 
 
 # ---------------------------------------------------------------------------

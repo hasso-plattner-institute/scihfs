@@ -78,7 +78,8 @@ class LazyHierarchicalFeatureSelector(
 
     Sparse input stays sparse: the training set is kept in its sparse form
     for the estimator's lifetime. At predict time only the single instance
-    from the test set currently being classified is densified.
+    from the test set currently being classified is densified, and the
+    selection masks are returned sparse as well.
 
     TEMPORARY: Subclasses whose internals still require a dense matrix densify it
     themselves (currently only TAN and HieAODE).
@@ -223,6 +224,41 @@ class LazyHierarchicalFeatureSelector(
             return X[[row_index]].toarray().ravel()
         return X[row_index]
 
+    @staticmethod
+    def _selected_columns(instance_status):
+        """The selected feature columns of one instance, as a list of int."""
+        return [node for node, selected in instance_status.items() if selected]
+
+    def _build_masks(self, rows, columns, n_samples, as_sparse):
+        """Assemble the per-instance selection masks from the selected positions.
+
+        Parameters
+        ----------
+        rows, columns : list of int
+            The positions of the selected features, as parallel list (COO style).
+        n_samples : int
+            The number of test instances (row count on X_test).
+        as_sparse : bool
+            Whether to return a sparse (CSR) mask. Set from the format of the
+            input X, so that sparse input yields sparse masks and dense input
+            keeps yielding an ndarray.
+
+        Returns
+        -------
+        masks : numpy array or scipy.sparse csr_array of shape \
+(n_samples, n_features), dtype bool
+            ``masks[i, j]`` is True if feature column ``j`` was selected for
+            test instance ``i``.
+        """
+        shape = (n_samples, self.n_features_in_)
+        if as_sparse:
+            return sp.csr_array(
+                (np.ones(len(rows), dtype=bool), (rows, columns)), shape=shape, dtype=bool
+            )
+        masks = np.zeros(shape, dtype=bool)
+        masks[rows, columns] = True
+        return masks
+
     def _select_and_predict_proba(self, X, return_masks):
         """One per-instance sweep of selection + prediction.
 
@@ -237,25 +273,24 @@ class LazyHierarchicalFeatureSelector(
         -------
         proba : numpy array of shape (n_samples, n_classes)
             The per-instance class probabilities, columns ordered by ``classes_``.
-        masks : numpy array of shape (n_samples, n_features), dtype bool, or None
+        masks : numpy array or scipy.sparse csr_array of shape \
+(n_samples, n_features), dtype bool, or None
             The per-instance selection masks when ``return_masks`` is set, else
-            ``None``.
+            ``None``. Sparse iff X is.
         """
         proba = np.empty((X.shape[0], self.n_classes_))
-        masks = (
-            np.zeros((X.shape[0], self.n_features_in_), dtype=bool)
-            if return_masks
-            else None
-        )
+        mask_rows, mask_columns = [], []
         for idx in range(X.shape[0]):
             x_row = self._dense_row(X, idx)
             status = self._select_features_per_instance(x_row)
             proba[idx] = self._predict_proba_per_instance(x_row, status)
             if return_masks:
-                for node, selected in status.items():
-                    # Nodes are data-column indices after fit's relabel.
-                    if selected:
-                        masks[idx, node] = True
+                selected = self._selected_columns(status)
+                mask_rows.extend([idx] * len(selected))
+                mask_columns.extend(selected)
+        if not return_masks:
+            return proba, None
+        masks = self._build_masks(mask_rows, mask_columns, X.shape[0], sp.issparse(X))
         return proba, masks
 
     def predict(self, X, return_masks=False):
@@ -269,7 +304,7 @@ class LazyHierarchicalFeatureSelector(
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
+        X : array-like or scipy.sparse (CSR) of shape (n_samples, n_features)
             The test input samples. Must be bool-dtype.
         return_masks : bool, default=False
             If True, also return the per-instance selection masks, built in the
@@ -280,9 +315,11 @@ class LazyHierarchicalFeatureSelector(
         -------
         predictions : numpy array of shape (n_samples,)
             The predicted target values.
-        masks : numpy array of shape (n_samples, n_features), dtype bool
+        masks : numpy array or scipy.sparse csr_array of shape \
+(n_samples, n_features), dtype bool
             Returned only when ``return_masks`` is True; ``masks[i, j]`` is True
-            iff feature column ``j`` was selected for test instance ``i``.
+            iff feature column ``j`` was selected for test instance ``i``. Sparse
+            iff X is (see ``select``).
         """
         X = self._check_and_validate(X)
         proba, masks = self._select_and_predict_proba(X, return_masks=return_masks)
@@ -316,26 +353,29 @@ class LazyHierarchicalFeatureSelector(
         predictions, without scoring the naive Bayes. Equivalent to the masks
         from ``predict(X, return_masks=True)``.
 
+        The masks follow the format of X: sparse input yields a sparse (CSR)
+        mask, dense input an ndarray.
+
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
+        X : array-like or scipy.sparse (CSR) of shape (n_samples, n_features)
             The test input samples. Must be bool-dtype.
 
         Returns
         -------
-        masks : numpy array of shape (n_samples, n_features), dtype bool
-            ``masks[i, j]`` is True iff feature column ``j`` was selected for
-            test instance ``i``.
+        masks : numpy array or scipy.sparse csr_array of shape \
+(n_samples, n_features), dtype bool
+            ``masks[i, j]`` is True if feature column ``j`` was selected for
+            test instance ``i``. Sparse if X is.
         """
         X = self._check_and_validate(X)
-        masks = np.zeros((X.shape[0], self.n_features_in_), dtype=bool)
+        mask_rows, mask_columns = [], []
         for idx in range(X.shape[0]):
             x_row = self._dense_row(X, idx)
-            for node, selected in self._select_features_per_instance(x_row).items():
-                # Nodes are data-column indices after fit's relabel.
-                if selected:
-                    masks[idx, node] = True
-        return masks
+            selected = self._selected_columns(self._select_features_per_instance(x_row))
+            mask_rows.extend([idx] * len(selected))
+            mask_columns.extend(selected)
+        return self._build_masks(mask_rows, mask_columns, X.shape[0], sp.issparse(X))
 
     @abstractmethod
     def _select_features_per_instance(self, x_row):

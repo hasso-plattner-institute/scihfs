@@ -105,3 +105,22 @@ model.fit(df_train, y_train)
 print("auto-derived column->node mapping:", model.get_columns())
 print("predictions:", model.predict(df_test))
 print("selection masks (plain ndarray):\n", model.select(df_test))
+
+# %%
+# Sparse input: Input data and masks stay sparse
+# --------------------------------------------------------
+# Lazy's ``fit`` and ``predict``/``select`` all accept sparse input and keep it sparse
+# throughout their internal processing.
+
+import scipy.sparse as sp
+
+model = HNB(hierarchy=hierarchy, k=3).fit(sp.csr_array(X_train), y_train)
+sparse_masks = model.select(sp.csr_array(X_test))
+
+print("predictions:", model.predict(sp.csr_array(X_test)))
+print("selection masks (sparse):", repr(sparse_masks))
+# The metrics take the sparse masks directly, without densifying them.
+print("mean selected fraction:", mean_selected_fraction(sparse_masks))
+
+# Dense input still yields a plain ndarray.
+print("same selection, dense input:\n", model.select(X_test))

@@ -118,7 +118,7 @@ class _SelectNodesACSelector(EagerHierarchicalFeatureSelector):
     """Concrete stub whose _select always keeps hierarchy nodes A (0) and C (2)."""
 
     def _select(self, X, y):
-        self.representatives_ = [0, 2]
+        self.selected_features_ = [0, 2]
 
 
 def test_get_feature_names_out_from_dataframe():

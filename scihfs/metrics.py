@@ -273,14 +273,17 @@ def mean_selected_fraction(masks):
 
     Parameters
     ----------
-    masks : array-like of shape (n_samples, n_features), dtype bool
-        The per-instance selection masks, as returned by a lazy selector's
-        ``select`` method.
+    masks : {array-like, sparse matrix} of shape (n_samples, n_features), dtype bool
+        The per-instance selection masks, as returned by a lazy selector's ``select``
+        method (or ``predict`` with return_masks=True set).
 
     Returns
     ----------
     float : The mean fraction of selected features per instance, in [0, 1].
     """
+    if sparse.issparse(masks):
+        n_samples, n_features = masks.shape
+        return float(masks.count_nonzero() / (n_samples * n_features))
     masks = np.asarray(masks, dtype=bool)
     return float(masks.mean())
 
@@ -299,4 +302,10 @@ def pearson_correlation(i: np.ndarray, j: np.ndarray):
     ----------
     float : The pearson correlation between the input vectors.
     """
+    # Since np.corrcoef has no sparse support, densify the two (n_samples,)
+    # columns at their time of comparison (and not the full feature matrix).
+    if sparse.issparse(i):
+        i = i.toarray().ravel()
+    if sparse.issparse(j):
+        j = j.toarray().ravel()
     return np.corrcoef(i, j)[0, 1]

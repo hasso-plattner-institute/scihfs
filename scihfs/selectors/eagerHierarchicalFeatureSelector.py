@@ -16,7 +16,7 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
     Eager selectors are supervised: ``fit`` requires a target ``y``.
     Subclasses implement their selection algorithm in ``_select``, which
     runs after the single input-validation pass and the hierarchy setup
-    and fills ``representatives_`` with the names of all hierarchy nodes
+    and fills ``selected_features_`` with the names of all hierarchy nodes
     that are left after feature selection.
 
     A DataFrame passed to ``fit`` together with a named ``nx.DiGraph``
@@ -41,14 +41,14 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
     def _fit(self, X, y):
         """Runs the eager feature selection on the validated X and y.
 
-        Rejects a hierarchy/column mismatch, resets ``representatives_`` and
+        Rejects a hierarchy/column mismatch, resets ``selected_features_`` and
         delegates to the subclasses' ``_select``.
         """
         self._reject_column_node_mismatch()
 
-        # self.representatives_ includes all node names for selected nodes.
+        # self.selected_features_ includes all node names for selected nodes.
         # self._columns maps them to the respective column in X.
-        self.representatives_ = []
+        self.selected_features_ = []
         self._select(X, y)
 
     @abstractmethod
@@ -56,19 +56,17 @@ class EagerHierarchicalFeatureSelector(SelectorMixin, HierarchicalEstimator):
         """The subclass's feature selection algorithm.
 
         Called with the validated X and y after the hierarchy setup, and
-        expected to fill ``self.representatives_`` with the names of the
+        expected to fill ``self.selected_features_`` with the names of the
         selected hierarchy nodes.
         """
 
     def _get_support_mask(self):
         # Implements _get_support_mask method from SelectorMixin to
         # indicate the selected features from X.
-        representatives_indices = [
-            self._column_index(node) for node in self.representatives_
-        ]
+        selected_indices = [self._column_index(node) for node in self.selected_features_]
         return np.asarray(
             [
-                True if index in representatives_indices else False
+                True if index in selected_indices else False
                 for index in range(self.n_features_in_)
             ]
         )

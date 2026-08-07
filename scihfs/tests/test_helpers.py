@@ -13,7 +13,12 @@ from scihfs.helpers import (
     get_relevance,
     shrink_dag,
 )
-from scihfs.metrics import conditional_mutual_information, gain_ratio, information_gain
+from scihfs.metrics import (
+    conditional_mutual_information,
+    gain_ratio,
+    information_gain,
+    pearson_correlation,
+)
 
 # ---------------------------------------------------------------------------
 # Independent reference oracles for the information-gain and gain ratio metrics, reproducing the
@@ -118,6 +123,40 @@ def test_relevance(lazy_data2):
         assert value == results[node_idx]
 
 
+@pytest.mark.parametrize(
+    "sparse_type", [sparse.csr_array, sparse.csr_matrix], ids=["csr_array", "csr_matrix"]
+)
+def test_relevance_accepts_sparse_like_dense(lazy_data2, sparse_type):
+    # Sparse X previously raised TypeError here (the row-subset selections
+    # could not be masked). The scores must not merely be close but identical:
+    # the lazy selectors rank nodes on them, so an exact Fraction is what keeps
+    # the resulting order independent of the input format.
+    small_DAG, train_x_data, train_y_data, _, _ = lazy_data2
+    sparse_x_data = sparse_type(train_x_data)
+    for node_idx in range(len(small_DAG)):
+        dense_value = get_relevance(train_x_data, train_y_data, node_idx)
+        assert get_relevance(sparse_x_data, train_y_data, node_idx) == dense_value
+
+
+def test_relevance_stays_exact_for_tied_nodes():
+    # The score is compared, not just reported: _sort_relevance ranks on it and
+    # _get_nonredundant_features_relevance drops an ancestor on `<=`. Two nodes
+    # whose probabilities differ by the same amount (1/3 vs 1/6, and 2/3 vs 1/2)
+    # are mathematically tied; in float arithmetic the two subtractions round
+    # apart and the tie becomes a strict ordering decided by rounding rather
+    # than by the data. Exact Fractions keep the tie a tie.
+    # 3 present rows (1 positive) -> p1 = 1/3; 6 absent rows (1 positive) -> p2 = 1/6.
+    tied_a = np.array([[1], [1], [1], [0], [0], [0], [0], [0], [0]], dtype=bool)
+    y_a = np.array([1, 0, 0, 1, 0, 0, 0, 0, 0])
+    # 3 present rows (2 positive) -> p1 = 2/3; 2 absent rows (1 positive) -> p2 = 1/2.
+    tied_b = np.array([[1], [1], [1], [0], [0]], dtype=bool)
+    y_b = np.array([1, 1, 0, 1, 0])
+
+    assert get_relevance(tied_a, y_a, 0) == Fraction(1, 18)
+    assert get_relevance(tied_b, y_b, 0) == Fraction(1, 18)
+    assert get_relevance(tied_a, y_a, 0) == get_relevance(tied_b, y_b, 0)
+
+
 def test_information_gain(data2):
     X, y, _, _ = data2
     ig = information_gain(X, y)
@@ -152,6 +191,18 @@ def test_gain_ratio_skips_empty_sparse_column():
     assert gain_ratio(X, y)[0] == 0
 
 
+def test_pearson_correlation_accepts_sparse_columns():
+    # A selector (SHSEL's Correlation relevance_metric) passes sparse column
+    # slices directly; np.corrcoef itself has no sparse support, so
+    # pearson_correlation must densify just the two compared columns.
+    X_dense = np.array([[1, 1], [1, 0], [0, 0], [1, 1], [0, 1]], dtype=bool)
+    X_sparse = sparse.csc_matrix(X_dense)
+
+    dense_value = pearson_correlation(X_dense[:, 0], X_dense[:, 1])
+    sparse_value = pearson_correlation(X_sparse[:, 0], X_sparse[:, 1])
+    assert sparse_value == pytest.approx(dense_value)
+
+
 @pytest.mark.parametrize(
     "data, result",
     [
@@ -172,6 +223,33 @@ def test_compute_aggregated_values(data, result, request):
     assert np.array_equal(X_transformed, result)
     # The bool input is left untouched (a fresh integer working copy is built).
     assert X.dtype == np.bool_
+
+
+@pytest.mark.parametrize(
+    "data, result",
+    [
+        ("data1", "result_aggregated1"),
+        ("data2", "result_aggregated2"),
+    ],
+)
+@pytest.mark.parametrize(
+    "sparse_type", [sparse.csr_array, sparse.csr_matrix], ids=["csr_array", "csr_matrix"]
+)
+def test_compute_aggregated_values_accepts_sparse_like_dense(
+    data, result, sparse_type, request
+):
+    # Sparse X must reproduce the exact dense result (and stay sparse: this
+    # was initially densified unconditionally via X.toarray()).
+    data = request.getfixturevalue(data)
+    result = request.getfixturevalue(result)
+    X, _, hierarchy, columns = data
+    hierarchy = add_virtual_root_node(nx.DiGraph(hierarchy))
+
+    X_transformed = compute_aggregated_values(sparse_type(X), hierarchy, columns)
+
+    assert sparse.issparse(X_transformed)
+    assert X_transformed.dtype == np.uint32
+    assert np.array_equal(X_transformed.toarray(), result)
 
 
 # ---------------------------------------------------------------------------

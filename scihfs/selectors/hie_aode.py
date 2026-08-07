@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+import scipy.sparse as sp
 
 from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
@@ -12,6 +13,9 @@ class HieAODE(LazyHierarchicalFeatureSelector):
 
     def _fit(self, X, y):
         """Allocate the conditional-probability tables from the fitted shapes."""
+        # TEMPORARY densification. Will be removed upon overhaul of this class.
+        if sp.issparse(self._xtrain):
+            self._xtrain = self._xtrain.toarray()
         self.cpts = dict(
             prior=np.full((self.n_features_in_, self.n_classes_, 2), -1),
             # (x_j (descendent), x_i (current feature), class, value)  # P(y, x_i )
@@ -33,6 +37,9 @@ class HieAODE(LazyHierarchicalFeatureSelector):
     def predict(self, X):
         """Predict the target value for each instance in X using HieAODE."""
         X = self._check_and_validate(X)
+        # TEMPORARY densification. Will be removed upon overhaul of this class.
+        if sp.issparse(X):
+            X = X.toarray()
         n_samples = X.shape[0]
         sample_sum = np.zeros((n_samples, self.n_classes_))
         for sample_idx in range(n_samples):

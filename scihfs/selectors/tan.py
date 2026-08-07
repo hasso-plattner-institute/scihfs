@@ -2,6 +2,7 @@
 
 import networkx as nx
 import numpy as np
+import scipy.sparse as sp
 
 from scihfs.metrics import conditional_mutual_information
 
@@ -17,6 +18,9 @@ class TAN(LazyHierarchicalFeatureSelector):
     """
 
     def _fit(self, X, y):
+        # TEMPORARY densification. Will be removed upon overhaul of this class.
+        if sp.issparse(self._xtrain):
+            self._xtrain = self._xtrain.toarray()
         self._build_mst()
 
     def _build_mst(self):

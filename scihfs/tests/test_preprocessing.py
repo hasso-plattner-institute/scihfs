@@ -916,6 +916,34 @@ def test_none_hierarchy_raises_type_error_in_fit():
         pre.fit(X)
 
 
+def test_non_square_ndarray_hierarchy_raises_value_error():
+    """A non-square ndarray adjacency matrix is rejected with a scihfs error.
+
+    Without the explicit check this surfaces as a raw networkx.NetworkXError
+    from the graph conversion.
+    """
+    X = np.zeros((2, 3), dtype=bool)
+    pre = HierarchicalPreprocessor(np.zeros((3, 4)))
+    with pytest.raises(ValueError, match="must be square"):
+        pre.fit(X)
+
+
+def test_non_square_sparse_hierarchy_raises_value_error():
+    """Same test, but for a scipy.sparse adjacency matrix. The same scihfs error is raised."""
+    X = np.zeros((2, 3), dtype=bool)
+    pre = HierarchicalPreprocessor(sp.csr_array((3, 4)))
+    with pytest.raises(ValueError, match="must be square"):
+        pre.fit(X)
+
+
+def test_one_dimensional_hierarchy_raises_value_error():
+    """A 1-D array is not an adjacency matrix at all."""
+    X = np.zeros((2, 3), dtype=bool)
+    pre = HierarchicalPreprocessor(np.zeros(3))
+    with pytest.raises(ValueError, match="2-dimensional"):
+        pre.fit(X)
+
+
 def test_invalid_hierarchy_type_raises_type_error():
     """A hierarchy that is none of ndarray / scipy.sparse / DiGraph raises TypeError."""
     X = np.zeros((2, 2), dtype=bool)

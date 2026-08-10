@@ -118,6 +118,28 @@ def _check_unique_column_mappings(columns):
         )
 
 
+def check_square_adjacency_matrix(matrix):
+    """Raise ValueError unless ``matrix`` is a 2-D square adjacency matrix.
+
+    Checks conformance of the user's ndarray/scipy.sparse matrix
+    input with adjacency matrix properties.
+    """
+    if matrix.ndim != 2:
+        raise ValueError(
+            f"The hierarchy adjacency matrix must be 2-dimensional, got "
+            f"{matrix.ndim} dimension(s) with shape {matrix.shape}. Pass the "
+            f"hierarchy as a square adjacency matrix (np.ndarray or "
+            f"scipy.sparse) -- or directly as an nx.DiGraph."
+        )
+    n_rows, n_columns = matrix.shape
+    if n_rows != n_columns:
+        raise ValueError(
+            f"The hierarchy adjacency matrix must be square, got shape "
+            f"{matrix.shape}. Consider directly passing the hierarchy"
+            f"directly as an nx.DiGraph instead of a matrix."
+        )
+
+
 def get_leaves(graph: nx.DiGraph):
     """Get the leaf nodes from the given directed acyclic graph (DAG).
 

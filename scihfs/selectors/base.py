@@ -13,6 +13,7 @@ from scihfs.helpers import (
     add_virtual_root_node,
     check_binary_target,
     check_bool_dtype,
+    check_square_adjacency_matrix,
 )
 
 # Node-attribute key for recording a node's original identity (name or index) in the hierarchy graph. Left untouched by all operations on the graph.
@@ -222,16 +223,21 @@ class HierarchyMixin:
         TypeError
             If ``hierarchy`` is None or is none of ``np.ndarray``,
             ``scipy.sparse``, or ``nx.DiGraph``.
+        ValueError
+            If an ``np.ndarray`` or ``scipy.sparse`` hierarchy is not a
+            (2-D, square) adjacency matrix.
         """
         if self.hierarchy is None:
             raise TypeError("Hierarchy is None but is required.")
         if isinstance(self.hierarchy, np.ndarray):
+            check_square_adjacency_matrix(self.hierarchy)
             hierarchy_graph = nx.from_numpy_array(self.hierarchy, create_using=nx.DiGraph)
             # Adjacency nodes already ARE their original integer indices.
             original_identifiers = {
                 node_index: node_index for node_index in hierarchy_graph.nodes
             }
         elif sp.issparse(self.hierarchy):
+            check_square_adjacency_matrix(self.hierarchy)
             hierarchy_graph = nx.from_scipy_sparse_array(
                 self.hierarchy, create_using=nx.DiGraph
             )

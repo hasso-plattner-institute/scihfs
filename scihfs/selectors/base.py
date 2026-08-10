@@ -11,8 +11,10 @@ from sklearn.utils.validation import check_is_fitted, validate_data
 from scihfs.helpers import (
     _check_unique_column_mappings,
     add_virtual_root_node,
+    check_adjacency_matrix_values,
     check_binary_target,
     check_bool_dtype,
+    check_digraph_edge_weights,
     check_square_adjacency_matrix,
 )
 
@@ -225,12 +227,14 @@ class HierarchyMixin:
             ``scipy.sparse``, or ``nx.DiGraph``.
         ValueError
             If an ``np.ndarray`` or ``scipy.sparse`` hierarchy is not a
-            (2-D, square) adjacency matrix.
+            (2-D, square) adjacency matrix, or if the hierarchy carries edge
+            weights other than 1 (in any of the three formats).
         """
         if self.hierarchy is None:
             raise TypeError("Hierarchy is None but is required.")
         if isinstance(self.hierarchy, np.ndarray):
             check_square_adjacency_matrix(self.hierarchy)
+            check_adjacency_matrix_values(self.hierarchy)
             hierarchy_graph = nx.from_numpy_array(self.hierarchy, create_using=nx.DiGraph)
             # Adjacency nodes already ARE their original integer indices.
             original_identifiers = {
@@ -238,6 +242,7 @@ class HierarchyMixin:
             }
         elif sp.issparse(self.hierarchy):
             check_square_adjacency_matrix(self.hierarchy)
+            check_adjacency_matrix_values(self.hierarchy)
             hierarchy_graph = nx.from_scipy_sparse_array(
                 self.hierarchy, create_using=nx.DiGraph
             )
@@ -246,6 +251,7 @@ class HierarchyMixin:
                 node_index: node_index for node_index in hierarchy_graph.nodes
             }
         elif isinstance(self.hierarchy, nx.DiGraph):
+            check_digraph_edge_weights(self.hierarchy)
             node_names = list(self.hierarchy.nodes)
             mapping = {
                 node_name: position for position, node_name in enumerate(node_names)

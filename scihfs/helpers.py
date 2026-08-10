@@ -135,8 +135,58 @@ def check_square_adjacency_matrix(matrix):
     if n_rows != n_columns:
         raise ValueError(
             f"The hierarchy adjacency matrix must be square, got shape "
-            f"{matrix.shape}. Consider directly passing the hierarchy"
-            f"directly as an nx.DiGraph instead of a matrix."
+            f"{matrix.shape}. Consider directly passing the hierarchy "
+            f"as an nx.DiGraph instead of a matrix."
+        )
+
+
+def check_adjacency_matrix_values(matrix):
+    """Raise ValueError if the adjacency matrix stores any edge
+    information beyond mere presence.
+
+    For scipy.sparse the explicitly stored values are checked.
+    Converting back to a graph would create edges from all those
+    explicitly stored values, even if they are zero.
+    """
+    if sp.issparse(matrix):
+        stored = matrix.tocoo().data
+        invalid = np.unique(stored[stored != 1])
+        requirement = "every stored value has to be 1"
+        hint = (
+            " Any explicitly stored zero will be converted to an"
+            "edge; drop these with matrix.eliminate_zeros()."
+            if invalid.size and (invalid == 0).any()
+            else ""
+        )
+    else:
+        invalid = np.unique(matrix[(matrix != 0) & (matrix != 1)])
+        requirement = "every entry has to be 0 (no edge) or 1 (edge)"
+        hint = ""
+    if invalid.size:
+        raise ValueError(
+            f"The hierarchy adjacency matrix must encode edge presence only, so "
+            f"{requirement}; got {invalid[:5].tolist()}.{hint} Edge weights are "
+            f"not supported."
+        )
+
+
+def check_digraph_edge_weights(digraph: nx.DiGraph):
+    """Raise ValueError if a DiGraph edge carries a weight other than 1.
+
+    Weightless edges are the encouraged format, ``weight=1`` is
+    accepted as synonym. Any other weight information is ambiguous.
+    """
+    weighted = [
+        (source, target, weight)
+        for source, target, weight in digraph.edges(data="weight")
+        if weight is not None and weight != 1
+    ]
+    if weighted:
+        raise ValueError(
+            f"Hierarchy edges must not carry a weight other than 1, but "
+            f"{len(weighted)} edge(s) do: {weighted[:5]}. Edge weights are not "
+            f"supported: an edge either exists or it does not. Drop the weight "
+            f"attributes -- and for a weight of 0, drop the edge itself."
         )
 
 

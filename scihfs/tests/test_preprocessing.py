@@ -944,6 +944,86 @@ def test_one_dimensional_hierarchy_raises_value_error():
         pre.fit(X)
 
 
+@pytest.mark.parametrize("weight", [2.0, -1.0, 0.5, np.nan])
+def test_weighted_ndarray_hierarchy_raises_value_error(weight):
+    """A dense adjacency matrix may only hold 0 and 1, never edge weights."""
+    hierarchy = np.zeros((3, 3))
+    hierarchy[0, 1] = weight
+    X = np.zeros((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="edge presence only"):
+        pre.fit(X)
+
+
+def test_weighted_sparse_hierarchy_raises_value_error():
+    """The value check covers the scipy.sparse hierarchy format as well."""
+    hierarchy = sp.csr_array(
+        (np.array([2.0]), (np.array([0]), np.array([1]))), shape=(3, 3)
+    )
+    X = np.zeros((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="edge presence only"):
+        pre.fit(X)
+
+
+def test_explicitly_stored_zero_in_sparse_hierarchy_raises_value_error():
+    """An explicitly stored zero is a stored entry, so networkx reads it as an
+    edge. It is ambiguous and therefore rejected, with a pointer at the fix."""
+    hierarchy = sp.csr_array(
+        (np.array([1.0, 0.0]), (np.array([0, 1]), np.array([1, 2]))), shape=(3, 3)
+    )
+    assert hierarchy.nnz == 2  # the zero really is stored
+    X = np.zeros((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="eliminate_zeros"):
+        pre.fit(X)
+
+
+def test_sparse_hierarchy_accepted_after_eliminate_zeros():
+    """The remedy named in the error message resolves the rejection."""
+    hierarchy = sp.csr_array(
+        (np.array([1.0, 0.0]), (np.array([0, 1]), np.array([1, 2]))), shape=(3, 3)
+    )
+    hierarchy.eliminate_zeros()
+    X = np.zeros((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X)
+    assert pre.is_fitted_
+
+
+@pytest.mark.parametrize("weight", [0, 2, 0.5])
+def test_weighted_digraph_hierarchy_raises_value_error(weight):
+    """A DiGraph edge carrying a weight other than 1 is rejected.
+
+    weight=0 is the ambiguous case: the edge is in the edge list (so it is an
+    edge) while its weight claims otherwise.
+    """
+    hierarchy = nx.DiGraph()
+    hierarchy.add_edge(0, 1)
+    hierarchy.add_edge(1, 2, weight=weight)
+    X = np.zeros((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="must not carry a weight"):
+        pre.fit(X)
+
+
+def test_digraph_hierarchy_with_explicit_weight_one_is_accepted():
+    """weight=1 is accepted as the explicit synonym of a weightless edge."""
+    hierarchy = nx.DiGraph()
+    hierarchy.add_edge(0, 1, weight=1)
+    hierarchy.add_edge(1, 2, weight=1)
+    X = np.zeros((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X)
+    assert pre.is_fitted_
+
+
 def test_invalid_hierarchy_type_raises_type_error():
     """A hierarchy that is none of ndarray / scipy.sparse / DiGraph raises TypeError."""
     X = np.zeros((2, 2), dtype=bool)
@@ -1310,26 +1390,26 @@ def test_to_adjacency_matrix_sparse_matches_dense():
     assert np.array_equal(spar.toarray(), dense)
 
 
-def test_hierarchy_edge_weights_dropped_and_output_is_binary():
-    """A weighted adjacency is treated as edge presence only.
+def test_hierarchy_carries_no_weight_attribute_and_output_is_binary():
+    """The hierarchy is kept as edge presence only.
 
-    The hierarchy is purely structural: input edge weights are dropped, so
-    (a) the internal graph carries no ``weight`` edge attribute and
-    (b) ``to_adjacency_matrix`` emits only 0/1 for a present edge, never echoing
-    the input's stored magnitude.
+    Weighted input is rejected up front (see the edge-weight tests above), so
+    what remains to pin down here is that a valid 0/1 adjacency yields
+    (a) an internal graph without any ``weight`` edge attribute -- the graph
+    conversion does attach ``weight=1.0``, which _set_hierarchy strips -- and
+    (b) a ``to_adjacency_matrix`` output of only 0/1.
     """
-    # Adjacency with non-1 weights on edges 0->1, 0->2, 1->3.
-    weighted = np.array(
+    adjacency = np.array(
         [
-            [0.0, 2.5, 7.0, 0.0],
-            [0.0, 0.0, 0.0, 3.0],
+            [0.0, 1.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
             [0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
         ]
     )
     X = np.array([[0, 0, 0, 1], [1, 1, 0, 0]], dtype=bool)
 
-    pre = HierarchicalPreprocessor(weighted)
+    pre = HierarchicalPreprocessor(adjacency)
     pre.fit(X, columns=[0, 1, 2, 3])
 
     # (a) No edge retains a 'weight' attribute.
@@ -1337,7 +1417,7 @@ def test_hierarchy_edge_weights_dropped_and_output_is_binary():
         "weight" not in data for _, _, data in pre._hierarchy_graph.edges(data=True)
     )
 
-    # (b) Output is binary, not the 2.5 / 7.0 / 3.0 input weights.
+    # (b) Output is binary.
     dense = pre.to_adjacency_matrix(sparse=False)
     sparse = pre.to_adjacency_matrix(sparse=True)
     assert set(np.unique(dense)).issubset({0.0, 1.0})

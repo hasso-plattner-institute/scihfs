@@ -75,6 +75,35 @@ def check_bool_dtype(X):
         )
 
 
+def warn_on_all_false_columns(X, feature_names=None):
+    """Warn about columns of ``X`` that hold no ``True`` value at all.
+
+    Note that the all-``True`` counterpart is NOT reported: a feature
+    corresponding to a node high up in the hierarchy is expected to be
+    'saturated' (all ``True``).
+
+    Only used at fit time. A test set may legitimately miss a rare feature,
+    so ``transform`` / ``predict`` stay silent about it.
+    """
+    if sp.issparse(X):
+        # Counts the True values per column; a stored False contributes 0.
+        empty_columns = np.flatnonzero(np.asarray(X.sum(axis=0)).ravel() == 0)
+    else:
+        empty_columns = np.flatnonzero(~X.any(axis=0))
+    if not empty_columns.size:
+        return
+    if feature_names is not None:
+        reported = [str(feature_names[column]) for column in empty_columns[:5]]
+    else:
+        reported = empty_columns[:5].tolist()
+    preview = f"{reported}" + (", ..." if empty_columns.size > 5 else "")
+    warnings.warn(
+        f"{empty_columns.size} column(s) of X hold no True value: {preview}. Such "
+        f"features are per requirement not part of the training data and must be "
+        f"excluded. Double-check the data preparation."
+    )
+
+
 def check_binary_target(y):
     """Raise ValueError unless ``y`` has a binary target encoding drawing
     from ``{0, 1}` (can also be encoded as boolean ``False`` and ``True``),

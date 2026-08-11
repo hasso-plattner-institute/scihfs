@@ -21,6 +21,7 @@ def test_abstract_bases_cannot_be_instantiated(abstract_class):
 
 
 @pytest.mark.filterwarnings("ignore:Hierarchy consists of multiple")
+@pytest.mark.filterwarnings("ignore:.*hold no True value")
 @pytest.mark.parametrize(
     "data",
     ["wrong_hierarchy_X", "wrong_hierarchy_X1"],

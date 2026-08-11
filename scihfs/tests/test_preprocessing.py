@@ -14,6 +14,7 @@ from scihfs.preprocessing import ColumnNotInHierarchyWarning, HierarchicalPrepro
     "data",
     ["data1_preprocessing", "data2_preprocessing"],
 )
+@pytest.mark.filterwarnings("ignore:.*hold no True value")
 def test_hierarchical_preprocessor(data, request):
     data = request.getfixturevalue(data)
     X, X_transformed, hierarchy, columns, hierarchy_expected = data
@@ -52,7 +53,7 @@ def test_adjust_node_names():
     # [0, 1, 2, 3] # renamed nodes
     # [0, 1, 3, 2] # renamed nodes mapping
 
-    X = np.zeros((4, 4), dtype=bool)
+    X = np.ones((4, 4), dtype=bool)
     edges = [(4, 5), (0, 1), (0, 3), (0, 4)]
     hierarchy = nx.DiGraph(edges)
     columns = get_columns_for_numpy_hierarchy(hierarchy, X.shape[1])
@@ -228,6 +229,7 @@ def test_propagate_ones_equivalence_random_trees(seed):
     assert np.array_equal(X_vec, X_loop)
 
 
+@pytest.mark.filterwarnings("ignore:.*hold no True value")
 @pytest.mark.parametrize("seed", list(range(5)))
 def test_propagate_ones_equivalence_random_dags(seed):
     rng = np.random.default_rng(1000 + seed)
@@ -245,6 +247,7 @@ def test_propagate_ones_equivalence_random_dags(seed):
     assert np.array_equal(X_vec, X_loop)
 
 
+@pytest.mark.filterwarnings("ignore:.*hold no True value")
 def test_propagate_ones_empty_input():
     rng = np.random.default_rng(0)
     n_nodes = 12
@@ -283,6 +286,7 @@ def test_propagate_ones_single_node():
     assert np.array_equal(out, X_added)
 
 
+@pytest.mark.filterwarnings("ignore:.*hold no True value")
 def test_propagate_ones_multi_parent_dag():
     # Diamond: 0 -> 1, 0 -> 2, 1 -> 3, 2 -> 3 (node 3 has two parents)
     hierarchy = np.zeros((4, 4), dtype=int)
@@ -399,6 +403,7 @@ def test_propagate_ones_complex_shapes(hierarchy):
     assert np.array_equal(X_vec, X_ref)
 
 
+@pytest.mark.filterwarnings("ignore:.*hold no True value")
 def test_propagate_ones_long_chain_explicit():
     """On a 0->1->2->3 chain, a 1 at the leaf must propagate up the full chain.
 
@@ -988,7 +993,7 @@ def test_sparse_hierarchy_accepted_after_eliminate_zeros():
         (np.array([1.0, 0.0]), (np.array([0, 1]), np.array([1, 2]))), shape=(3, 3)
     )
     hierarchy.eliminate_zeros()
-    X = np.zeros((2, 3), dtype=bool)
+    X = np.ones((2, 3), dtype=bool)
 
     pre = HierarchicalPreprocessor(hierarchy)
     pre.fit(X)
@@ -1017,7 +1022,7 @@ def test_digraph_hierarchy_with_explicit_weight_one_is_accepted():
     hierarchy = nx.DiGraph()
     hierarchy.add_edge(0, 1, weight=1)
     hierarchy.add_edge(1, 2, weight=1)
-    X = np.zeros((2, 3), dtype=bool)
+    X = np.ones((2, 3), dtype=bool)
 
     pre = HierarchicalPreprocessor(hierarchy)
     pre.fit(X)
@@ -1429,7 +1434,7 @@ def test_hierarchy_carries_no_weight_attribute_and_output_is_binary():
             [0.0, 0.0, 0.0, 0.0],
         ]
     )
-    X = np.array([[0, 0, 0, 1], [1, 1, 0, 0]], dtype=bool)
+    X = np.array([[0, 0, 1, 1], [1, 1, 0, 0]], dtype=bool)
 
     pre = HierarchicalPreprocessor(adjacency)
     pre.fit(X, columns=[0, 1, 2, 3])
@@ -1475,7 +1480,7 @@ def test_to_adjacency_matrix_output_is_independent_of_input_format():
         "digraph weightless": nx.DiGraph([(0, 1), (0, 2), (1, 3)]),
         "digraph weight=1": digraph_weight_one,
     }
-    X = np.zeros((2, 4), dtype=bool)
+    X = np.ones((2, 4), dtype=bool)
 
     dense_results, sparse_results = {}, {}
     for name, hierarchy in hierarchies.items():
@@ -1502,7 +1507,7 @@ def test_to_adjacency_matrix_output_round_trips_as_a_hierarchy():
     checks (square, and edge presence only) in both formats.
     """
     hierarchy = nx.DiGraph([(0, 1), (0, 2), (1, 3)])
-    X = np.zeros((2, 4), dtype=bool)
+    X = np.ones((2, 4), dtype=bool)
     pre = HierarchicalPreprocessor(hierarchy)
     pre.fit(X, columns=[0, 1, 2, 3])
 
@@ -1531,7 +1536,7 @@ def test_to_adjacency_matrix_round_trip_is_checked_on_the_sparse_output():
     sides are densified for the comparison alone.
     """
     hierarchy = nx.DiGraph([(0, 1), (0, 2), (1, 3)])
-    X = np.zeros((2, 4), dtype=bool)
+    X = np.ones((2, 4), dtype=bool)
     pre = HierarchicalPreprocessor(hierarchy)
     pre.fit(X, columns=[0, 1, 2, 3])
 

@@ -11,7 +11,12 @@ from sklearn.naive_bayes import BernoulliNB
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted, validate_data
 
-from scihfs.helpers import check_binary_target, check_bool_dtype, get_relevance
+from scihfs.helpers import (
+    check_binary_target,
+    check_bool_dtype,
+    get_relevance,
+    warn_on_all_false_columns,
+)
 from scihfs.selectors.base import HierarchyMixin
 
 
@@ -131,6 +136,15 @@ class LazyHierarchicalFeatureSelector(
             ``nx.DiGraph``, the mapping is auto-derived from the feature names (see
             ``_auto_derive_columns``).
 
+        Warns
+        -----
+        UserWarning
+            If a column of X holds no True value (see
+            ``warn_on_all_false_columns``), if the column->node mapping falls
+            back to positional order (see ``_warn_on_positional_fallback``),
+            or if the hierarchy consists of multiple components (see
+            ``add_virtual_root_node``).
+
         Returns
         -------
         self : object
@@ -144,6 +158,7 @@ class LazyHierarchicalFeatureSelector(
 
         self._fit_hierarchy(columns)
         self._relabel_hierarchy_to_columns()
+        warn_on_all_false_columns(X, getattr(self, "feature_names_in_", None))
 
         self._xtrain = X
         self._ytrain = y

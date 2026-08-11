@@ -19,6 +19,7 @@ from scihfs.helpers import (
     check_digraph_edge_weights,
     check_square_adjacency_matrix,
     check_unique_node_names,
+    warn_on_all_false_columns,
 )
 
 # Node-attribute key for recording a node's original identity (name or index) in the hierarchy graph. Left untouched by all operations on the graph.
@@ -438,6 +439,15 @@ class HierarchicalEstimator(TransformerMixin, HierarchyMixin, BaseEstimator):
             node names, or feature names with no matching node -- see
             ``_handle_orphan_features``).
 
+        Warns
+        -----
+        UserWarning
+            If a column of X holds no True value (see
+            ``warn_on_all_false_columns``), if the column->node mapping falls
+            back to positional order (see ``_warn_on_positional_fallback``),
+            or if the hierarchy consists of multiple components (see
+            ``add_virtual_root_node``).
+
         Returns
         -------
         self : object
@@ -454,6 +464,7 @@ class HierarchicalEstimator(TransformerMixin, HierarchyMixin, BaseEstimator):
             check_binary_target(y)
         check_bool_dtype(X)
         self._fit_hierarchy(columns)
+        warn_on_all_false_columns(X, getattr(self, "feature_names_in_", None))
         self._fit(X, y)
 
         self.is_fitted_ = True

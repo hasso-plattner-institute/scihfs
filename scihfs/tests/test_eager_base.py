@@ -29,7 +29,9 @@ def test_check_hierarchy_X_raises_on_mismatch(data, request):
     # (like the lazy) HFS methods are strict consumers of aligned input (only
     # the HierarchicalPreprocessor tolerates -- and fixes -- a mismatch).
     X, hierarchy, columns = request.getfixturevalue(data)
-    y = np.zeros(X.shape[0], dtype=int)
+    # y is irrelevant here, but must still hold both classes to clear the
+    # target check that precedes the alignment check in fit.
+    y = np.arange(X.shape[0]) % 2
     selector = _MinimalEagerSelector(hierarchy)
     with pytest.raises(ValueError, match="not aligned"):
         selector.fit(X, y, columns=columns)

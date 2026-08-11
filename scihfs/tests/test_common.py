@@ -24,6 +24,13 @@ _Y_MULTICLASS = np.array([0, 1, 2, 0])
 # signed ({-1, 1}) encoding. type_of_target reports both as "binary", so they
 # clear the multiclass gate and must be rejected by the tighter {0, 1} check.
 _NON_ZERO_ONE_BINARY = [np.array([1, 2, 1, 2]), np.array([-1, 1, -1, 1])]
+# type_of_target reports a single-class y as "binary" as well, and {0} / {1}
+# even pass the {0, 1} membership check -- so this needs its own gate.
+_SINGLE_CLASS = [
+    np.array([0, 0, 0, 0]),
+    np.array([1, 1, 1, 1]),
+    np.array([True, True, True, True]),
+]
 _REJECTED_DTYPES = [np.int8, np.int32, np.int64, np.float32, np.float64]
 
 
@@ -78,6 +85,22 @@ def test_eager_selector_rejects_non_zero_one_binary_y(Selector, y):
 def test_lazy_selector_rejects_non_zero_one_binary_y(Selector, y):
     selector = Selector(_HIERARCHY)
     with pytest.raises(ValueError, match="labelled 0 and 1"):
+        selector.fit(_X_BOOL, y)
+
+
+@pytest.mark.parametrize("y", _SINGLE_CLASS)
+@pytest.mark.parametrize("Selector", EAGER_SELECTORS)
+def test_eager_selector_rejects_single_class_y(Selector, y):
+    selector = Selector(_HIERARCHY)
+    with pytest.raises(ValueError, match="only one class"):
+        selector.fit(_X_BOOL, y)
+
+
+@pytest.mark.parametrize("y", _SINGLE_CLASS)
+@pytest.mark.parametrize("Selector", LAZY_SELECTORS)
+def test_lazy_selector_rejects_single_class_y(Selector, y):
+    selector = Selector(_HIERARCHY)
+    with pytest.raises(ValueError, match="only one class"):
         selector.fit(_X_BOOL, y)
 
 

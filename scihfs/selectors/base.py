@@ -387,10 +387,12 @@ class HierarchicalEstimator(TransformerMixin, HierarchyMixin, BaseEstimator):
             If the passed hierarchy is None.
         ValueError
             If X is not bool-dtype (numerical inputs may be supported in the
-            future); if y is None on a supervised subclass (selectors); or if the
-            column->node mapping cannot be auto-derived for a DataFrame X
-            (adjacency-matrix hierarchy without node names, or feature names
-            with no matching node -- see ``_handle_orphan_features``).
+            future); if y is None on a supervised subclass (selectors); if y is
+            not a binary target labelled 0 and 1 (or False and True) with both
+            classes present; or if the column->node mapping cannot be
+            auto-derived for a DataFrame X (adjacency-matrix hierarchy without
+            node names, or feature names with no matching node -- see
+            ``_handle_orphan_features``).
 
         Returns
         -------

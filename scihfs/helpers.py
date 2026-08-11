@@ -10,7 +10,7 @@ import networkx as nx
 import numpy as np
 import scipy.sparse as sp
 from networkx.algorithms.simple_paths import all_simple_paths
-from sklearn.utils.multiclass import type_of_target
+from sklearn.utils.multiclass import type_of_target, unique_labels
 
 
 def get_relevance(xdata, ydata, node):
@@ -77,7 +77,8 @@ def check_bool_dtype(X):
 
 def check_binary_target(y):
     """Raise ValueError unless ``y`` has a binary target encoding drawing
-    from ``{0, 1}` (can also be encoded as boolean ``False`` and ``True``).
+    from ``{0, 1}` (can also be encoded as boolean ``False`` and ``True``),
+    with both classes present.
     """
     y_type = type_of_target(y, input_name="y")
     if y_type != "binary":
@@ -85,7 +86,18 @@ def check_binary_target(y):
             f"Only binary classification is supported. scihfs estimators "
             f"require a binary target; got y_type={y_type!r}."
         )
-    labels = set(np.unique(y).tolist())
+    # Checks to comply precisely with the requirements to (a) have both classes
+    # present in the training data, and (b) only use 0/1 or False/True for the
+    # binary target encoding (not mix in other data dtypes).
+    labels = set(unique_labels(y).tolist())
+    if len(labels) < 2:
+        # The wording "only one class" should not be changed as it is required
+        # by some of the sklearn estimator checks.
+        raise ValueError(
+            f"Only binary classification is supported, but y holds only one "
+            f"class: {sorted(labels)!r}. Both classes (0 and 1) must be "
+            f"present in the training data."
+        )
     if not labels <= {0, 1}:
         raise ValueError(
             f"scihfs estimators require the binary target to be labelled 0 and "

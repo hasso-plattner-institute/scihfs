@@ -8,6 +8,7 @@ import scipy.sparse as sp
 from scipy.special import logsumexp
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.naive_bayes import BernoulliNB
+from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted, validate_data
 
 from scihfs.helpers import check_binary_target, check_bool_dtype, get_relevance
@@ -120,7 +121,8 @@ class LazyHierarchicalFeatureSelector(
             The training input samples. Must be bool-dtype. Sparse input is
             kept sparse.
         y : array-like of shape (n_samples,)
-            The target values.
+            The target values. Must be a binary target labelled 0 and 1 (or
+            False and True), with both classes present.
         columns : list or None
             The mapping from the hierarchy graph's nodes to the columns in X.
             A list of ints. If ``None`` the columns in X and the hierarchy nodes
@@ -137,7 +139,7 @@ class LazyHierarchicalFeatureSelector(
         X, y = validate_data(self, X, y, accept_sparse="csr")
         check_binary_target(y)
         check_bool_dtype(X)
-        self.classes_ = np.unique(y)
+        self.classes_ = unique_labels(y)
         self.n_classes_ = self.classes_.shape[0]
 
         self._fit_hierarchy(columns)

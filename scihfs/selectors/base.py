@@ -268,9 +268,10 @@ class HierarchyMixin:
         nx.set_node_attributes(
             hierarchy_graph, original_identifiers, ORIGINAL_NODE_IDENTIFIER
         )
-        # The hierarchy is purely meant as structural information.
-        # Thus, any edge weights from the user input are dropped.
-        # This also ensures that to_adjacency_matrix returns a boolean matrix, which is expected by the rest of the pipeline.
+        # The hierarchy is purely meant as structural information, so besides
+        # accepting no edge weight information previously, even all remaining
+        # weights of ``1`` at this point are dropped. This is not a processing
+        # necessity, but a memory optimization.
         for _, _, edge_data in hierarchy_graph.edges(data=True):
             edge_data.pop("weight", None)
         # Add "ROOT" node and connect components if there are multiple

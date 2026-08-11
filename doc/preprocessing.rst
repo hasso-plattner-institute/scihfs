@@ -90,6 +90,8 @@ The following function demonstrates how to use `HierarchicalPreprocessor` to pre
    densifying -- which at large scale avoids allocating a dense adjacency matrix.
    Pass ``sparse=False`` if you specifically need a dense ``np.ndarray``.
 
+   In either way: The result is dtype ``bool`` -- (a) because the hierarchy
+   is purely structural, and (b) because it has the smallest memory footprint.
 
 Handling Node Name Changes
 ---------------------------

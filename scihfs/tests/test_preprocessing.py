@@ -1424,6 +1424,109 @@ def test_hierarchy_carries_no_weight_attribute_and_output_is_binary():
     assert set(np.unique(sparse.toarray())).issubset({0.0, 1.0})
 
 
+def test_to_adjacency_matrix_output_is_independent_of_input_format():
+    """The hierarchy output is bool and independent from the input.
+
+    Both the values and the dtype are pinned. Left to networkx, the dtype
+    would be derived from the edge weight values and so would follow the
+    input format (bool in -> bool out, float in -> float out);
+    to_adjacency_matrix requests dtype=bool explicitly instead -- the fitting
+    encoding for a purely structural matrix, and the smallest one.
+    """
+    edges = np.array(
+        [
+            [0.0, 1.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+        ]
+    )
+    digraph_weight_one = nx.DiGraph()
+    digraph_weight_one.add_edges_from([(0, 1), (0, 2), (1, 3)], weight=1)
+
+    hierarchies = {
+        "ndarray float": edges,
+        "ndarray int": edges.astype(int),
+        "ndarray bool": edges.astype(bool),
+        "sparse float": sp.csr_array(edges),
+        "sparse bool": sp.csr_array(edges.astype(bool)),
+        "digraph weightless": nx.DiGraph([(0, 1), (0, 2), (1, 3)]),
+        "digraph weight=1": digraph_weight_one,
+    }
+    X = np.zeros((2, 4), dtype=bool)
+
+    dense_results, sparse_results = {}, {}
+    for name, hierarchy in hierarchies.items():
+        pre = HierarchicalPreprocessor(hierarchy)
+        pre.fit(X, columns=[0, 1, 2, 3])
+        dense_results[name] = pre.to_adjacency_matrix(sparse=False)
+        sparse_results[name] = pre.to_adjacency_matrix(sparse=True)
+
+    reference = "ndarray float"
+    for name in hierarchies:
+        assert np.array_equal(dense_results[name], dense_results[reference]), name
+        assert np.array_equal(
+            sparse_results[name].toarray(), sparse_results[reference].toarray()
+        ), name
+        assert sparse_results[name].dtype == np.bool_, name
+        assert dense_results[name].dtype == np.bool_, name
+
+
+def test_to_adjacency_matrix_output_round_trips_as_a_hierarchy():
+    """The bool-dtype output is accepted back as a ``hierarchy`` argument.
+
+    Feeding the updated hierarchy straight into the next estimator is the
+    documented workflow, so the output has to satisfy the hierarchy input
+    checks (square, and edge presence only) in both formats.
+    """
+    hierarchy = nx.DiGraph([(0, 1), (0, 2), (1, 3)])
+    X = np.zeros((2, 4), dtype=bool)
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X, columns=[0, 1, 2, 3])
+
+    for adjacency in (
+        pre.to_adjacency_matrix(sparse=True),
+        pre.to_adjacency_matrix(sparse=False),
+    ):
+        assert adjacency.dtype == np.bool_
+        downstream = HierarchicalPreprocessor(adjacency)
+        downstream.fit(X, columns=[0, 1, 2, 3])
+        assert downstream.is_fitted_
+        assert np.array_equal(
+            downstream.to_adjacency_matrix(sparse=False),
+            pre.to_adjacency_matrix(sparse=False),
+        )
+
+
+def test_to_adjacency_matrix_round_trip_is_checked_on_the_sparse_output():
+    """The round trip holds when read back in the sparse form.
+
+    Same round trip as
+    ``test_to_adjacency_matrix_output_round_trips_as_a_hierarchy``, except the
+    before/after comparison reads the CSR output of both estimators instead of
+    the dense one, so a sparse-only regression cannot hide behind the dense
+    conversion. ``np.array_equal`` cannot compare CSR arrays directly, so both
+    sides are densified for the comparison alone.
+    """
+    hierarchy = nx.DiGraph([(0, 1), (0, 2), (1, 3)])
+    X = np.zeros((2, 4), dtype=bool)
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X, columns=[0, 1, 2, 3])
+
+    for adjacency in (
+        pre.to_adjacency_matrix(sparse=True),
+        pre.to_adjacency_matrix(sparse=False),
+    ):
+        assert adjacency.dtype == np.bool_
+        downstream = HierarchicalPreprocessor(adjacency)
+        downstream.fit(X, columns=[0, 1, 2, 3])
+        assert downstream.is_fitted_
+        assert np.array_equal(
+            downstream.to_adjacency_matrix(sparse=True).toarray(),
+            pre.to_adjacency_matrix(sparse=True).toarray(),
+        )
+
+
 def test_clone_preserves_ndarray_hierarchy_input():
     """clone() round-trips an ndarray hierarchy without fit-time state."""
     from sklearn.base import clone

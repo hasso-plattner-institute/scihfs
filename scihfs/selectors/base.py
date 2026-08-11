@@ -2,6 +2,8 @@
 Base class for Sklearn compatible estimators using hierarchical data.
 """
 
+import warnings
+
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp
@@ -92,13 +94,15 @@ class HierarchyMixin:
             The mapping from the hierarchy graph's nodes to the columns in X.
             If None, the mapping is auto-derived from the feature names when
             X was a DataFrame (see ``_auto_derive_columns``); otherwise
-            positional 1:1 ordering is assumed.
+            positional 1:1 ordering is assumed (see
+            ``_warn_on_positional_fallback``).
         """
         if columns is None and getattr(self, "feature_names_in_", None) is not None:
             columns = self._auto_derive_columns()
         if columns:
             self._columns = columns
         else:
+            self._warn_on_positional_fallback()
             self._columns = list(range(self.n_features_in_))
 
         # Check whether there are duplicate column mappings (not dependent of the input route).
@@ -107,6 +111,35 @@ class HierarchyMixin:
 
         self._set_hierarchy()
         self._check_dag()
+
+    def _warn_on_positional_fallback(self):
+        """Warn when a named DiGraph hierarchy is mapped by position.
+
+        Reached when neither the ``columns`` have been passed nor DataFrame
+        feature names are available. In that case, the columns of X are assumed to
+        be in the hierarchy's node order. For an adjacency matrix that is the only
+        possible reading -- the nodes are their own indices. A ``DiGraph`` however
+        carries node names, and those are silently ignored here: the input formats
+        are mixed (nameless X, named hierarchy) and only one of them can be
+        honoured.
+
+        Node names that already equal their own position carry no information
+        beyond the order, so those stay silent.
+        """
+        if not isinstance(self.hierarchy, nx.DiGraph):
+            return
+        nodes = list(self.hierarchy.nodes)
+        if nodes == list(range(len(nodes))):
+            return
+        preview = f"{nodes[:5]}" + (", ..." if len(nodes) > 5 else "")
+        warnings.warn(
+            f"The hierarchy is an nx.DiGraph with node names, but X carries no "
+            f"column names and no columns mapping was passed, so the columns of "
+            f"X are mapped to the hierarchy nodes by position: {preview}. "
+            f"Pass X as a DataFrame whose (string) column labels match the node "
+            f"names to map by name instead, or pass the columns mapping "
+            f"explicitly to confirm the positional order."
+        )
 
     def _auto_derive_columns(self):
         """Derive the column->node mapping from DataFrame feature names.

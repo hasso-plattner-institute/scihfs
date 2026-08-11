@@ -1,5 +1,7 @@
 """Tests for the eager selector base class (EagerHierarchicalFeatureSelector)."""
 
+import warnings
+
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -70,11 +72,48 @@ def test_autoderives_columns_from_dataframe():
 
 
 def test_ndarray_X_keeps_positional_mapping():
-    """Plain ndarray X + columns=None still maps positionally (no auto-derive)."""
+    """Plain ndarray X + columns=None still maps positionally (no auto-derive).
+
+    The formats are mixed here -- a nameless X against a named hierarchy --
+    so the positional reading is announced rather than assumed silently.
+    """
     X = _named_dataframe().to_numpy()
     selector = _MinimalEagerSelector(_named_graph())
-    selector.fit(X, _y)
+    with pytest.warns(UserWarning, match="by position"):
+        selector.fit(X, _y)
     assert not hasattr(selector, "feature_names_in_")
+    assert selector.get_columns() == [0, 1, 2, 3]
+
+
+def test_no_positional_warning_with_explicit_columns():
+    """An explicit columns mapping confirms the order, so nothing is assumed."""
+    X = _named_dataframe().to_numpy()
+    selector = _MinimalEagerSelector(_named_graph())
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        selector.fit(X, _y, columns=[0, 1, 2, 3])
+    assert selector.get_columns() == [0, 1, 2, 3]
+
+
+def test_no_positional_warning_for_self_naming_digraph():
+    """Node names that already are their own positions add no information."""
+    hierarchy = nx.DiGraph([(0, 1), (1, 2), (0, 3)])
+    X = _named_dataframe().to_numpy()
+    selector = _MinimalEagerSelector(hierarchy)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        selector.fit(X, _y)
+    assert selector.get_columns() == [0, 1, 2, 3]
+
+
+def test_no_positional_warning_for_adjacency_hierarchy():
+    """An adjacency matrix has no node names to ignore in the first place."""
+    hierarchy = nx.to_numpy_array(_named_graph())
+    X = _named_dataframe().to_numpy()
+    selector = _MinimalEagerSelector(hierarchy)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        selector.fit(X, _y)
     assert selector.get_columns() == [0, 1, 2, 3]
 
 
@@ -174,6 +213,7 @@ def test_get_feature_names_out_from_dataframe():
     assert list(selector.get_feature_names_out()) == ["C", "A"]
 
 
+@pytest.mark.filterwarnings("ignore:The hierarchy is an nx.DiGraph")
 def test_get_feature_names_out_from_ndarray():
     """Without input feature names the x<position> fallback names are used."""
     selector = _SelectNodesACSelector(_named_graph())

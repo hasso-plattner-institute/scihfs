@@ -330,9 +330,11 @@ def test_lazy_autoderives_columns_from_dataframe():
 
 
 def test_lazy_ndarray_keeps_positional_mapping():
-    # A plain ndarray has no feature names, so the mapping stays positional.
+    # A plain ndarray has no feature names, so the mapping stays positional --
+    # which is worth a warning here, because the node names say otherwise.
     X = _named_dataframe().to_numpy()
-    selector = HIP(_named_graph()).fit(X, _DF_Y)
+    with pytest.warns(UserWarning, match="by position"):
+        selector = HIP(_named_graph()).fit(X, _DF_Y)
     assert not hasattr(selector, "feature_names_in_")
     assert selector.get_columns() == [0, 1, 2, 3]
 

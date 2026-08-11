@@ -1088,14 +1088,17 @@ def test_digraph_with_string_node_names_dataframe_with_int_columns():
     preprocessor falls back to positional 1:1 mapping (the same behaviour as
     a plain ndarray X). The mismatch therefore surfaces as positional mapping
     rather than name matching -- documented limitation: use string columns.
+    The fallback is not silent though: the named hierarchy against the
+    (effectively) nameless X is what the positional warning is there for.
     """
     graph = nx.DiGraph([("dog", "cat")])
     df = pd.DataFrame({0: [True, False], 1: [False, True]}).astype(bool)
 
     pre = HierarchicalPreprocessor(graph)
     assert not hasattr(pre, "feature_names_in_")
-    pre.fit(df)  # no feature names captured -> positional fallback, no raise
-    pre.fit(df)
+    with pytest.warns(UserWarning, match="by position"):
+        pre.fit(df)  # no feature names captured -> positional fallback, no raise
+        pre.fit(df)
     assert pre.is_fitted_
     assert not hasattr(pre, "feature_names_in_")
 

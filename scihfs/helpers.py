@@ -261,14 +261,23 @@ def add_virtual_root_node(hierarchy: nx.DiGraph):
     ----------
     hierarchy : networkx.DiGraph
                 The final hierarchy graph.
+
+    Warns
+    ----------
+    UserWarning
+                If the hierarchy falls apart into more than one connected
+                component, i.e. it is a forest rather than a single hierarchy.
     """
 
+    # Counted before "ROOT" is added and merges all components into a single one.
+    n_components = nx.number_weakly_connected_components(hierarchy)
+    # Roots do not equal multiple components, but still ALL require the adding of
+    # another node.
     roots = [x for x in hierarchy.nodes() if hierarchy.in_degree(x) == 0]
-    # create parent node to join hierarchies
     hierarchy.add_node("ROOT")
-    if len(roots) > 1:
+    if n_components > 1:
         warnings.warn(
-            f"Hierarchy consists of multiple ({len(roots)}) disjoint hierarchies. "
+            f"Hierarchy consists of multiple ({n_components}) disjoint hierarchies. "
         )
     for root_node in roots:
         hierarchy.add_edge("ROOT", root_node)

@@ -99,6 +99,44 @@ def test_dataframe_with_adjacency_hierarchy_and_no_columns_raises():
         selector.fit(_named_dataframe(), _y)
 
 
+def _colliding_graph():
+    """Nodes 1, "a", "1", "b": the two "1"s are distinct nodes, one name."""
+    return nx.DiGraph([(1, "a"), ("1", "b")])
+
+
+def test_colliding_node_names_raise_on_autoderive():
+    """Nodes sharing a string form cannot be matched against column labels.
+
+    Previously the later node won the lookup and the earlier one silently
+    became unreachable, surfacing (if at all) as a confusing alignment error
+    about a hierarchy node without a data column.
+    """
+    df = pd.DataFrame({"1": [1, 0, 1, 1], "a": [0, 1, 0, 1], "b": [1, 1, 0, 0]}).astype(
+        bool
+    )
+    selector = _MinimalEagerSelector(_colliding_graph())
+    with pytest.raises(ValueError, match="unique when compared as strings"):
+        selector.fit(df, _y)
+
+
+def test_colliding_node_names_accepted_with_explicit_columns():
+    """Explicit columns skip the name matching, so the collision is harmless.
+
+    This is the escape hatch the error message points to.
+    """
+    df = pd.DataFrame(
+        {
+            "one": [1, 0, 1, 1],
+            "a": [0, 1, 0, 1],
+            "1": [1, 1, 0, 0],
+            "b": [0, 0, 1, 1],
+        }
+    ).astype(bool)
+    selector = _MinimalEagerSelector(_colliding_graph())
+    selector.fit(df, _y, columns=[0, 1, 2, 3])
+    assert selector.get_columns() == [0, 1, 2, 3]
+
+
 def test_duplicate_dataframe_column_names_raise():
     """Duplicate DataFrame column names are rejected on the auto-derive path.
 

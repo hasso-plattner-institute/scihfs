@@ -16,6 +16,7 @@ from scihfs.helpers import (
     check_bool_dtype,
     check_digraph_edge_weights,
     check_square_adjacency_matrix,
+    check_unique_node_names,
 )
 
 # Node-attribute key for recording a node's original identity (name or index) in the hierarchy graph. Left untouched by all operations on the graph.
@@ -68,6 +69,12 @@ class HierarchyMixin:
                     (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
                     Any ``scipy.sparse`` format (``csr_array``, ``csr_matrix``,
                     ``coo_array``, ...) is accepted and converted internally.
+                    Node names may be of any hashable type, but they are
+                    matched against the DataFrame column labels -- and
+                    reported back -- by their ``str()`` form. They therefore
+                    have to be unique as strings: a hierarchy holding both
+                    ``1`` and ``"1"`` is rejected when the mapping is derived
+                    from column names.
                     Note: ``None`` is accepted for scikit-learn ``clone()``
                     compatibility but raises ``TypeError`` in ``fit``."""
         self.hierarchy = hierarchy
@@ -127,7 +134,8 @@ class HierarchyMixin:
         ValueError
             If the hierarchy is not a ``DiGraph`` – an adjacency matrix, given
             as np.ndarray or scipy.sparse, has no node names to match
-            against).
+            against). Also if two node names coincide once coerced to ``str``
+            (see ``check_unique_node_names``).
         """
         if not isinstance(self.hierarchy, nx.DiGraph):
             raise ValueError(
@@ -137,6 +145,9 @@ class HierarchyMixin:
                 "nx.DiGraph with named nodes, or supply columns explicitly."
             )
         nodes = list(self.hierarchy.nodes)
+        # Only relevant on this path: without the matching by name, nodes that
+        # share a string form are perfectly valid.
+        check_unique_node_names(nodes)
         name_to_position = {str(node): i for i, node in enumerate(nodes)}
         columns = [name_to_position.get(str(name), -1) for name in self.feature_names_in_]
         orphan_names = [

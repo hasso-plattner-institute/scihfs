@@ -1061,6 +1061,25 @@ def test_digraph_with_integer_node_names():
     assert out.shape[0] == 2
 
 
+def test_digraph_with_colliding_node_names_raises():
+    """Node 1 and node "1" are distinct nodes but have the same name.
+
+    The flip side of matching node names as strings: the two nodes collapse
+    to a single lookup key, so one of them can never be addressed by a
+    DataFrame column. Without the guard the preprocessor silently attached
+    the "1" column to the string node and invented an empty column for the
+    integer one.
+    """
+    graph = nx.DiGraph([(1, "a"), ("1", "b")])
+    df = pd.DataFrame({"1": [True, False], "a": [False, True], "b": [True, True]}).astype(
+        bool
+    )
+
+    pre = HierarchicalPreprocessor(graph)
+    with pytest.raises(ValueError, match="unique when compared as strings"):
+        pre.fit(df)
+
+
 def test_digraph_with_string_node_names_dataframe_with_int_columns():
     """String-named DiGraph but int-labelled DataFrame columns.
 

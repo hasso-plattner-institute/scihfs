@@ -202,6 +202,32 @@ def check_digraph_edge_weights(digraph: nx.DiGraph):
         )
 
 
+def check_unique_node_names(nodes):
+    """Raise ValueError if node names collide once coerced to ``str``.
+
+    Node names are unique within an ``nx.DiGraph`` by construction, but the
+    DataFrame column matching compares them as strings (scikit-learn stores
+    ``feature_names_in_`` as ``str``). Distinct nodes such as ``1`` and
+    ``"1"`` therefore share one name, and all but one of them would silently
+    become unreachable by that name.
+    """
+    nodes_per_name = {}
+    for node in nodes:
+        nodes_per_name.setdefault(str(node), []).append(node)
+    collisions = [
+        (name, found) for name, found in nodes_per_name.items() if len(found) > 1
+    ]
+    if collisions:
+        detail = ", ".join(f"{name!r}: {found!r}" for name, found in collisions[:5])
+        raise ValueError(
+            f"Hierarchy node names must stay unique when compared as strings, "
+            f"but {len(collisions)} name(s) are shared by multiple nodes: "
+            f"{detail}. Rename those nodes so that their string forms differ, "
+            f"or supply the columns mapping explicitly (which skips the "
+            f"matching by name)."
+        )
+
+
 def get_leaves(graph: nx.DiGraph):
     """Get the leaf nodes from the given directed acyclic graph (DAG).
 

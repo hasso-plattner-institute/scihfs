@@ -145,11 +145,17 @@ class LazyHierarchicalFeatureSelector(
             or if the hierarchy consists of multiple components (see
             ``add_virtual_root_node``).
 
+        Raises
+        ------
+        ValueError
+            If a constructor hyperparameter is invalid.
+
         Returns
         -------
         self : object
             Fitted estimator.
         """
+        self._validate_hyperparameters()
         X, y = validate_data(self, X, y, accept_sparse="csr")
         check_binary_target(y)
         check_bool_dtype(X)

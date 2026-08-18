@@ -20,6 +20,58 @@ def test_abstract_bases_cannot_be_instantiated(abstract_class):
         abstract_class()
 
 
+# ---------------------------------------------------------------------------
+# _validate_hyperparameters: no-op hook, called first thing in fit.
+# ---------------------------------------------------------------------------
+
+
+class _RaisingHyperparameterSelector(_MinimalEagerSelector):
+    """A stub whose hyperparameter validation always fails.
+
+    Stands in for a future subclass that overrides the hook to validate its
+    own hyperparameters (a threshold, an enum choice, ...); this repo has none
+    yet, so the override is defined locally for the test.
+    """
+
+    def _validate_hyperparameters(self):
+        raise ValueError("bad hyperparameter")
+
+
+def test_validate_hyperparameters_default_is_a_noop():
+    """The base HierarchyMixin implementation rejects nothing."""
+    X = np.zeros((2, 2), dtype=bool)
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))
+    selector = _MinimalEagerSelector(hierarchy)
+    selector.fit(X, np.array([0, 1]))
+    assert selector.is_fitted_
+
+
+def test_validate_hyperparameters_runs_before_hierarchy_none_check():
+    """An invalid hyperparameter is reported even when hierarchy is also None.
+
+    Hyperparameters are known from __init__ alone, so validating them first
+    means this failure is reported instead of the (also true, but less
+    specific) "hierarchy is required" complaint.
+    """
+    X = np.zeros((2, 2), dtype=bool)
+    selector = _RaisingHyperparameterSelector(None)
+    with pytest.raises(ValueError, match="bad hyperparameter"):
+        selector.fit(X, np.array([0, 1]))
+
+
+def test_validate_hyperparameters_runs_before_data_validation():
+    """An invalid hyperparameter is reported even when X is nonsense.
+
+    X here is 1-D, which validate_data would reject with an unrelated
+    "Expected 2D array" error -- proving the hyperparameter check runs first
+    and validate_data is never reached.
+    """
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))
+    selector = _RaisingHyperparameterSelector(hierarchy)
+    with pytest.raises(ValueError, match="bad hyperparameter"):
+        selector.fit(np.zeros(4), np.array([0, 1]))
+
+
 @pytest.mark.filterwarnings("ignore:Hierarchy consists of multiple")
 @pytest.mark.filterwarnings("ignore:.*hold no True value")
 @pytest.mark.parametrize(

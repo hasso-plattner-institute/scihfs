@@ -82,6 +82,15 @@ class HierarchyMixin:
                     compatibility but raises ``TypeError`` in ``fit``."""
         self.hierarchy = hierarchy
 
+    def _validate_hyperparameters(self):
+        """Hook for a subclass to validate its own constructor hyperparameters.
+
+        Cheap and thus called before actual dataset and hierarchy validations.
+
+        No-op here in the base class, but overridden in all HFS methods
+        subclasses that have hyperparameters manually set by the user.
+        """
+
     def _fit_hierarchy(self, columns):
         """Set ``_columns`` and build ``_hierarchy_graph`` from a validated X.
 
@@ -431,12 +440,13 @@ class HierarchicalEstimator(TransformerMixin, HierarchyMixin, BaseEstimator):
         TypeError
             If the passed hierarchy is None.
         ValueError
-            If X is not bool-dtype (numerical inputs may be supported in the
-            future); if y is None on a supervised subclass (selectors); if y is
-            not a binary target labelled 0 and 1 (or False and True) with both
-            classes present; or if the column->node mapping cannot be
-            auto-derived for a DataFrame X (adjacency-matrix hierarchy without
-            node names, or feature names with no matching node -- see
+            If a constructor hyperparameter is invalid; if X is not bool-dtype (numerical
+            inputs may be supported in the future); if y is None on a
+            supervised subclass (selectors); if y is not a binary target
+            labelled 0 and 1 (or False and True) with both classes present;
+            or if the column->node mapping cannot be auto-derived for a
+            DataFrame X (adjacency-matrix hierarchy without node names, or
+            feature names with no matching node -- see
             ``_handle_orphan_features``).
 
         Warns
@@ -453,6 +463,7 @@ class HierarchicalEstimator(TransformerMixin, HierarchyMixin, BaseEstimator):
         self : object
             Returns self.
         """
+        self._validate_hyperparameters()
         if self.hierarchy is None:
             raise TypeError("Hierarchy is None but is required.")
         if y is None:

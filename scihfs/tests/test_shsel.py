@@ -142,6 +142,23 @@ def test_SHSEL_rejects_unknown_ig_average(data2):
         selector.fit(X, y, columns)
 
 
+def test_SHSEL_rejects_unknown_ig_average_even_when_pruning_is_off(data2):
+    # ig_average is only consumed by the pruning stage, but is validated
+    # unconditionally: a typo here should not lie dormant until someone
+    # later turns pruning on.
+    X, y, hierarchy, columns = data2
+    selector = SHSELSelector(hierarchy, pruning=False, ig_average="bogus")
+    with pytest.raises(ValueError, match="ig_average"):
+        selector.fit(X, y, columns)
+
+
+def test_SHSEL_rejects_unknown_relevance_metric(data2):
+    X, y, hierarchy, columns = data2
+    selector = SHSELSelector(hierarchy, relevance_metric="bogus")
+    with pytest.raises(ValueError, match="relevance_metric"):
+        selector.fit(X, y, columns)
+
+
 def test_SHSEL_threshold_none_resolves_per_metric(data_shsel_normalization):
     # similarity_threshold=None resolves to the paper's metric-specific default:
     # 0.99 for information gain, 0.6 for correlation. An explicit value is kept.

@@ -52,7 +52,7 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                     for the accepted formats.
         relevance_metric : str
                     The relevance metric to use in the initial selection
-                    stage of the algorithm. The options ore "IG" for
+                    stage of the algorithm. The options are "IG" for
                     information gain and "Correlation". Default is IG.
         similarity_threshold : float or None
                     The similarity threshold to use in the initial selection
@@ -108,6 +108,11 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         # self.preprocess_numerical_data = preprocess_numerical_data
 
     def _validate_hyperparameters(self):
+        if self.relevance_metric not in ("IG", "Correlation"):
+            raise ValueError(
+                f"Unknown relevance_metric {self.relevance_metric!r}; "
+                'expected "IG" (information gain) or "Correlation".'
+            )
         if self.similarity_threshold is not None:
             check_scalar(
                 self.similarity_threshold,
@@ -116,6 +121,12 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                 min_val=0,
                 max_val=1,
                 include_boundaries="both",
+            )
+        # ig_average validated even pruning is set to False.
+        if self.ig_average not in ("full_path", "survivors_only"):
+            raise ValueError(
+                f"Unknown ig_average {self.ig_average!r}; "
+                'expected "full_path" or "survivors_only".'
             )
 
     def _select(self, X, y):
@@ -170,12 +181,10 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         ]
 
     def _pruning(self, paths):
-        """Second part of the feature selection algorithm"""
-        if self.ig_average not in ("full_path", "survivors_only"):
-            raise ValueError(
-                f"Unknown ig_average {self.ig_average!r}; "
-                'expected "full_path" or "survivors_only".'
-            )
+        """Second part of the feature selection algorithm.
+
+        (ig_average is already validated.)
+        """
         updated_selected_features = []
 
         for path in paths:

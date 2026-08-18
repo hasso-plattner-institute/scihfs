@@ -2,6 +2,7 @@ import warnings
 
 import networkx as nx
 import numpy as np
+import pandas as pd
 import pytest
 import scipy.sparse as sp
 
@@ -151,6 +152,17 @@ def test_lazy_selector_rejects_single_class_y(Selector, y):
 def test_selector_warns_on_all_false_column(Selector):
     with pytest.warns(UserWarning, match="hold no True value"):
         Selector(_HIERARCHY).fit(_X_ALL_FALSE_COLUMN, _Y_WIDE)
+
+
+@pytest.mark.parametrize("Selector", EAGER_SELECTORS + LAZY_SELECTORS)
+def test_selector_warns_with_column_name_for_dataframe_X(Selector):
+    # An explicit `columns` mapping keeps the node<->column pairing positional
+    # (identity here) regardless of the DataFrame's own labels, isolating the
+    # one thing under test: with feature_names_in_ set, the warning names the
+    # offending column instead of reporting its bare integer index.
+    df = pd.DataFrame(_X_ALL_FALSE_COLUMN, columns=["w", "x", "y", "z"])
+    with pytest.warns(UserWarning, match=r"hold no True value: \['y'\]"):
+        Selector(_HIERARCHY).fit(df, _Y_WIDE, columns=[0, 1, 2, 3])
 
 
 @pytest.mark.parametrize("Selector", EAGER_SELECTORS + LAZY_SELECTORS)

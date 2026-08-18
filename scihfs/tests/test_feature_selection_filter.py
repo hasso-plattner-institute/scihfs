@@ -500,9 +500,10 @@ def test_hie_aode_disables_predict_proba(lazy_data2):
 class _RaisingHyperparameterHIP(HIP):
     """A stub whose hyperparameter validation always fails.
 
-    Stands in for a future subclass that overrides the hook to validate its
-    own hyperparameters; this repo has none yet, so the override is defined
-    locally for the test.
+    HIP itself has no hyperparameters to validate; the real override lives on
+    HNB and RNB's k (see the "k must be a non-negative int" tests below), but
+    those raise from check_scalar rather than unconditionally, so the wiring
+    itself is still exercised separately here with a stub that always raises.
     """
 
     def _validate_hyperparameters(self):
@@ -542,6 +543,39 @@ def test_lazy_validate_hyperparameters_runs_before_data_validation():
     selector = _RaisingHyperparameterHIP(hierarchy)
     with pytest.raises(ValueError, match="bad hyperparameter"):
         selector.fit(np.zeros(4), np.array([0, 1]))
+
+
+# --- HNB / RNB: k must be a non-negative int -----------------------------
+#
+# k=0 (the default for both) is a real, meaningful value ("no limit"), not a
+# placeholder -- see _get_top_k -- so the lower bound is 0, not 1.
+
+
+@pytest.mark.parametrize("Selector", [HNB, RNB], ids=["HNB", "RNB"])
+def test_k_rejects_negative_int(Selector):
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))
+    X = np.zeros((2, 2), dtype=bool)
+    selector = Selector(hierarchy, k=-1)
+    with pytest.raises(ValueError, match="k"):
+        selector.fit(X, np.array([0, 1]))
+
+
+@pytest.mark.parametrize("Selector", [HNB, RNB], ids=["HNB", "RNB"])
+def test_k_rejects_non_integer(Selector):
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))
+    X = np.zeros((2, 2), dtype=bool)
+    selector = Selector(hierarchy, k=1.5)
+    with pytest.raises(TypeError, match="k"):
+        selector.fit(X, np.array([0, 1]))
+
+
+@pytest.mark.parametrize("Selector", [HNB, RNB], ids=["HNB", "RNB"])
+def test_k_zero_is_accepted(Selector):
+    """k=0 means "no limit", not an invalid placeholder."""
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))
+    X = np.zeros((2, 2), dtype=bool)
+    selector = Selector(hierarchy, k=0).fit(X, np.array([0, 1]))
+    assert selector.is_fitted_
 
 
 # ---------------------------------------------------------------------------

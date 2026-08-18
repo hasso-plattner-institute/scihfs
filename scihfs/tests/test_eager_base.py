@@ -28,9 +28,11 @@ def test_abstract_bases_cannot_be_instantiated(abstract_class):
 class _RaisingHyperparameterSelector(_MinimalEagerSelector):
     """A stub whose hyperparameter validation always fails.
 
-    Stands in for a future subclass that overrides the hook to validate its
-    own hyperparameters (a threshold, an enum choice, ...); this repo has none
-    yet, so the override is defined locally for the test.
+    _MinimalEagerSelector itself has no hyperparameters to validate; real
+    examples of the override exist on BottomUpSelector's k (see
+    test_hill_climbing.py) and SHSELSelector's similarity_threshold (see
+    test_shsel.py), but neither is convenient to drive through this
+    minimal-selector test setup, so the override is defined locally here.
     """
 
     def _validate_hyperparameters(self):

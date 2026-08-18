@@ -160,6 +160,30 @@ def test_SHSEL_threshold_none_resolves_per_metric(data_shsel_normalization):
     assert explicit._effective_threshold == 0.85
 
 
+@pytest.mark.parametrize("similarity_threshold", [-0.1, 1.1])
+def test_SHSEL_rejects_out_of_range_threshold(data2, similarity_threshold):
+    X, y, hierarchy, columns = data2
+    selector = SHSELSelector(hierarchy, similarity_threshold=similarity_threshold)
+    with pytest.raises(ValueError, match="similarity_threshold"):
+        selector.fit(X, y, columns)
+
+
+def test_SHSEL_rejects_non_numeric_threshold(data2):
+    X, y, hierarchy, columns = data2
+    selector = SHSELSelector(hierarchy, similarity_threshold="high")
+    with pytest.raises(TypeError, match="similarity_threshold"):
+        selector.fit(X, y, columns)
+
+
+@pytest.mark.parametrize("similarity_threshold", [0.0, 1.0])
+def test_SHSEL_accepts_boundary_threshold(data2, similarity_threshold):
+    # 0 and 1 are legitimate threshold choices ("never merge" / "always merge").
+    X, y, hierarchy, columns = data2
+    selector = SHSELSelector(hierarchy, similarity_threshold=similarity_threshold)
+    selector.fit(X, y, columns)
+    assert selector._effective_threshold == similarity_threshold
+
+
 def test_SHSEL_pruning_toggle(data_shsel_ig_average):
     # pruning=False applies only the initial selection (the paper's initialSHSEL);
     # the default pruning=True also runs Algorithm 2 (pruneSHSEL), removing more.

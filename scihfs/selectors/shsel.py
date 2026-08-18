@@ -3,10 +3,12 @@ SHSEL Feature Selector.
 """
 
 import statistics
+from numbers import Real
 
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp
+from sklearn.utils.validation import check_scalar
 
 # The HFE extension from Oudah and Henschel (2018) is commented out below, as it requires numerical features in the input (currently only bool supported).
 # When it is restored, also restore the `compute_aggregated_values` and `get_leaves` imports.
@@ -54,7 +56,8 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                     information gain and "Correlation". Default is IG.
         similarity_threshold : float or None
                     The similarity threshold to use in the initial selection
-                    stage of the algorithm, a number between 0 and 1. If None
+                    stage of the algorithm, a number between 0 and 1
+                    (inclusive) if given. If None
                     (the default), a metric-specific default is used: 0.99 for
                     the "IG" (information gain) metric and 0.6 for "Correlation" according to the original paper.
                     The IG metric is normalized to the [0,1] interval, so it
@@ -103,6 +106,17 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         # HFE extension disabled:
         # self.use_hfe_extension = use_hfe_extension
         # self.preprocess_numerical_data = preprocess_numerical_data
+
+    def _validate_hyperparameters(self):
+        if self.similarity_threshold is not None:
+            check_scalar(
+                self.similarity_threshold,
+                "similarity_threshold",
+                target_type=Real,
+                min_val=0,
+                max_val=1,
+                include_boundaries="both",
+            )
 
     def _select(self, X, y):
         """The actual SHSEL feature selection algorithm."""

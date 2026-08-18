@@ -88,7 +88,10 @@ class HierarchyMixin:
         Cheap and thus called before actual dataset and hierarchy validations.
 
         No-op here in the base class, but overridden in all HFS methods
-        subclasses that have hyperparameters manually set by the user.
+        subclasses that have hyperparameters manually set by the user --
+        using ``sklearn.utils.validation.check_scalar``, which raises
+        ``TypeError`` for a wrong type and ``ValueError`` for an out-of-range
+        value.
         """
 
     def _fit_hierarchy(self, columns):
@@ -438,10 +441,11 @@ class HierarchicalEstimator(TransformerMixin, HierarchyMixin, BaseEstimator):
         Raises
         ------
         TypeError
-            If the passed hierarchy is None.
+            If the passed hierarchy is None, or if a constructor hyperparameter
+            has the wrong type.
         ValueError
-            If a constructor hyperparameter is invalid; if X is not bool-dtype (numerical
-            inputs may be supported in the future); if y is None on a
+            If a constructor hyperparameter has an invalid value; if X is not
+            bool-dtype (numerical inputs may be supported in the future); if y is None on a
             supervised subclass (selectors); if y is not a binary target
             labelled 0 and 1 (or False and True) with both classes present;
             or if the column->node mapping cannot be auto-derived for a

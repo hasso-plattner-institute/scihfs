@@ -147,8 +147,10 @@ class LazyHierarchicalFeatureSelector(
 
         Raises
         ------
+        TypeError
+            If a constructor hyperparameter has the wrong type.
         ValueError
-            If a constructor hyperparameter is invalid.
+            If a constructor hyperparameter has an invalid value.
 
         Returns
         -------

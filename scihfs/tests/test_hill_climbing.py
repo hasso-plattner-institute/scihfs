@@ -169,3 +169,20 @@ def test_calculate_fitness_function_td(
     fitness = selector._fitness_function(result_comparison_matrix_td1)
 
     assert np.array_equal(fitness, fitness_expected)
+
+
+# --- BottomUpSelector: k must be a positive int -----------------------------
+
+
+def test_k_rejects_zero(data1):
+    X, y, hierarchy, columns = data1
+    selector = BottomUpSelector(hierarchy, k=0)
+    with pytest.raises(ValueError, match="k"):
+        selector.fit(X, y, columns)
+
+
+def test_k_rejects_non_integer(data1):
+    X, y, hierarchy, columns = data1
+    selector = BottomUpSelector(hierarchy, k=1.5)
+    with pytest.raises(TypeError, match="k"):
+        selector.fit(X, y, columns)

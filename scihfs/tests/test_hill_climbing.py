@@ -169,3 +169,30 @@ def test_calculate_fitness_function_td(
     fitness = selector._fitness_function(result_comparison_matrix_td1)
 
     assert np.array_equal(fitness, fitness_expected)
+
+
+# --- BottomUpSelector: k must be a positive int -----------------------------
+
+
+def test_bottom_up_rejects_too_few_samples_for_k(data1):
+    # The kNN step requires n_samples > k; k == n_samples trips the boundary
+    # exactly. k stays >= 1, so this exercises the n_samples check itself
+    # rather than the (separate) k >= 1 hyperparameter validation above.
+    X, y, hierarchy, columns = data1
+    selector = BottomUpSelector(hierarchy, k=len(X))
+    with pytest.raises(ValueError, match=r"n \(samples\) > k \(neighbors\)"):
+        selector.fit(X, y, columns)
+
+
+def test_k_rejects_zero(data1):
+    X, y, hierarchy, columns = data1
+    selector = BottomUpSelector(hierarchy, k=0)
+    with pytest.raises(ValueError, match="k"):
+        selector.fit(X, y, columns)
+
+
+def test_k_rejects_non_integer(data1):
+    X, y, hierarchy, columns = data1
+    selector = BottomUpSelector(hierarchy, k=1.5)
+    with pytest.raises(TypeError, match="k"):
+        selector.fit(X, y, columns)

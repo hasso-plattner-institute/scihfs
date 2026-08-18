@@ -148,7 +148,10 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         -------
         np.ndarray or scipy.sparse.csr_array
             The transformed hierarchy as an adjacency matrix -- dense when
-            ``sparse=False``, CSR when ``sparse=True``.
+            ``sparse=False``, CSR when ``sparse=True``. Always of dtype
+            ``bool``, as the hierarchy is purely structural and it is the
+            smallest possible encoding. This output would be accepted back as
+            a ``hierarchy`` argument unchanged.
 
         Raises
         ------
@@ -161,9 +164,10 @@ class HierarchicalPreprocessor(HierarchicalEstimator):
         # _hierarchy_graph and only be callable once.
         graph_view = self._hierarchy_graph.copy()
         graph_view.remove_node("ROOT")
+        # dtype=bool is the output dtype -- independent of the input format.
         if sparse:
-            return nx.to_scipy_sparse_array(graph_view, format="csr")
-        return nx.to_numpy_array(graph_view)
+            return nx.to_scipy_sparse_array(graph_view, format="csr", dtype=bool)
+        return nx.to_numpy_array(graph_view, dtype=bool)
 
     def get_feature_names_out(self, input_features=None):
         """Map each output column to its hierarchy node name.

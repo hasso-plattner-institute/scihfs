@@ -4,10 +4,12 @@ Hill Climbing Feature Selectors.
 
 import math
 from abc import abstractmethod
+from numbers import Integral
 
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp
+from sklearn.utils.validation import check_scalar
 
 # Numerical input is not supported and previous related code commented out throughout this file, such as the 'dataset_type' variable with "binary" and "numerical" branches.
 # Restore the `normalize_score` import here when reintroducing.
@@ -298,7 +300,7 @@ class BottomUpSelector(HillClimbingSelector):
         k : int
                 A hyperparameter needed to determine the k nearest
                 neighbors during the feature selection algorithm.
-                The default value is 5.
+                The default value is 5. Must be >= 1.
 
         Notes
         -----
@@ -312,6 +314,9 @@ class BottomUpSelector(HillClimbingSelector):
         # dataset_type disabled:
         super().__init__(hierarchy, alpha=alpha)
         self.k = k
+
+    def _validate_hyperparameters(self):
+        check_scalar(self.k, "k", target_type=Integral, min_val=1)
 
     def _hill_climb(self, X) -> list[int]:
         """Performs the feature selection.

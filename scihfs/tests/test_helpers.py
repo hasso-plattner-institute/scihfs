@@ -1,3 +1,4 @@
+import warnings
 from collections import Counter
 from fractions import Fraction
 
@@ -113,6 +114,57 @@ def test_shrink_dag_keeps_interior_identifier_and_its_subtree_ancestors():
     # 1 (relevant) + 0 (ancestor) + ROOT survive; 2, 3 (descendants) and the
     # unrelated branch 4 are pruned.
     assert set(graph.nodes()) == {"ROOT", 0, 1}
+
+
+# ---------------------------------------------------------------------------
+# add_virtual_root_node: the "disjoint hierarchies" warning counts connected
+# components, not roots.
+# ---------------------------------------------------------------------------
+
+
+def test_add_virtual_root_node_single_tree_does_not_warn():
+    """One tree, one root: nothing disjoint to report."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        graph = add_virtual_root_node(nx.DiGraph([(0, 1), (0, 2), (1, 3)]))
+    assert set(graph.successors("ROOT")) == {0}
+
+
+def test_add_virtual_root_node_shared_child_does_not_warn():
+    """Two roots joined by a shared child form a single hierarchy.
+
+    Counting roots would report this connected graph as disjoint.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        graph = add_virtual_root_node(nx.DiGraph([(0, 2), (1, 2)]))
+    assert set(graph.successors("ROOT")) == {0, 1}
+
+
+def test_add_virtual_root_node_warns_with_component_count():
+    """Two disjoint trees: both roots get attached, one warning is issued."""
+    with pytest.warns(UserWarning, match=r"multiple \(2\) disjoint hierarchies"):
+        graph = add_virtual_root_node(nx.DiGraph([(0, 1), (2, 3)]))
+    assert set(graph.successors("ROOT")) == {0, 2}
+
+
+def test_add_virtual_root_node_warning_count_is_components_not_roots():
+    """Three roots, two components: the warning reports the component count.
+
+    Component A: 0 -> 2 <- 1 (two roots, one hierarchy). Component B: 3 -> 4.
+    """
+    with pytest.warns(UserWarning, match=r"multiple \(2\) disjoint hierarchies"):
+        graph = add_virtual_root_node(nx.DiGraph([(0, 2), (1, 2), (3, 4)]))
+    assert set(graph.successors("ROOT")) == {0, 1, 3}
+
+
+def test_add_virtual_root_node_isolated_node_is_its_own_component():
+    """An unconnected node is a hierarchy of its own -- and gets reported."""
+    hierarchy = nx.DiGraph([(0, 1)])
+    hierarchy.add_node(2)
+    with pytest.warns(UserWarning, match=r"multiple \(2\) disjoint hierarchies"):
+        graph = add_virtual_root_node(hierarchy)
+    assert set(graph.successors("ROOT")) == {0, 2}
 
 
 def test_relevance(lazy_data2):

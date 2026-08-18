@@ -10,7 +10,7 @@ import networkx as nx
 import numpy as np
 import scipy.sparse as sp
 from networkx.algorithms.simple_paths import all_simple_paths
-from sklearn.utils.multiclass import type_of_target
+from sklearn.utils.multiclass import type_of_target, unique_labels
 
 
 def get_relevance(xdata, ydata, node):
@@ -75,9 +75,39 @@ def check_bool_dtype(X):
         )
 
 
+def warn_on_all_false_columns(X, feature_names=None):
+    """Warn about columns of ``X`` that hold no ``True`` value at all.
+
+    Note that the all-``True`` counterpart is NOT reported: a feature
+    corresponding to a node high up in the hierarchy is expected to be
+    'saturated' (all ``True``).
+
+    Only used at fit time. A test set may legitimately miss a rare feature,
+    so ``transform`` / ``predict`` stay silent about it.
+    """
+    if sp.issparse(X):
+        # Counts the True values per column; a stored False contributes 0.
+        empty_columns = np.flatnonzero(np.asarray(X.sum(axis=0)).ravel() == 0)
+    else:
+        empty_columns = np.flatnonzero(~X.any(axis=0))
+    if not empty_columns.size:
+        return
+    if feature_names is not None:
+        reported = [str(feature_names[column]) for column in empty_columns[:5]]
+    else:
+        reported = empty_columns[:5].tolist()
+    preview = f"{reported}" + (", ..." if empty_columns.size > 5 else "")
+    warnings.warn(
+        f"{empty_columns.size} column(s) of X hold no True value: {preview}. Such "
+        f"features are per requirement not part of the training data and must be "
+        f"excluded. Double-check the data preparation."
+    )
+
+
 def check_binary_target(y):
     """Raise ValueError unless ``y`` has a binary target encoding drawing
-    from ``{0, 1}` (can also be encoded as boolean ``False`` and ``True``).
+    from ``{0, 1}` (can also be encoded as boolean ``False`` and ``True``),
+    with both classes present.
     """
     y_type = type_of_target(y, input_name="y")
     if y_type != "binary":
@@ -85,7 +115,18 @@ def check_binary_target(y):
             f"Only binary classification is supported. scihfs estimators "
             f"require a binary target; got y_type={y_type!r}."
         )
-    labels = set(np.unique(y).tolist())
+    # Checks to comply precisely with the requirements to (a) have both classes
+    # present in the training data, and (b) only use 0/1 or False/True for the
+    # binary target encoding (not mix in other data dtypes).
+    labels = set(unique_labels(y).tolist())
+    if len(labels) < 2:
+        # The wording "only one class" should not be changed as it is required
+        # by some of the sklearn estimator checks.
+        raise ValueError(
+            f"Only binary classification is supported, but y holds only one "
+            f"class: {sorted(labels)!r}. Both classes (0 and 1) must be "
+            f"present in the training data."
+        )
     if not labels <= {0, 1}:
         raise ValueError(
             f"scihfs estimators require the binary target to be labelled 0 and "
@@ -115,6 +156,104 @@ def _check_unique_column_mappings(columns):
             f"Suggested solution: If X was a DataFrame, check it for duplicate column names with "
             f"df.columns[df.columns.duplicated()]. "
             f"prior to feeding the dataset to the Estimator."
+        )
+
+
+def check_square_adjacency_matrix(matrix):
+    """Raise ValueError unless ``matrix`` is a 2-D square adjacency matrix.
+
+    Checks conformance of the user's ndarray/scipy.sparse matrix
+    input with adjacency matrix properties.
+    """
+    if matrix.ndim != 2:
+        raise ValueError(
+            f"The hierarchy adjacency matrix must be 2-dimensional, got "
+            f"{matrix.ndim} dimension(s) with shape {matrix.shape}. Pass the "
+            f"hierarchy as a square adjacency matrix (np.ndarray or "
+            f"scipy.sparse) -- or directly as an nx.DiGraph."
+        )
+    n_rows, n_columns = matrix.shape
+    if n_rows != n_columns:
+        raise ValueError(
+            f"The hierarchy adjacency matrix must be square, got shape "
+            f"{matrix.shape}. Consider directly passing the hierarchy "
+            f"as an nx.DiGraph instead of a matrix."
+        )
+
+
+def check_adjacency_matrix_values(matrix):
+    """Raise ValueError if the adjacency matrix stores any edge
+    information beyond mere presence.
+
+    For scipy.sparse the explicitly stored values are checked.
+    Converting back to a graph would create edges from all those
+    explicitly stored values, even if they are zero.
+    """
+    if sp.issparse(matrix):
+        stored = matrix.tocoo().data
+        invalid = np.unique(stored[stored != 1])
+        requirement = "every stored value has to be 1"
+        hint = (
+            " Any explicitly stored zero will be converted to an"
+            "edge; drop these with matrix.eliminate_zeros()."
+            if invalid.size and (invalid == 0).any()
+            else ""
+        )
+    else:
+        invalid = np.unique(matrix[(matrix != 0) & (matrix != 1)])
+        requirement = "every entry has to be 0 (no edge) or 1 (edge)"
+        hint = ""
+    if invalid.size:
+        raise ValueError(
+            f"The hierarchy adjacency matrix must encode edge presence only, so "
+            f"{requirement}; got {invalid[:5].tolist()}.{hint} Edge weights are "
+            f"not supported."
+        )
+
+
+def check_digraph_edge_weights(digraph: nx.DiGraph):
+    """Raise ValueError if a DiGraph edge carries a weight other than 1.
+
+    Weightless edges are the encouraged format, ``weight=1`` is
+    accepted as synonym. Any other weight information is ambiguous.
+    """
+    weighted = [
+        (source, target, weight)
+        for source, target, weight in digraph.edges(data="weight")
+        if weight is not None and weight != 1
+    ]
+    if weighted:
+        raise ValueError(
+            f"Hierarchy edges must not carry a weight other than 1, but "
+            f"{len(weighted)} edge(s) do: {weighted[:5]}. Edge weights are not "
+            f"supported: an edge either exists or it does not. Drop the weight "
+            f"attributes -- and for a weight of 0, drop the edge itself."
+        )
+
+
+def check_unique_node_names(nodes):
+    """Raise ValueError if node names collide once coerced to ``str``.
+
+    Node names are unique within an ``nx.DiGraph`` by construction, but the
+    DataFrame column matching compares them as strings (scikit-learn stores
+    ``feature_names_in_`` as ``str``). Distinct nodes such as ``1`` and
+    ``"1"`` therefore share one name, and all but one of them would silently
+    become unreachable by that name.
+    """
+    nodes_per_name = {}
+    for node in nodes:
+        nodes_per_name.setdefault(str(node), []).append(node)
+    collisions = [
+        (name, found) for name, found in nodes_per_name.items() if len(found) > 1
+    ]
+    if collisions:
+        detail = ", ".join(f"{name!r}: {found!r}" for name, found in collisions[:5])
+        raise ValueError(
+            f"Hierarchy node names must stay unique when compared as strings, "
+            f"but {len(collisions)} name(s) are shared by multiple nodes: "
+            f"{detail}. Rename those nodes so that their string forms differ, "
+            f"or supply the columns mapping explicitly (which skips the "
+            f"matching by name)."
         )
 
 
@@ -189,14 +328,23 @@ def add_virtual_root_node(hierarchy: nx.DiGraph):
     ----------
     hierarchy : networkx.DiGraph
                 The final hierarchy graph.
+
+    Warns
+    ----------
+    UserWarning
+                If the hierarchy falls apart into more than one connected
+                component, i.e. it is a forest rather than a single hierarchy.
     """
 
+    # Counted before "ROOT" is added and merges all components into a single one.
+    n_components = nx.number_weakly_connected_components(hierarchy)
+    # Roots do not equal multiple components, but still ALL require the adding of
+    # another node.
     roots = [x for x in hierarchy.nodes() if hierarchy.in_degree(x) == 0]
-    # create parent node to join hierarchies
     hierarchy.add_node("ROOT")
-    if len(roots) > 1:
+    if n_components > 1:
         warnings.warn(
-            f"Hierarchy consists of multiple ({len(roots)}) disjoint hierarchies. "
+            f"Hierarchy consists of multiple ({n_components}) disjoint hierarchies. "
         )
     for root_node in roots:
         hierarchy.add_edge("ROOT", root_node)

@@ -8,9 +8,15 @@ import scipy.sparse as sp
 from scipy.special import logsumexp
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.naive_bayes import BernoulliNB
+from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted, validate_data
 
-from scihfs.helpers import check_binary_target, check_bool_dtype, get_relevance
+from scihfs.helpers import (
+    check_binary_target,
+    check_bool_dtype,
+    get_relevance,
+    warn_on_all_false_columns,
+)
 from scihfs.selectors.base import HierarchyMixin
 
 
@@ -120,7 +126,8 @@ class LazyHierarchicalFeatureSelector(
             The training input samples. Must be bool-dtype. Sparse input is
             kept sparse.
         y : array-like of shape (n_samples,)
-            The target values.
+            The target values. Must be a binary target labelled 0 and 1 (or
+            False and True), with both classes present.
         columns : list or None
             The mapping from the hierarchy graph's nodes to the columns in X.
             A list of ints. If ``None`` the columns in X and the hierarchy nodes
@@ -129,19 +136,37 @@ class LazyHierarchicalFeatureSelector(
             ``nx.DiGraph``, the mapping is auto-derived from the feature names (see
             ``_auto_derive_columns``).
 
+        Warns
+        -----
+        UserWarning
+            If a column of X holds no True value (see
+            ``warn_on_all_false_columns``), if the column->node mapping falls
+            back to positional order (see ``_warn_on_positional_fallback``),
+            or if the hierarchy consists of multiple components (see
+            ``add_virtual_root_node``).
+
+        Raises
+        ------
+        TypeError
+            If a constructor hyperparameter has the wrong type.
+        ValueError
+            If a constructor hyperparameter has an invalid value.
+
         Returns
         -------
         self : object
             Fitted estimator.
         """
+        self._validate_hyperparameters()
         X, y = validate_data(self, X, y, accept_sparse="csr")
         check_binary_target(y)
         check_bool_dtype(X)
-        self.classes_ = np.unique(y)
+        self.classes_ = unique_labels(y)
         self.n_classes_ = self.classes_.shape[0]
 
         self._fit_hierarchy(columns)
         self._relabel_hierarchy_to_columns()
+        warn_on_all_false_columns(X, getattr(self, "feature_names_in_", None))
 
         self._xtrain = X
         self._ytrain = y

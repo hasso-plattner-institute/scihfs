@@ -50,6 +50,13 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
         self.iterate_first_level = iterate_first_level  # TODO: warning for DAG
         self.heuristic_function = heuristic_function
 
+    def _validate_hyperparameters(self):
+        if self.heuristic_function not in ("GR", "IG"):
+            raise ValueError(
+                f"Unknown heuristic_function {self.heuristic_function!r}; "
+                'expected "GR" (gain ratio) or "IG" (information gain).'
+            )
+
     def _select(self, X, y):
         """The actual GTD feature selection algorithm."""
         if sp.issparse(X):
@@ -85,13 +92,9 @@ class GreedyTopDownSelector(EagerHierarchicalFeatureSelector):
                 branch_nodes = [node for node in branch_nodes if node not in remove_nodes]
 
     def calculate_heuristic_function(self, X, y):
+        # heuristic_function already validated in _validate_hyperparameters
         if self.heuristic_function == "GR":
             relevance_values = gain_ratio(X, y)
-        elif self.heuristic_function == "IG":
-            relevance_values = information_gain(X, y)
         else:
-            raise ValueError(
-                f"Unknown heuristic_function {self.heuristic_function!r}; "
-                'expected "GR" (gain ratio) or "IG" (information gain).'
-            )
+            relevance_values = information_gain(X, y)
         self.heuristic_function_values_ = dict(zip(self._columns, relevance_values))

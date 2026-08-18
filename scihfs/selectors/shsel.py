@@ -3,10 +3,12 @@ SHSEL Feature Selector.
 """
 
 import statistics
+from numbers import Real
 
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp
+from sklearn.utils.validation import check_scalar
 
 # The HFE extension from Oudah and Henschel (2018) is commented out below, as it requires numerical features in the input (currently only bool supported).
 # When it is restored, also restore the `compute_aggregated_values` and `get_leaves` imports.
@@ -50,11 +52,12 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
                     for the accepted formats.
         relevance_metric : str
                     The relevance metric to use in the initial selection
-                    stage of the algorithm. The options ore "IG" for
+                    stage of the algorithm. The options are "IG" for
                     information gain and "Correlation". Default is IG.
         similarity_threshold : float or None
                     The similarity threshold to use in the initial selection
-                    stage of the algorithm, a number between 0 and 1. If None
+                    stage of the algorithm, a number between 0 and 1
+                    (inclusive) if given. If None
                     (the default), a metric-specific default is used: 0.99 for
                     the "IG" (information gain) metric and 0.6 for "Correlation" according to the original paper.
                     The IG metric is normalized to the [0,1] interval, so it
@@ -103,6 +106,28 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         # HFE extension disabled:
         # self.use_hfe_extension = use_hfe_extension
         # self.preprocess_numerical_data = preprocess_numerical_data
+
+    def _validate_hyperparameters(self):
+        if self.relevance_metric not in ("IG", "Correlation"):
+            raise ValueError(
+                f"Unknown relevance_metric {self.relevance_metric!r}; "
+                'expected "IG" (information gain) or "Correlation".'
+            )
+        if self.similarity_threshold is not None:
+            check_scalar(
+                self.similarity_threshold,
+                "similarity_threshold",
+                target_type=Real,
+                min_val=0,
+                max_val=1,
+                include_boundaries="both",
+            )
+        # ig_average validated even pruning is set to False.
+        if self.ig_average not in ("full_path", "survivors_only"):
+            raise ValueError(
+                f"Unknown ig_average {self.ig_average!r}; "
+                'expected "full_path" or "survivors_only".'
+            )
 
     def _select(self, X, y):
         """The actual SHSEL feature selection algorithm."""
@@ -156,12 +181,10 @@ class SHSELSelector(EagerHierarchicalFeatureSelector):
         ]
 
     def _pruning(self, paths):
-        """Second part of the feature selection algorithm"""
-        if self.ig_average not in ("full_path", "survivors_only"):
-            raise ValueError(
-                f"Unknown ig_average {self.ig_average!r}; "
-                'expected "full_path" or "survivors_only".'
-            )
+        """Second part of the feature selection algorithm.
+
+        (ig_average is already validated.)
+        """
         updated_selected_features = []
 
         for path in paths:

@@ -330,9 +330,11 @@ def test_lazy_autoderives_columns_from_dataframe():
 
 
 def test_lazy_ndarray_keeps_positional_mapping():
-    # A plain ndarray has no feature names, so the mapping stays positional.
+    # A plain ndarray has no feature names, so the mapping stays positional --
+    # which is worth a warning here, because the node names say otherwise.
     X = _named_dataframe().to_numpy()
-    selector = HIP(_named_graph()).fit(X, _DF_Y)
+    with pytest.warns(UserWarning, match="by position"):
+        selector = HIP(_named_graph()).fit(X, _DF_Y)
     assert not hasattr(selector, "feature_names_in_")
     assert selector.get_columns() == [0, 1, 2, 3]
 
@@ -484,6 +486,96 @@ def test_hie_aode_disables_predict_proba(lazy_data2):
     selector = HieAODE(small_DAG).fit(X_train, y_train)
     with pytest.raises(AttributeError):
         selector.predict_proba(X_test)
+
+
+# ---------------------------------------------------------------------------
+# _validate_hyperparameters: no-op hook, called first thing in fit.
+#
+# Mirrors the equivalent eager-path tests in test_eager_base.py; the lazy
+# fit() re-implements the template (it is not TransformerMixin-based), so the
+# wiring is verified separately here.
+# ---------------------------------------------------------------------------
+
+
+class _RaisingHyperparameterHIP(HIP):
+    """A stub whose hyperparameter validation always fails.
+
+    HIP itself has no hyperparameters to validate; the real override lives on
+    HNB and RNB's k (see the "k must be a non-negative int" tests below), but
+    those raise from check_scalar rather than unconditionally, so the wiring
+    itself is still exercised separately here with a stub that always raises.
+    """
+
+    def _validate_hyperparameters(self):
+        raise ValueError("bad hyperparameter")
+
+
+def test_lazy_validate_hyperparameters_default_is_a_noop():
+    """The base HierarchyMixin implementation rejects nothing."""
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))
+    X = np.zeros((2, 2), dtype=bool)
+    selector = HIP(hierarchy).fit(X, np.array([0, 1]))
+    assert selector.is_fitted_
+
+
+def test_lazy_validate_hyperparameters_runs_before_hierarchy_none_check():
+    """An invalid hyperparameter is reported even when hierarchy is also None.
+
+    Hyperparameters are known from __init__ alone, so validating them first
+    means this failure is reported instead of the (also true, but less
+    specific, and only surfaced deep inside _fit_hierarchy on this path)
+    "hierarchy is required" complaint.
+    """
+    X = np.zeros((2, 2), dtype=bool)
+    selector = _RaisingHyperparameterHIP(None)
+    with pytest.raises(ValueError, match="bad hyperparameter"):
+        selector.fit(X, np.array([0, 1]))
+
+
+def test_lazy_validate_hyperparameters_runs_before_data_validation():
+    """An invalid hyperparameter is reported even when X is nonsense.
+
+    X here is 1-D, which validate_data would reject with an unrelated
+    "Expected 2D array" error -- proving the hyperparameter check runs first
+    and validate_data is never reached.
+    """
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))
+    selector = _RaisingHyperparameterHIP(hierarchy)
+    with pytest.raises(ValueError, match="bad hyperparameter"):
+        selector.fit(np.zeros(4), np.array([0, 1]))
+
+
+# --- HNB / RNB: k must be a non-negative int -----------------------------
+#
+# k=0 (the default for both) is a real, meaningful value ("no limit"), not a
+# placeholder -- see _get_top_k -- so the lower bound is 0, not 1.
+
+
+@pytest.mark.parametrize("Selector", [HNB, RNB], ids=["HNB", "RNB"])
+def test_k_rejects_negative_int(Selector):
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))
+    X = np.zeros((2, 2), dtype=bool)
+    selector = Selector(hierarchy, k=-1)
+    with pytest.raises(ValueError, match="k"):
+        selector.fit(X, np.array([0, 1]))
+
+
+@pytest.mark.parametrize("Selector", [HNB, RNB], ids=["HNB", "RNB"])
+def test_k_rejects_non_integer(Selector):
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))
+    X = np.zeros((2, 2), dtype=bool)
+    selector = Selector(hierarchy, k=1.5)
+    with pytest.raises(TypeError, match="k"):
+        selector.fit(X, np.array([0, 1]))
+
+
+@pytest.mark.parametrize("Selector", [HNB, RNB], ids=["HNB", "RNB"])
+def test_k_zero_is_accepted(Selector):
+    """k=0 means "no limit", not an invalid placeholder."""
+    hierarchy = nx.to_numpy_array(nx.DiGraph([(0, 1)]))
+    X = np.zeros((2, 2), dtype=bool)
+    selector = Selector(hierarchy, k=0).fit(X, np.array([0, 1]))
+    assert selector.is_fitted_
 
 
 # ---------------------------------------------------------------------------

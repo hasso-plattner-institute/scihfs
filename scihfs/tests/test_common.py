@@ -1,8 +1,17 @@
+import warnings
+
 import networkx as nx
 import numpy as np
+import pandas as pd
 import pytest
+import scipy.sparse as sp
 
+from scihfs.selectors import HieAODE
 from scihfs.tests._estimators import EAGER_SELECTORS, LAZY_SELECTORS
+
+# HieAODE's predict is broken independently of anything tested here (it is
+# being worked on in its own branch), so predict-time cases skip it.
+_LAZY_SELECTORS_WITH_PREDICT = [S for S in LAZY_SELECTORS if S is not HieAODE]
 
 # ---------------------------------------------------------------------------
 # TEMPORARY FILE CONTENT WARNING:
@@ -24,7 +33,49 @@ _Y_MULTICLASS = np.array([0, 1, 2, 0])
 # signed ({-1, 1}) encoding. type_of_target reports both as "binary", so they
 # clear the multiclass gate and must be rejected by the tighter {0, 1} check.
 _NON_ZERO_ONE_BINARY = [np.array([1, 2, 1, 2]), np.array([-1, 1, -1, 1])]
+# type_of_target reports a single-class y as "binary" as well, and {0} / {1}
+# even pass the {0, 1} membership check -- so this needs its own gate.
+_SINGLE_CLASS = [
+    np.array([0, 0, 0, 0]),
+    np.array([1, 1, 1, 1]),
+    np.array([True, True, True, True]),
+]
 _REJECTED_DTYPES = [np.int8, np.int32, np.int64, np.float32, np.float64]
+# Wider than _X_BOOL because BottomUpSelector needs n_samples > k (default 5)
+# for its k-nearest-neighbors step, and these cases have to reach _select.
+_X_WIDE = np.array(
+    [
+        [1, 1, 1, 0],
+        [1, 1, 0, 1],
+        [1, 0, 0, 1],
+        [1, 1, 1, 1],
+        [0, 0, 0, 0],
+        [1, 1, 0, 0],
+        [1, 0, 0, 0],
+        [1, 1, 1, 0],
+    ],
+    dtype=bool,
+)
+_Y_WIDE = np.array([0, 1, 0, 1, 0, 1, 0, 1])
+# A feature that is never present carries no information. Its counterpart --
+# node 0 is the hierarchy root, so it is present for every instance -- is the
+# expected case and must stay silent.
+_X_ALL_FALSE_COLUMN = _X_WIDE.copy()
+_X_ALL_FALSE_COLUMN[:, 2] = False
+_X_ALL_TRUE_COLUMN = _X_WIDE.copy()
+_X_ALL_TRUE_COLUMN[:, 0] = True
+
+
+def _all_false_warnings(function, *args, **kwargs):
+    """Run ``function`` and return only the all-False-column warnings it raised.
+
+    Targeted instead of ``simplefilter("error")`` so that an unrelated warning
+    from one of the estimators cannot masquerade as this one.
+    """
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        function(*args, **kwargs)
+    return [w for w in caught if "hold no True value" in str(w.message)]
 
 
 @pytest.mark.parametrize("dtype", _REJECTED_DTYPES)
@@ -79,6 +130,76 @@ def test_lazy_selector_rejects_non_zero_one_binary_y(Selector, y):
     selector = Selector(_HIERARCHY)
     with pytest.raises(ValueError, match="labelled 0 and 1"):
         selector.fit(_X_BOOL, y)
+
+
+@pytest.mark.parametrize("y", _SINGLE_CLASS)
+@pytest.mark.parametrize("Selector", EAGER_SELECTORS)
+def test_eager_selector_rejects_single_class_y(Selector, y):
+    selector = Selector(_HIERARCHY)
+    with pytest.raises(ValueError, match="only one class"):
+        selector.fit(_X_BOOL, y)
+
+
+@pytest.mark.parametrize("y", _SINGLE_CLASS)
+@pytest.mark.parametrize("Selector", LAZY_SELECTORS)
+def test_lazy_selector_rejects_single_class_y(Selector, y):
+    selector = Selector(_HIERARCHY)
+    with pytest.raises(ValueError, match="only one class"):
+        selector.fit(_X_BOOL, y)
+
+
+@pytest.mark.parametrize("Selector", EAGER_SELECTORS + LAZY_SELECTORS)
+def test_selector_warns_on_all_false_column(Selector):
+    with pytest.warns(UserWarning, match="hold no True value"):
+        Selector(_HIERARCHY).fit(_X_ALL_FALSE_COLUMN, _Y_WIDE)
+
+
+@pytest.mark.parametrize("Selector", EAGER_SELECTORS + LAZY_SELECTORS)
+def test_selector_warns_with_column_name_for_dataframe_X(Selector):
+    # An explicit `columns` mapping keeps the node<->column pairing positional
+    # (identity here) regardless of the DataFrame's own labels, isolating the
+    # one thing under test: with feature_names_in_ set, the warning names the
+    # offending column instead of reporting its bare integer index.
+    df = pd.DataFrame(_X_ALL_FALSE_COLUMN, columns=["w", "x", "y", "z"])
+    with pytest.warns(UserWarning, match=r"hold no True value: \['y'\]"):
+        Selector(_HIERARCHY).fit(df, _Y_WIDE, columns=[0, 1, 2, 3])
+
+
+@pytest.mark.parametrize("Selector", EAGER_SELECTORS + LAZY_SELECTORS)
+def test_selector_does_not_warn_on_all_true_column(Selector):
+    # A node high up in the hierarchy is present for every instance, so a
+    # saturated column is the expected case, not a suspicious one.
+    selector = Selector(_HIERARCHY)
+    assert not _all_false_warnings(selector.fit, _X_ALL_TRUE_COLUMN, _Y_WIDE)
+
+
+@pytest.mark.parametrize("Selector", EAGER_SELECTORS + LAZY_SELECTORS)
+def test_selector_warns_on_all_false_column_of_sparse_X(Selector):
+    # Counted from the stored values, so a sparse X is covered without
+    # densifying it.
+    with pytest.warns(UserWarning, match="hold no True value"):
+        Selector(_HIERARCHY).fit(sp.csr_array(_X_ALL_FALSE_COLUMN), _Y_WIDE)
+
+
+# BottomUpSelector compares two instances by the cosine similarity of their
+# aggregated values, restricted to the candidate feature set of the current
+# hill-climbing step. An instance with no presence among those features gives a
+# zero vector, so the division by its norm yields NaN with a RuntimeWarning.
+# Pre-existing behaviour on sparse-ish data, unrelated to the assertion here
+# (it fires during fit, and equally without any all-False column).
+@pytest.mark.filterwarnings("ignore:invalid value encountered in scalar divide")
+@pytest.mark.parametrize("Selector", EAGER_SELECTORS)
+def test_eager_selector_does_not_warn_on_all_false_column_at_transform(Selector):
+    # Only the training data is checked: a test set may legitimately miss a
+    # rare feature, and re-reporting it on every transform would be noise.
+    selector = Selector(_HIERARCHY).fit(_X_WIDE, _Y_WIDE)
+    assert not _all_false_warnings(selector.transform, _X_ALL_FALSE_COLUMN)
+
+
+@pytest.mark.parametrize("Selector", _LAZY_SELECTORS_WITH_PREDICT)
+def test_lazy_selector_does_not_warn_on_all_false_column_at_predict(Selector):
+    selector = Selector(_HIERARCHY).fit(_X_WIDE, _Y_WIDE)
+    assert not _all_false_warnings(selector.predict, _X_ALL_FALSE_COLUMN)
 
 
 @pytest.mark.parametrize("Selector", LAZY_SELECTORS)

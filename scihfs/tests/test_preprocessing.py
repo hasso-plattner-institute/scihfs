@@ -14,6 +14,7 @@ from scihfs.preprocessing import ColumnNotInHierarchyWarning, HierarchicalPrepro
     "data",
     ["data1_preprocessing", "data2_preprocessing"],
 )
+@pytest.mark.filterwarnings("ignore:.*hold no True value")
 def test_hierarchical_preprocessor(data, request):
     data = request.getfixturevalue(data)
     X, X_transformed, hierarchy, columns, hierarchy_expected = data
@@ -52,7 +53,7 @@ def test_adjust_node_names():
     # [0, 1, 2, 3] # renamed nodes
     # [0, 1, 3, 2] # renamed nodes mapping
 
-    X = np.zeros((4, 4), dtype=bool)
+    X = np.ones((4, 4), dtype=bool)
     edges = [(4, 5), (0, 1), (0, 3), (0, 4)]
     hierarchy = nx.DiGraph(edges)
     columns = get_columns_for_numpy_hierarchy(hierarchy, X.shape[1])
@@ -228,6 +229,7 @@ def test_propagate_ones_equivalence_random_trees(seed):
     assert np.array_equal(X_vec, X_loop)
 
 
+@pytest.mark.filterwarnings("ignore:.*hold no True value")
 @pytest.mark.parametrize("seed", list(range(5)))
 def test_propagate_ones_equivalence_random_dags(seed):
     rng = np.random.default_rng(1000 + seed)
@@ -245,6 +247,7 @@ def test_propagate_ones_equivalence_random_dags(seed):
     assert np.array_equal(X_vec, X_loop)
 
 
+@pytest.mark.filterwarnings("ignore:.*hold no True value")
 def test_propagate_ones_empty_input():
     rng = np.random.default_rng(0)
     n_nodes = 12
@@ -283,6 +286,7 @@ def test_propagate_ones_single_node():
     assert np.array_equal(out, X_added)
 
 
+@pytest.mark.filterwarnings("ignore:.*hold no True value")
 def test_propagate_ones_multi_parent_dag():
     # Diamond: 0 -> 1, 0 -> 2, 1 -> 3, 2 -> 3 (node 3 has two parents)
     hierarchy = np.zeros((4, 4), dtype=int)
@@ -399,6 +403,7 @@ def test_propagate_ones_complex_shapes(hierarchy):
     assert np.array_equal(X_vec, X_ref)
 
 
+@pytest.mark.filterwarnings("ignore:.*hold no True value")
 def test_propagate_ones_long_chain_explicit():
     """On a 0->1->2->3 chain, a 1 at the leaf must propagate up the full chain.
 
@@ -916,6 +921,114 @@ def test_none_hierarchy_raises_type_error_in_fit():
         pre.fit(X)
 
 
+def test_non_square_ndarray_hierarchy_raises_value_error():
+    """A non-square ndarray adjacency matrix is rejected with a scihfs error.
+
+    Without the explicit check this surfaces as a raw networkx.NetworkXError
+    from the graph conversion.
+    """
+    X = np.zeros((2, 3), dtype=bool)
+    pre = HierarchicalPreprocessor(np.zeros((3, 4)))
+    with pytest.raises(ValueError, match="must be square"):
+        pre.fit(X)
+
+
+def test_non_square_sparse_hierarchy_raises_value_error():
+    """Same test, but for a scipy.sparse adjacency matrix. The same scihfs error is raised."""
+    X = np.zeros((2, 3), dtype=bool)
+    pre = HierarchicalPreprocessor(sp.csr_array((3, 4)))
+    with pytest.raises(ValueError, match="must be square"):
+        pre.fit(X)
+
+
+def test_one_dimensional_hierarchy_raises_value_error():
+    """A 1-D array is not an adjacency matrix at all."""
+    X = np.zeros((2, 3), dtype=bool)
+    pre = HierarchicalPreprocessor(np.zeros(3))
+    with pytest.raises(ValueError, match="2-dimensional"):
+        pre.fit(X)
+
+
+@pytest.mark.parametrize("weight", [2.0, -1.0, 0.5, np.nan])
+def test_weighted_ndarray_hierarchy_raises_value_error(weight):
+    """A dense adjacency matrix may only hold 0 and 1, never edge weights."""
+    hierarchy = np.zeros((3, 3))
+    hierarchy[0, 1] = weight
+    X = np.zeros((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="edge presence only"):
+        pre.fit(X)
+
+
+def test_weighted_sparse_hierarchy_raises_value_error():
+    """The value check covers the scipy.sparse hierarchy format as well."""
+    hierarchy = sp.csr_array(
+        (np.array([2.0]), (np.array([0]), np.array([1]))), shape=(3, 3)
+    )
+    X = np.zeros((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="edge presence only"):
+        pre.fit(X)
+
+
+def test_explicitly_stored_zero_in_sparse_hierarchy_raises_value_error():
+    """An explicitly stored zero is a stored entry, so networkx reads it as an
+    edge. It is ambiguous and therefore rejected, with a pointer at the fix."""
+    hierarchy = sp.csr_array(
+        (np.array([1.0, 0.0]), (np.array([0, 1]), np.array([1, 2]))), shape=(3, 3)
+    )
+    assert hierarchy.nnz == 2  # the zero really is stored
+    X = np.zeros((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="eliminate_zeros"):
+        pre.fit(X)
+
+
+def test_sparse_hierarchy_accepted_after_eliminate_zeros():
+    """The remedy named in the error message resolves the rejection."""
+    hierarchy = sp.csr_array(
+        (np.array([1.0, 0.0]), (np.array([0, 1]), np.array([1, 2]))), shape=(3, 3)
+    )
+    hierarchy.eliminate_zeros()
+    X = np.ones((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X)
+    assert pre.is_fitted_
+
+
+@pytest.mark.parametrize("weight", [0, 2, 0.5])
+def test_weighted_digraph_hierarchy_raises_value_error(weight):
+    """A DiGraph edge carrying a weight other than 1 is rejected.
+
+    weight=0 is the ambiguous case: the edge is in the edge list (so it is an
+    edge) while its weight claims otherwise.
+    """
+    hierarchy = nx.DiGraph()
+    hierarchy.add_edge(0, 1)
+    hierarchy.add_edge(1, 2, weight=weight)
+    X = np.zeros((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    with pytest.raises(ValueError, match="must not carry a weight"):
+        pre.fit(X)
+
+
+def test_digraph_hierarchy_with_explicit_weight_one_is_accepted():
+    """weight=1 is accepted as the explicit synonym of a weightless edge."""
+    hierarchy = nx.DiGraph()
+    hierarchy.add_edge(0, 1, weight=1)
+    hierarchy.add_edge(1, 2, weight=1)
+    X = np.ones((2, 3), dtype=bool)
+
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X)
+    assert pre.is_fitted_
+
+
 def test_invalid_hierarchy_type_raises_type_error():
     """A hierarchy that is none of ndarray / scipy.sparse / DiGraph raises TypeError."""
     X = np.zeros((2, 2), dtype=bool)
@@ -953,6 +1066,25 @@ def test_digraph_with_integer_node_names():
     assert out.shape[0] == 2
 
 
+def test_digraph_with_colliding_node_names_raises():
+    """Node 1 and node "1" are distinct nodes but have the same name.
+
+    The flip side of matching node names as strings: the two nodes collapse
+    to a single lookup key, so one of them can never be addressed by a
+    DataFrame column. Without the guard the preprocessor silently attached
+    the "1" column to the string node and invented an empty column for the
+    integer one.
+    """
+    graph = nx.DiGraph([(1, "a"), ("1", "b")])
+    df = pd.DataFrame({"1": [True, False], "a": [False, True], "b": [True, True]}).astype(
+        bool
+    )
+
+    pre = HierarchicalPreprocessor(graph)
+    with pytest.raises(ValueError, match="unique when compared as strings"):
+        pre.fit(df)
+
+
 def test_digraph_with_string_node_names_dataframe_with_int_columns():
     """String-named DiGraph but int-labelled DataFrame columns.
 
@@ -961,14 +1093,17 @@ def test_digraph_with_string_node_names_dataframe_with_int_columns():
     preprocessor falls back to positional 1:1 mapping (the same behaviour as
     a plain ndarray X). The mismatch therefore surfaces as positional mapping
     rather than name matching -- documented limitation: use string columns.
+    The fallback is not silent though: the named hierarchy against the
+    (effectively) nameless X is what the positional warning is there for.
     """
     graph = nx.DiGraph([("dog", "cat")])
     df = pd.DataFrame({0: [True, False], 1: [False, True]}).astype(bool)
 
     pre = HierarchicalPreprocessor(graph)
     assert not hasattr(pre, "feature_names_in_")
-    pre.fit(df)  # no feature names captured -> positional fallback, no raise
-    pre.fit(df)
+    with pytest.warns(UserWarning, match="by position"):
+        pre.fit(df)  # no feature names captured -> positional fallback, no raise
+        pre.fit(df)
     assert pre.is_fitted_
     assert not hasattr(pre, "feature_names_in_")
 
@@ -1282,26 +1417,26 @@ def test_to_adjacency_matrix_sparse_matches_dense():
     assert np.array_equal(spar.toarray(), dense)
 
 
-def test_hierarchy_edge_weights_dropped_and_output_is_binary():
-    """A weighted adjacency is treated as edge presence only.
+def test_hierarchy_carries_no_weight_attribute_and_output_is_binary():
+    """The hierarchy is kept as edge presence only.
 
-    The hierarchy is purely structural: input edge weights are dropped, so
-    (a) the internal graph carries no ``weight`` edge attribute and
-    (b) ``to_adjacency_matrix`` emits only 0/1 for a present edge, never echoing
-    the input's stored magnitude.
+    Weighted input is rejected up front (see the edge-weight tests above), so
+    what remains to pin down here is that a valid 0/1 adjacency yields
+    (a) an internal graph without any ``weight`` edge attribute -- the graph
+    conversion does attach ``weight=1.0``, which _set_hierarchy strips -- and
+    (b) a ``to_adjacency_matrix`` output of only 0/1.
     """
-    # Adjacency with non-1 weights on edges 0->1, 0->2, 1->3.
-    weighted = np.array(
+    adjacency = np.array(
         [
-            [0.0, 2.5, 7.0, 0.0],
-            [0.0, 0.0, 0.0, 3.0],
+            [0.0, 1.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
             [0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
         ]
     )
-    X = np.array([[0, 0, 0, 1], [1, 1, 0, 0]], dtype=bool)
+    X = np.array([[0, 0, 1, 1], [1, 1, 0, 0]], dtype=bool)
 
-    pre = HierarchicalPreprocessor(weighted)
+    pre = HierarchicalPreprocessor(adjacency)
     pre.fit(X, columns=[0, 1, 2, 3])
 
     # (a) No edge retains a 'weight' attribute.
@@ -1309,11 +1444,114 @@ def test_hierarchy_edge_weights_dropped_and_output_is_binary():
         "weight" not in data for _, _, data in pre._hierarchy_graph.edges(data=True)
     )
 
-    # (b) Output is binary, not the 2.5 / 7.0 / 3.0 input weights.
+    # (b) Output is binary.
     dense = pre.to_adjacency_matrix(sparse=False)
     sparse = pre.to_adjacency_matrix(sparse=True)
     assert set(np.unique(dense)).issubset({0.0, 1.0})
     assert set(np.unique(sparse.toarray())).issubset({0.0, 1.0})
+
+
+def test_to_adjacency_matrix_output_is_independent_of_input_format():
+    """The hierarchy output is bool and independent from the input.
+
+    Both the values and the dtype are pinned. Left to networkx, the dtype
+    would be derived from the edge weight values and so would follow the
+    input format (bool in -> bool out, float in -> float out);
+    to_adjacency_matrix requests dtype=bool explicitly instead -- the fitting
+    encoding for a purely structural matrix, and the smallest one.
+    """
+    edges = np.array(
+        [
+            [0.0, 1.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+        ]
+    )
+    digraph_weight_one = nx.DiGraph()
+    digraph_weight_one.add_edges_from([(0, 1), (0, 2), (1, 3)], weight=1)
+
+    hierarchies = {
+        "ndarray float": edges,
+        "ndarray int": edges.astype(int),
+        "ndarray bool": edges.astype(bool),
+        "sparse float": sp.csr_array(edges),
+        "sparse bool": sp.csr_array(edges.astype(bool)),
+        "digraph weightless": nx.DiGraph([(0, 1), (0, 2), (1, 3)]),
+        "digraph weight=1": digraph_weight_one,
+    }
+    X = np.ones((2, 4), dtype=bool)
+
+    dense_results, sparse_results = {}, {}
+    for name, hierarchy in hierarchies.items():
+        pre = HierarchicalPreprocessor(hierarchy)
+        pre.fit(X, columns=[0, 1, 2, 3])
+        dense_results[name] = pre.to_adjacency_matrix(sparse=False)
+        sparse_results[name] = pre.to_adjacency_matrix(sparse=True)
+
+    reference = "ndarray float"
+    for name in hierarchies:
+        assert np.array_equal(dense_results[name], dense_results[reference]), name
+        assert np.array_equal(
+            sparse_results[name].toarray(), sparse_results[reference].toarray()
+        ), name
+        assert sparse_results[name].dtype == np.bool_, name
+        assert dense_results[name].dtype == np.bool_, name
+
+
+def test_to_adjacency_matrix_output_round_trips_as_a_hierarchy():
+    """The bool-dtype output is accepted back as a ``hierarchy`` argument.
+
+    Feeding the updated hierarchy straight into the next estimator is the
+    documented workflow, so the output has to satisfy the hierarchy input
+    checks (square, and edge presence only) in both formats.
+    """
+    hierarchy = nx.DiGraph([(0, 1), (0, 2), (1, 3)])
+    X = np.ones((2, 4), dtype=bool)
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X, columns=[0, 1, 2, 3])
+
+    for adjacency in (
+        pre.to_adjacency_matrix(sparse=True),
+        pre.to_adjacency_matrix(sparse=False),
+    ):
+        assert adjacency.dtype == np.bool_
+        downstream = HierarchicalPreprocessor(adjacency)
+        downstream.fit(X, columns=[0, 1, 2, 3])
+        assert downstream.is_fitted_
+        assert np.array_equal(
+            downstream.to_adjacency_matrix(sparse=False),
+            pre.to_adjacency_matrix(sparse=False),
+        )
+
+
+def test_to_adjacency_matrix_round_trip_is_checked_on_the_sparse_output():
+    """The round trip holds when read back in the sparse form.
+
+    Same round trip as
+    ``test_to_adjacency_matrix_output_round_trips_as_a_hierarchy``, except the
+    before/after comparison reads the CSR output of both estimators instead of
+    the dense one, so a sparse-only regression cannot hide behind the dense
+    conversion. ``np.array_equal`` cannot compare CSR arrays directly, so both
+    sides are densified for the comparison alone.
+    """
+    hierarchy = nx.DiGraph([(0, 1), (0, 2), (1, 3)])
+    X = np.ones((2, 4), dtype=bool)
+    pre = HierarchicalPreprocessor(hierarchy)
+    pre.fit(X, columns=[0, 1, 2, 3])
+
+    for adjacency in (
+        pre.to_adjacency_matrix(sparse=True),
+        pre.to_adjacency_matrix(sparse=False),
+    ):
+        assert adjacency.dtype == np.bool_
+        downstream = HierarchicalPreprocessor(adjacency)
+        downstream.fit(X, columns=[0, 1, 2, 3])
+        assert downstream.is_fitted_
+        assert np.array_equal(
+            downstream.to_adjacency_matrix(sparse=True).toarray(),
+            pre.to_adjacency_matrix(sparse=True).toarray(),
+        )
 
 
 def test_clone_preserves_ndarray_hierarchy_input():

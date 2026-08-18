@@ -2,6 +2,8 @@
 Base class for Sklearn compatible estimators using hierarchical data.
 """
 
+import warnings
+
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp
@@ -11,8 +13,13 @@ from sklearn.utils.validation import check_is_fitted, validate_data
 from scihfs.helpers import (
     _check_unique_column_mappings,
     add_virtual_root_node,
+    check_adjacency_matrix_values,
     check_binary_target,
     check_bool_dtype,
+    check_digraph_edge_weights,
+    check_square_adjacency_matrix,
+    check_unique_node_names,
+    warn_on_all_false_columns,
 )
 
 # Node-attribute key for recording a node's original identity (name or index) in the hierarchy graph. Left untouched by all operations on the graph.
@@ -65,9 +72,27 @@ class HierarchyMixin:
                     (``scipy.sparse``), or as directly as digraph (``networkx.DiGraph``, with optional node names that can match the columns in X).
                     Any ``scipy.sparse`` format (``csr_array``, ``csr_matrix``,
                     ``coo_array``, ...) is accepted and converted internally.
+                    Node names may be of any hashable type, but they are
+                    matched against the DataFrame column labels -- and
+                    reported back -- by their ``str()`` form. They therefore
+                    have to be unique as strings: a hierarchy holding both
+                    ``1`` and ``"1"`` is rejected when the mapping is derived
+                    from column names.
                     Note: ``None`` is accepted for scikit-learn ``clone()``
                     compatibility but raises ``TypeError`` in ``fit``."""
         self.hierarchy = hierarchy
+
+    def _validate_hyperparameters(self):
+        """Hook for a subclass to validate its own constructor hyperparameters.
+
+        Cheap and thus called before actual dataset and hierarchy validations.
+
+        No-op here in the base class, but overridden in all HFS methods
+        subclasses that have hyperparameters manually set by the user --
+        using ``sklearn.utils.validation.check_scalar``, which raises
+        ``TypeError`` for a wrong type and ``ValueError`` for an out-of-range
+        value.
+        """
 
     def _fit_hierarchy(self, columns):
         """Set ``_columns`` and build ``_hierarchy_graph`` from a validated X.
@@ -82,13 +107,15 @@ class HierarchyMixin:
             The mapping from the hierarchy graph's nodes to the columns in X.
             If None, the mapping is auto-derived from the feature names when
             X was a DataFrame (see ``_auto_derive_columns``); otherwise
-            positional 1:1 ordering is assumed.
+            positional 1:1 ordering is assumed (see
+            ``_warn_on_positional_fallback``).
         """
         if columns is None and getattr(self, "feature_names_in_", None) is not None:
             columns = self._auto_derive_columns()
         if columns:
             self._columns = columns
         else:
+            self._warn_on_positional_fallback()
             self._columns = list(range(self.n_features_in_))
 
         # Check whether there are duplicate column mappings (not dependent of the input route).
@@ -97,6 +124,35 @@ class HierarchyMixin:
 
         self._set_hierarchy()
         self._check_dag()
+
+    def _warn_on_positional_fallback(self):
+        """Warn when a named DiGraph hierarchy is mapped by position.
+
+        Reached when neither the ``columns`` have been passed nor DataFrame
+        feature names are available. In that case, the columns of X are assumed to
+        be in the hierarchy's node order. For an adjacency matrix that is the only
+        possible reading -- the nodes are their own indices. A ``DiGraph`` however
+        carries node names, and those are silently ignored here: the input formats
+        are mixed (nameless X, named hierarchy) and only one of them can be
+        honoured.
+
+        Node names that already equal their own position carry no information
+        beyond the order, so those stay silent.
+        """
+        if not isinstance(self.hierarchy, nx.DiGraph):
+            return
+        nodes = list(self.hierarchy.nodes)
+        if nodes == list(range(len(nodes))):
+            return
+        preview = f"{nodes[:5]}" + (", ..." if len(nodes) > 5 else "")
+        warnings.warn(
+            f"The hierarchy is an nx.DiGraph with node names, but X carries no "
+            f"column names and no columns mapping was passed, so the columns of "
+            f"X are mapped to the hierarchy nodes by position: {preview}. "
+            f"Pass X as a DataFrame whose (string) column labels match the node "
+            f"names to map by name instead, or pass the columns mapping "
+            f"explicitly to confirm the positional order."
+        )
 
     def _auto_derive_columns(self):
         """Derive the column->node mapping from DataFrame feature names.
@@ -124,7 +180,8 @@ class HierarchyMixin:
         ValueError
             If the hierarchy is not a ``DiGraph`` – an adjacency matrix, given
             as np.ndarray or scipy.sparse, has no node names to match
-            against).
+            against). Also if two node names coincide once coerced to ``str``
+            (see ``check_unique_node_names``).
         """
         if not isinstance(self.hierarchy, nx.DiGraph):
             raise ValueError(
@@ -134,6 +191,9 @@ class HierarchyMixin:
                 "nx.DiGraph with named nodes, or supply columns explicitly."
             )
         nodes = list(self.hierarchy.nodes)
+        # Only relevant on this path: without the matching by name, nodes that
+        # share a string form are perfectly valid.
+        check_unique_node_names(nodes)
         name_to_position = {str(node): i for i, node in enumerate(nodes)}
         columns = [name_to_position.get(str(name), -1) for name in self.feature_names_in_]
         orphan_names = [
@@ -222,16 +282,24 @@ class HierarchyMixin:
         TypeError
             If ``hierarchy`` is None or is none of ``np.ndarray``,
             ``scipy.sparse``, or ``nx.DiGraph``.
+        ValueError
+            If an ``np.ndarray`` or ``scipy.sparse`` hierarchy is not a
+            (2-D, square) adjacency matrix, or if the hierarchy carries edge
+            weights other than 1 (in any of the three formats).
         """
         if self.hierarchy is None:
             raise TypeError("Hierarchy is None but is required.")
         if isinstance(self.hierarchy, np.ndarray):
+            check_square_adjacency_matrix(self.hierarchy)
+            check_adjacency_matrix_values(self.hierarchy)
             hierarchy_graph = nx.from_numpy_array(self.hierarchy, create_using=nx.DiGraph)
             # Adjacency nodes already ARE their original integer indices.
             original_identifiers = {
                 node_index: node_index for node_index in hierarchy_graph.nodes
             }
         elif sp.issparse(self.hierarchy):
+            check_square_adjacency_matrix(self.hierarchy)
+            check_adjacency_matrix_values(self.hierarchy)
             hierarchy_graph = nx.from_scipy_sparse_array(
                 self.hierarchy, create_using=nx.DiGraph
             )
@@ -240,6 +308,7 @@ class HierarchyMixin:
                 node_index: node_index for node_index in hierarchy_graph.nodes
             }
         elif isinstance(self.hierarchy, nx.DiGraph):
+            check_digraph_edge_weights(self.hierarchy)
             node_names = list(self.hierarchy.nodes)
             mapping = {
                 node_name: position for position, node_name in enumerate(node_names)
@@ -256,9 +325,10 @@ class HierarchyMixin:
         nx.set_node_attributes(
             hierarchy_graph, original_identifiers, ORIGINAL_NODE_IDENTIFIER
         )
-        # The hierarchy is purely meant as structural information.
-        # Thus, any edge weights from the user input are dropped.
-        # This also ensures that to_adjacency_matrix returns a boolean matrix, which is expected by the rest of the pipeline.
+        # The hierarchy is purely meant as structural information, so besides
+        # accepting no edge weight information previously, even all remaining
+        # weights of ``1`` at this point are dropped. This is not a processing
+        # necessity, but a memory optimization.
         for _, _, edge_data in hierarchy_graph.edges(data=True):
             edge_data.pop("weight", None)
         # Add "ROOT" node and connect components if there are multiple
@@ -371,19 +441,33 @@ class HierarchicalEstimator(TransformerMixin, HierarchyMixin, BaseEstimator):
         Raises
         ------
         TypeError
-            If the passed hierarchy is None.
+            If the passed hierarchy is None, or if a constructor hyperparameter
+            has the wrong type.
         ValueError
-            If X is not bool-dtype (numerical inputs may be supported in the
-            future); if y is None on a supervised subclass (selectors); or if the
-            column->node mapping cannot be auto-derived for a DataFrame X
-            (adjacency-matrix hierarchy without node names, or feature names
-            with no matching node -- see ``_handle_orphan_features``).
+            If a constructor hyperparameter has an invalid value; if X is not
+            bool-dtype (numerical inputs may be supported in the future); if y is None on a
+            supervised subclass (selectors); if y is not a binary target
+            labelled 0 and 1 (or False and True) with both classes present;
+            or if the column->node mapping cannot be auto-derived for a
+            DataFrame X (adjacency-matrix hierarchy without node names, or
+            feature names with no matching node -- see
+            ``_handle_orphan_features``).
+
+        Warns
+        -----
+        UserWarning
+            If a column of X holds no True value (see
+            ``warn_on_all_false_columns``), if the column->node mapping falls
+            back to positional order (see ``_warn_on_positional_fallback``),
+            or if the hierarchy consists of multiple components (see
+            ``add_virtual_root_node``).
 
         Returns
         -------
         self : object
             Returns self.
         """
+        self._validate_hyperparameters()
         if self.hierarchy is None:
             raise TypeError("Hierarchy is None but is required.")
         if y is None:
@@ -395,6 +479,7 @@ class HierarchicalEstimator(TransformerMixin, HierarchyMixin, BaseEstimator):
             check_binary_target(y)
         check_bool_dtype(X)
         self._fit_hierarchy(columns)
+        warn_on_all_false_columns(X, getattr(self, "feature_names_in_", None))
         self._fit(X, y)
 
         self.is_fitted_ = True

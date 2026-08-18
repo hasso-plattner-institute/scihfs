@@ -1,8 +1,11 @@
 "RNB feature selection"
 
+from numbers import Integral
+
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp
+from sklearn.utils.validation import check_scalar
 
 from .lazyHierarchicalFeatureSelector import LazyHierarchicalFeatureSelector
 
@@ -27,10 +30,14 @@ class RNB(LazyHierarchicalFeatureSelector):
             The hierarchy graph. See ``HierarchicalEstimator.__init__``
             for the accepted formats.
         k : int
-            The numbers of features to select.
+            The number of top-relevance features to keep per instance. 0 (the
+            default) means no limit: every feature is kept. Must be >= 0.
         """
         super().__init__(hierarchy)
         self.k = k
+
+    def _validate_hyperparameters(self):
+        check_scalar(self.k, "k", target_type=Integral, min_val=0)
 
     def _fit(self, X, y):
         self._compute_relevance(X, y)

@@ -90,6 +90,8 @@ The following function demonstrates how to use `HierarchicalPreprocessor` to pre
    densifying -- which at large scale avoids allocating a dense adjacency matrix.
    Pass ``sparse=False`` if you specifically need a dense ``np.ndarray``.
 
+   In either way: The result is dtype ``bool`` -- (a) because the hierarchy
+   is purely structural, and (b) because it has the smallest memory footprint.
 
 Handling Node Name Changes
 ---------------------------
@@ -113,6 +115,24 @@ Consider a simple hierarchy with nodes labeled `[4, 5, 0, 1, 3]`. When transform
    column_mapping = [2, 3, -1, 4]  # Example mapping
 
 After fitting, the preprocessor adjusts these mappings so that the correct relationships between dataset columns and hierarchy nodes are preserved. This process ensures that feature selection algorithms operate on the intended hierarchical structure.
+
+Node Names Are Compared as Strings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Node names of an ``nx.DiGraph`` hierarchy may be of any hashable type, but scihfs
+only ever handles them as strings: scikit-learn stores DataFrame column labels as
+``str`` in ``feature_names_in_``, so the mapping is derived by comparing each
+``str(node)`` from the digraph against those labels, and
+``get_feature_names_out()`` reports them in the same way. This is what lets an
+integer-named hierarchy match a DataFrame whose column labels are the string
+versions of those integers.
+
+The flip side is that node names must be unique **as strings**. A hierarchy holding
+both ``1`` and ``"1"`` has two distinct nodes but only one name to address them by,
+so one of them could never be reached from a DataFrame column. Such a hierarchy is
+rejected as soon as the mapping is derived from column names. Passing the
+``columns`` mapping explicitly bypasses the name matching entirely and stays
+allowed.
 
 
 Implementation Details
